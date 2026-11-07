@@ -55,5 +55,19 @@
   "started": "2026-11-07 13:17:45",
   "git_commit": "a202565",
   "seconds": 929.0,
-  "finished": "2026-11-07 13:33:14"
+  "finished": "2026-11-07 13:33:14",
+  "partial_reruns": [
+    {
+      "part": "probe",
+      "finished": "2026-11-07 13:54:50",
+      "git_commit": "1a8f5cf",
+      "seconds": 315.2
+    },
+    {
+      "part": "main",
+      "finished": "2026-11-07 13:59:02",
+      "git_commit": "1a8f5cf",
+      "seconds": 192.6
+    }
+  ]
 }

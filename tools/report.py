@@ -107,5 +107,43 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(sys.argv) == 1:
     raise SystemExit(main())
+
+
+def export_json() -> None:
+    """Compact results for the web Results page."""
+    import json
+    cfg = Config()
+    man = an.manifest()
+    ev, mo = an.load("events_main"), an.load("monthly_main")
+    t1, rl = an.main_table(ev, mo, cfg, conds=("A", "B", "C", "D", "C_T3"))
+    dec = econ.decomposition(rl)
+    sens = an.sens_summary(an.load("events_sens"), an.load("monthly_sens"))
+    e4 = an.load("events_sens"); m4 = an.load("monthly_sens")
+    dec4 = econ.decomposition(econ.run_level(e4[e4.tag == "sens_duration_4h"], m4[m4.tag == "sens_duration_4h"],
+                                             cfg.with_(e_nom_kwh=10000.0)))
+    cal = an.calib_summary(an.load("events_cal"))
+    probe = an.probe_summary(an.load("events_probe"), an.load("monthly_probe"))
+    bands = an.dref_bands(mo, ["A", "B", "C", "C_T3"])
+    f = lambda x: None if x != x else round(float(x), 4)
+    out = dict(
+        manifest={k: man.get(k) for k in ("config_hash", "git_commit", "n_main", "n_side", "seconds", "finished")},
+        t1=[dict(cond=r.cond, savings=[f(v) for v in r.savings], npv=[f(v) for v in r.npv], capture=f(r.capture[0]),
+                 delivered=f(r.delivered[0]), annual=f(r.annual[0]), p5miss=f(r.p5miss), p5lo=f(r.p5_lo), p5hi=f(r.p5_hi),
+                 premium_same=[f(v) for v in r.premium_same], aug=f(r.aug[0]), d_true=f(r.d_true[0]), psar=f(r.psar))
+            for _, r in t1.iterrows()],
+        dec=[dict(component=r.component, mean=f(r["mean"]), lo=f(r.lo), hi=f(r.hi)) for _, r in dec.iterrows()],
+        dec4=[dict(component=r.component, mean=f(r["mean"]), lo=f(r.lo), hi=f(r.hi)) for _, r in dec4.iterrows()],
+        sens=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in sens.to_dict("records")],
+        cal=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in cal.to_dict("records")],
+        probe=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in probe.to_dict("records")],
+        bands=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in bands.to_dict("records")],
+    )
+    p = ROOT / "web" / "public" / "data" / "results.json"
+    p.write_text(json.dumps(out))
+    print("wrote", p)
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "--json":
+    export_json()

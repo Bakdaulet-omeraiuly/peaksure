@@ -74,6 +74,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
+    ap.add_argument("--only", choices=["main", "probe", "cal", "sens"], default=None)
     a = ap.parse_args(argv)
     base = Config()
     n_main = 12 if a.quick else base.n_runs
@@ -88,15 +89,17 @@ def main(argv=None) -> int:
     except Exception:
         manifest["git_commit"] = "unknown"
 
+    only = a.only
     # 1. main benchmark (+ snapshots for run 0)
     jobs = [(cfgd(base), c, s, "main", s == 0 and c in ("A", "C")) for c in MAIN_CONDS for s in range(n_main)]
     probe_cfg = base.with_(probe_budget=4)
     jobs += [(cfgd(probe_cfg), c, s, "main", False) for c in ["D"] for s in range(n_main)]
-    ev, mo, snaps = run_set(jobs, a.workers)
-    ev.to_parquet(RESULTS / "events_main.parquet")
-    mo.to_parquet(RESULTS / "monthly_main.parquet")
-    pd.to_pickle(snaps, RESULTS / "snapshots.pkl")
-    print(f"main done {time.time()-t0:.0f}s", flush=True)
+    if only in (None, "main"):
+        ev, mo, snaps = run_set(jobs, a.workers)
+        ev.to_parquet(RESULTS / "events_main.parquet")
+        mo.to_parquet(RESULTS / "monthly_main.parquet")
+        pd.to_pickle(snaps, RESULTS / "snapshots.pkl")
+        print(f"main done {time.time()-t0:.0f}s", flush=True)
 
     # 2. probing study: policies x budget
     jobs = []
@@ -110,10 +113,11 @@ def main(argv=None) -> int:
                      ("probe_bias", pbase.with_(probe_budget=4, meas_bias=0.03))]:
         jobs += [(cfgd(cb), c, s, name, False) for c in ("D", "D_rr") for s in range(n_side)]
     jobs += [(cfgd(pbase.with_(meas_bias=0.03)), "C", s, "probe_bias_C", False) for s in range(n_side)]
-    ev2, mo2, _ = run_set(jobs, a.workers)
-    ev2.to_parquet(RESULTS / "events_probe.parquet")
-    mo2.to_parquet(RESULTS / "monthly_probe.parquet")
-    print(f"probe done {time.time()-t0:.0f}s", flush=True)
+    if only in (None, "probe"):
+        ev2, mo2, _ = run_set(jobs, a.workers)
+        ev2.to_parquet(RESULTS / "events_probe.parquet")
+        mo2.to_parquet(RESULTS / "monthly_probe.parquet")
+        print(f"probe done {time.time()-t0:.0f}s", flush=True)
 
     # 3. calibration / model mismatch
     jobs = []
@@ -123,10 +127,11 @@ def main(argv=None) -> int:
         for c in ("A_opt", "C"):
             jobs += [(cfgd(sysc), c, s, f"cal_sys_{eps:.1f}", False) for s in range(n_side)]
             jobs += [(cfgd(rndc), c, s, f"cal_rnd_{eps:.1f}", False) for s in range(n_side)]
-    ev3, mo3, _ = run_set(jobs, a.workers)
-    ev3.to_parquet(RESULTS / "events_cal.parquet")
-    mo3.to_parquet(RESULTS / "monthly_cal.parquet")
-    print(f"calibration done {time.time()-t0:.0f}s", flush=True)
+    if only in (None, "cal"):
+        ev3, mo3, _ = run_set(jobs, a.workers)
+        ev3.to_parquet(RESULTS / "events_cal.parquet")
+        mo3.to_parquet(RESULTS / "monthly_cal.parquet")
+        print(f"calibration done {time.time()-t0:.0f}s", flush=True)
 
     # 4. sensitivity (tornado + thermal + chemistry)
     sens = SENS
@@ -143,13 +148,19 @@ def main(argv=None) -> int:
             cfg = cfg.with_(chemistry=f"Na-ion:{name}")
         jobs += [(cfgd(cfg), c, s, f"sens_{name}", False)
                  for c in ("A", "A_opt", "A_twin", "B", "B_opt", "C") for s in range(n_side)]
-    ev4, mo4, _ = _run_sens(jobs, a.workers, sens)
-    ev4.to_parquet(RESULTS / "events_sens.parquet")
-    mo4.to_parquet(RESULTS / "monthly_sens.parquet")
-    print(f"sensitivity done {time.time()-t0:.0f}s", flush=True)
+    if only in (None, "sens"):
+        ev4, mo4, _ = _run_sens(jobs, a.workers, sens)
+        ev4.to_parquet(RESULTS / "events_sens.parquet")
+        mo4.to_parquet(RESULTS / "monthly_sens.parquet")
+        print(f"sensitivity done {time.time()-t0:.0f}s", flush=True)
 
     manifest["seconds"] = round(time.time() - t0, 1)
     manifest["finished"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    if only:
+        old = json.loads((RESULTS / "manifest.json").read_text()) if (RESULTS / "manifest.json").exists() else {}
+        old.setdefault("partial_reruns", []).append(dict(part=only, finished=manifest["finished"],
+                                                          git_commit=manifest["git_commit"], seconds=manifest["seconds"]))
+        manifest = old
     (RESULTS / "manifest.json").write_text(json.dumps(manifest, indent=2, default=str))
     print("done", manifest["seconds"], "s")
     return 0

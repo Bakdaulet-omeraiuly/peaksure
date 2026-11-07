@@ -29,7 +29,19 @@ A factorial design (A_opt, A_twin, B_opt, perfect-information runs) separates **
 | `app/` | Streamlit demo |
 | `tests/` | Unit tests (including the brief's 16-cell example) |
 
-## Run
+## PeakSure Studio (web demo)
+`web/` holds a Next.js + React Three Fiber app.
+- **Studio:** two CES containers (1,920 cells each). Pick a real ISO-NE peak and battery age, then press **Run the peak**. Every cell discharges minute by minute: a conventional string stops at its first empty cell, while REON bypass lets empty or hot cells leave the path. The panels show each operator's belief vs the truth, the 95%-confidence commitment, VoI probes, a calibration watchdog and an event log.
+- **Results:** the Monte Carlo study (where it pays, value decomposition, calibration, probing, lifetime).
+- **Method:** what is real, what is modelled, and what is not shown.
+
+The browser physics is a TypeScript port of `peaksure/physics.py`, tested against the Python model. Cell ageing comes from the Python model through `tools/export_web.py`.
+
+```bash
+cd web && npm install && npm test && npm run dev     # http://localhost:3000
+```
+
+## Run (Python model)
 ```bash
 pip install numpy pandas scipy plotly streamlit pyarrow openpyxl pytest
 pytest -q

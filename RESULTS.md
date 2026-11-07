@@ -11,7 +11,7 @@ System: REON CES 2.5 MW / 5 MWh (2 h), sodium-ion parameters, 15 years from 2027
 | A Conventional | $454,758 [$450,626, $458,713] | $3,964,955 [$3,928,154, $4,001,799] | 65.5% | 100.0% | 84% | n/a | baseline |
 | B REON bypass | $454,758 [$450,626, $458,713] | $3,985,859 [$3,949,139, $4,022,747] | 65.5% | 100.0% | 84% | n/a | 4.2 [4.1, 4.3] |
 | C PeakSure | $444,229 [$439,203, $448,917] | $3,898,130 [$3,851,254, $3,940,686] | 71.9% | 99.7% | 84% | 4.4% [4.0, 4.8] | 7.8 [3.8, 11.6] |
-| D PeakSure + VoI | $444,440 [$439,427, $449,198] | $3,899,797 [$3,853,085, $3,942,626] | 72.0% | 99.6% | 84% | 4.4% [4.0, 4.7] | 8.1 [4.1, 11.9] |
+| D PeakSure + VoI | $444,266 [$439,274, $448,993] | $3,898,445 [$3,851,573, $3,941,193] | 71.9% | 99.7% | 84% | 4.4% [4.0, 4.8] | 7.8 [3.9, 11.7] |
 | C + Tier 3 | $442,921 [$437,754, $447,584] | $3,887,025 [$3,837,421, $3,930,121] | 71.8% | 99.7% | 84% | 3.9% [3.6, 4.3] | 5.6 [1.6, 9.4] |
 
 ## T2. Value decomposition, 2-h CES ($/yr, paired, exact by construction)
@@ -21,8 +21,8 @@ System: REON CES 2.5 MW / 5 MWh (2 h), sodium-ion parameters, 15 years from 2027
 | Decision rule (optimized commitment) | $-12,334 | [$-13,975, $-10,817] |
 | V1 Physical (bypass) | $5,945 | [$4,492, $7,386] |
 | V2 Informational (cell twin) | $-4,140 | [$-5,269, $-3,062] |
-| V3 Active information (VoI probes) | $211 | [$-55, $476] |
-| Total | $-10,318 | [$-12,572, $-8,188] |
+| V3 Active information (VoI probes) | $38 | [$-2, $115] |
+| Total | $-10,491 | [$-12,800, $-8,347] |
 
 ## T3. Where it pays: one change at a time from base ($/yr; premium = paired NPV C minus A_opt per kWh)
 
@@ -67,21 +67,21 @@ System: REON CES 2.5 MW / 5 MWh (2 h), sodium-ion parameters, 15 years from 2027
 | Policy | Budget | Probes used / peak | Gain [95% CI] |
 |---|---|---|---|
 | C (probe_b0) | 0 | 0.00 | $0 [$0, $0] |
-| D (probe_b1) | 1 | 0.05 | $5 [$-3, $15] |
+| D (probe_b1) | 1 | 0.01 | $5 [$0, $10] |
 | D_rand (probe_b1) | 1 | 1.00 | $-2 [$-10, $7] |
 | D_rr (probe_b1) | 1 | 1.00 | $-109 [$-359, $22] |
-| D (probe_b2) | 2 | 0.09 | $130 [$2, $380] |
+| D (probe_b2) | 2 | 0.02 | $8 [$0, $18] |
 | D_rand (probe_b2) | 2 | 2.00 | $126 [$-10, $389] |
 | D_rr (probe_b2) | 2 | 2.00 | $8 [$2, $15] |
-| D (probe_b4) | 4 | 0.15 | $271 [$11, $650] |
+| D (probe_b4) | 4 | 0.02 | $10 [$0, $20] |
 | D_rand (probe_b4) | 4 | 4.00 | $399 [$15, $796] |
 | D_rr (probe_b4) | 4 | 4.00 | $262 [$3, $646] |
-| D (probe_b8) | 8 | 0.28 | $278 [$14, $663] |
+| D (probe_b8) | 8 | 0.02 | $10 [$0, $20] |
 | D_rand (probe_b8) | 8 | 8.00 | $380 [$5, $876] |
 | D_rr (probe_b8) | 8 | 8.00 | $562 [$-5, $1,558] |
 | C (probe_bias_C) | - | 0.00 | $-69,368 [$-74,590, $-64,064] |
-| D (probe_bias) | - | 0.10 | $-69,496 [$-74,626, $-64,258] |
-| D (probe_noisy) | - | 0.14 | $0 [$0, $0] |
+| D (probe_bias) | - | 0.01 | $-69,370 [$-74,592, $-64,065] |
+| D (probe_noisy) | - | 0.01 | $0 [$0, $0] |
 | D_rr (probe_bias) | - | 4.00 | $-69,082 [$-74,386, $-63,693] |
 | D_rr (probe_noisy) | - | 4.00 | $0 [$0, $0] |
 

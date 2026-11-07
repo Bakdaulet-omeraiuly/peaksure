@@ -106,5 +106,32 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and len(sys.argv) == 1:
     raise SystemExit(main())
+
+
+def export_fixture():
+    """Cross-check fixture: Python physics on the exported year-9 states of life_2h_s0."""
+    from peaksure import physics as ph
+    cfg = Config()
+    life = json.loads((OUT / "life_2h_s0.json").read_text())
+    dec = lambda b: np.frombuffer(base64.b64decode(b), "<u2").astype(float)
+    t_off = np.frombuffer(base64.b64decode(life["t_off"]), "<i2").astype(float) / 100
+    out = {}
+    for tier in ("fixed", "bypass"):
+        soh = dec(life["tiers"][tier][8]["soh"]) / 20000
+        q = (soh * cfg.q_nom_ah).reshape(cfg.n_strings, cfg.n_series)
+        for t_amb in (34.4, -18.3, 20.0):
+            t_cell = ph.container_temp(t_amb, cfg.t_hvac_set, cfg.k_hvac) + t_off.reshape(q.shape) + cfg.load_heating_c
+            soc0 = np.full_like(q, 1.0)
+            e, p = ph.deliverable(q, tier=tier, v_nom=cfg.chem.v_nom, n_min=cfg.n_min, soc0=soc0, t_cell=t_cell,
+                                  chem=cfg.chem, eta=cfg.eta_discharge, switch_loss=cfg.switch_loss,
+                                  p_string_max=cfg.p_max_kw / cfg.n_strings)
+            out[f"{tier}_{t_amb}"] = dict(energy=float(e.sum()), power=float(p.sum()))
+    (ROOT / "web" / "src" / "engine" / "__fixtures__").mkdir(parents=True, exist_ok=True)
+    (ROOT / "web" / "src" / "engine" / "__fixtures__" / "python_deliverable.json").write_text(json.dumps(out, indent=1))
+    print("fixture", out)
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "--fixture":
+    export_fixture()

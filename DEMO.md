@@ -1,5 +1,15 @@
 # PeakSure: Demo Guide (2 minutes)
 
+**Primary demo: PeakSure Studio** (`cd web && npm run dev`). Use the four scenario presets on the left:
+1. **REON CES, 2025 annual peak.** Base case: both operators shave 2.5 MW, so the CES's cell-level value here is about zero (honest).
+2. **Hot afternoon, weak cooling.** Switch the colour to *Temp*, then press *Run the peak*. Conventional strings derate on their hottest cell; REON rests the hot cells. The difference at this one peak is in the commitment panel.
+3. **Winter peak, aged 1-h battery.** Watch all eight conventional strings stop at their first empty cell, while REON strings keep running.
+4. **VoI diagnostic probes.** Amber cells are probed; the twin's belief narrows before the commitment.
+
+Then open **Results** for the Monte Carlo evidence.
+
+The Streamlit app (`streamlit run app/app.py`) is the secondary, analysis-oriented view:
+
 ```bash
 pip install numpy pandas scipy plotly streamlit pyarrow openpyxl pytest
 pytest -q                                   # 18 tests, incl. the brief's 16-cell example

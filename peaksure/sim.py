@@ -42,6 +42,8 @@ LABELS = {
     "C_T3": "C + Tier 3 lifetime-aware resting SOC",
 }
 
+MIN_VOI_KW = 0.5   # smallest expected gain (kW shaved) worth a probe
+
 S_POP, S_SEQ, S_MEAS, S_FORE, S_SAMP, S_PROBE, S_TEST, S_FAULT, S_RAND, S_NEW = range(10)
 
 
@@ -350,7 +352,7 @@ def _run_probes(policy, cfg, twin, q_true, faulted, soc0, t_cell, p_hour, phys, 
         crit = (np.abs(ranks - k_lim) <= 2).mean(axis=0)
         score = np.where(faulted, 0.0, crit * twin.sd)
         cands = np.argsort(score, axis=None)[::-1][:n_cand]
-        best_c, best_v = None, 0.0
+        best_c, best_v = None, MIN_VOI_KW
         for c in cands:
             si, ni = np.unravel_index(c, (S, N))
             if score[si, ni] <= 0:
