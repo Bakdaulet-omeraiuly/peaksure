@@ -155,7 +155,7 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
         <input type="range" min={0} max={0.03} step={0.01} value={reportBias} onChange={(e) => set({ reportBias: +e.target.value })} />
         <div className="text-[11.5px] text-muted mt-1 leading-snug">
           Systematic error in per-cell capacity reports. Monte Carlo: twin P5 miss rate {sysMiss ? <b className="num text-ink">{(sysMiss.miss * 100).toFixed(1)}%</b> : "n/a"} (target 5%).
-          {reportBias > 0 ? " Systematic bias can make the twin overconfident. An automatic fallback is not implemented." : ""}
+          {reportBias > 0 ? " Systematic bias can make this live twin overconfident. The independent pack-test safety envelope is evaluated separately in Findings." : ""}
         </div>
       </Section>
       {hoverInfo && (

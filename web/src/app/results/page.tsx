@@ -121,7 +121,7 @@ export default function Results() {
         <div className="grid sm:grid-cols-3 gap-3 mb-5">
           <div className="surface p-5"><div className="micro mb-2">Lifetime control</div><p className="text-[13px] text-muted leading-relaxed">{life ? `${Math.abs(Math.round(life.end_energy_kwh[0])).toLocaleString()} kWh ${life.end_energy_kwh[0] >= 0 ? "more" : "less"} deliverable energy at the horizon; ${usd(life.savings_yr[0])}/yr change in peak savings.` : "Exploratory resting-charge policy."}</p></div>
           <div className="surface p-5"><div className="micro mb-2">Twin uncertainty</div><p className="text-[13px] text-muted leading-relaxed">{guarded ? `Under injected bias, P5 miss: ${(guarded.p5_miss_baseline * 100).toFixed(1)}% → ${(guarded.p5_miss_candidate * 100).toFixed(1)}% with the pack-test envelope.` : "Independent pack-test safety envelope."}</p></div>
-          <div className="surface p-5"><div className="micro mb-2">Mixed-age cells</div><p className="text-[13px] text-muted leading-relaxed">{mixed ? `${mixed.n_runs} paired runs with assumed age cohorts of the same chemistry.` : "Synthetic same-chemistry cohorts."}</p></div>
+          <div className="surface p-5"><div className="micro mb-2">Mixed-age cells</div><p className="text-[13px] text-muted leading-relaxed">{mixed ? `${usd(mixed.savings_yr[0])}/yr for combined bypass and twin vs optimized conventional control, across ${mixed.n_runs} paired synthetic runs.` : "Synthetic same-chemistry cohorts."}</p></div>
         </div>
         <details className="surface disclosure"><summary>Explore the evidence</summary>
         <div className="results-grid p-4">
@@ -189,7 +189,7 @@ export default function Results() {
                 </table>
               </div>
             ))}
-            <div className="text-[11.5px] text-faint">The cell twin is calibrated and {narrow.toFixed(0)}x narrower at zero mismatch, but systematic bias makes it confidently wrong. Automatic detection and fallback remain open work.</div>
+            <div className="text-[11.5px] text-faint">The cell twin is calibrated and {narrow.toFixed(0)}x narrower at zero mismatch, but systematic bias makes it confidently wrong. The separate research study tests a conservative pack-test envelope and a diagnostic mismatch alert.</div>
           </Card>
 
           <Card title="VoI probing (4-h system)" sub="extra $/yr vs no probing, paired">

@@ -85,6 +85,20 @@ System: REON CES 2.5 MW / 5 MWh (2 h), sodium-ion parameters, 15 years from 2027
 | D_rr (probe_bias) | - | 4.00 | $-69,082 [$-74,386, $-63,693] |
 | D_rr (probe_noisy) | - | 4.00 | $0 [$0, $0] |
 
+## T6. Exploratory lifetime, mixed-age and model-mismatch study (24 paired runs; config `8f1d2b3cf5`)
+
+Same chemistry within each run. Mixed-age cohorts (0, 5, 10 years) are assumed calendar histories. Independent per-cell resting SOC is unconfirmed; no hardware validation. The guard uses the lower of twin and independent pack-test beliefs; its alert is diagnostic.
+
+| Study | Contrast | Δ savings $/yr [95% CI] | Δ end energy kWh [95% CI] | Δ augmentation kWh | P5 miss base → candidate; Δ pp [95% CI] | Alert rate |
+|---|---|---|---|---|---|---|
+| mixed | C − A_opt | $3,893 [$1,498, $6,278] | -38 [-43, -33] | -500 | 0.6% → 1.4%; +0.8 [+0.4, +1.2] | 0.0% |
+| mixed | C_T3 − C | $550 [$-291, $1,463] | 8 [-4, 14] | -10 | 1.4% → 1.4%; +0.0 [-0.1, +0.1] | 0.0% |
+| mixed | C_LC − C | $351 [$-526, $1,281] | 9 [8, 10] | 0 | 1.4% → 1.4%; +0.0 [-0.2, +0.2] | 0.0% |
+| lifetime | C_T3 − C | $-1,290 [$-3,235, $643] | 26 [25, 27] | 0 | 4.3% → 3.8%; -0.5 [-0.7, -0.3] | 0.0% |
+| lifetime | C_LC − C | $-1,017 [$-2,369, $468] | 24 [23, 25] | 0 | 4.3% → 4.1%; -0.2 [-0.4, -0.0] | 0.0% |
+| guard_null | C_G − C | $4,463 [$2,214, $6,937] | 41 [37, 44] | 0 | 4.3% → 0.0%; -4.3 [-4.8, -3.8] | 2.5% |
+| guard_bias | C_G − C | $33,985 [$28,967, $39,519] | 51 [47, 54] | 0 | 76.9% → 0.1%; -76.8 [-77.7, -75.9] | 42.5% |
+
 ## Reading the results
 
 - At the CES's 2-h duration, V1 + V2 = $1,805/yr. Energy rarely limits the coincident-peak decision; peak-hour timing dominates.

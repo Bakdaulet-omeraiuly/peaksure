@@ -80,6 +80,18 @@
    "ASSUMED",
    "Operators dispatch on several candidate days per month"
   ],
+  "initial_age_years": [
+   "ASSUMED",
+   "Mixed-age cohort ages; historical duty and measured SOH unavailable"
+  ],
+  "tier3_weak_share / tier3_rest_soc": [
+   "ASSUMED",
+   "Independent per-cell resting SOC and recharge before peaks are unconfirmed"
+  ],
+  "guard_threshold": [
+   "ASSUMED",
+   "1.5% one-sided exponentially smoothed discrepancy versus annual pack test"
+  ],
   "k_hvac / sigma_t_cell": [
    "ASSUMED",
    "No public CES thermal data; ask REON"
