@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 
 import analysis as an
-from peaksure import econ
+from peaksure import econ, research
 from peaksure.config import Config
 
 
@@ -37,6 +37,7 @@ def main() -> int:
     sens = an.sens_summary(an.load("events_sens"), an.load("monthly_sens"))
     cal = an.calib_summary(an.load("events_cal"))
     probe = an.probe_summary(an.load("events_probe"), an.load("monthly_probe"))
+    research_rows = research.summary(an.load("events_research"), an.load("monthly_research"))
     names = {"A": "A Conventional", "B": "B REON bypass", "C": "C PeakSure", "D": "D PeakSure + VoI", "C_T3": "C + Tier 3"}
 
     L = []
@@ -89,6 +90,25 @@ def main() -> int:
             b = "-" if r.budget != r.budget else int(r.budget)
             L.append(f"| {r.cond} ({r.tag}) | {b} | {r.probes:.2f} | {usd(r.gain)} [{usd(r.gain_lo)}, {usd(r.gain_hi)}] |")
 
+    if research_rows:
+        n_research = man.get("research", {}).get("n_runs", research_rows[0]["n_runs"])
+        research_hash = man.get("research", {}).get("config_hash", "unknown")
+        L.append(f"\n## T6. Exploratory lifetime, mixed-age and model-mismatch study ({n_research} paired runs; config `{research_hash}`)\n")
+        ages = ", ".join(f"{x:g}" for x in Config(initial_age_years=(0.0, 5.0, 10.0)).initial_age_years)
+        L.append(f"Same chemistry within each run. Mixed-age cohorts ({ages} years) are assumed calendar histories. "
+                 "Independent per-cell resting SOC is unconfirmed; no hardware validation. "
+                 "The guard uses the lower of twin and independent pack-test beliefs; its alert is diagnostic.\n")
+        L.append("| Study | Contrast | Δ savings $/yr [95% CI] | Δ end energy kWh [95% CI] | Δ augmentation kWh | P5 miss base → candidate; Δ pp [95% CI] | Alert rate |")
+        L.append("|---|---|---|---|---|---|---|")
+        for row in research_rows:
+            s, e, a = row["savings_yr"], row["end_energy_kwh"], row["augmentation_kwh"]
+            miss = row["p5_miss_delta"]
+            L.append(f"| {row['study']} | {row['candidate']} − {row['baseline']} | {usd(s[0])} [{usd(s[1])}, {usd(s[2])}] | "
+                     f"{e[0]:,.0f} [{e[1]:,.0f}, {e[2]:,.0f}] | {a[0]:,.0f} | "
+                     f"{row['p5_miss_baseline']*100:.1f}% → {row['p5_miss_candidate']*100:.1f}%; "
+                     f"{miss[0]*100:+.1f} [{miss[1]*100:+.1f}, {miss[2]*100:+.1f}] | "
+                     f"{row['guard_alert_rate']*100:.1f}% |")
+
     L.append("\n## Reading the results\n")
     v12 = dec.set_index("component")["mean"]
     L.append(f"- At the CES's 2-h duration, V1 + V2 = {usd(v12['V1 Physical (bypass)'] + v12['V2 Informational (cell twin)'])}/yr. "
@@ -125,6 +145,7 @@ def export_json() -> None:
                                              cfg.with_(e_nom_kwh=10000.0)))
     cal = an.calib_summary(an.load("events_cal"))
     probe = an.probe_summary(an.load("events_probe"), an.load("monthly_probe"))
+    research_rows = research.summary(an.load("events_research"), an.load("monthly_research"))
     bands = an.dref_bands(mo, ["A", "B", "C", "C_T3"])
     f = lambda x: None if x != x else round(float(x), 4)
     out = dict(
@@ -139,6 +160,7 @@ def export_json() -> None:
         cal=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in cal.to_dict("records")],
         probe=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in probe.to_dict("records")],
         bands=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in bands.to_dict("records")],
+        research=research_rows,
     )
     p = ROOT / "web" / "public" / "data" / "results.json"
     p.write_text(json.dumps(out))

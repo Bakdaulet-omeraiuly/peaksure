@@ -74,7 +74,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
-    ap.add_argument("--only", choices=["main", "probe", "cal", "sens"], default=None)
+    ap.add_argument("--only", choices=["main", "probe", "cal", "sens", "research"], default=None)
     a = ap.parse_args(argv)
     base = Config()
     n_main = 12 if a.quick else base.n_runs
@@ -154,12 +154,30 @@ def main(argv=None) -> int:
         mo4.to_parquet(RESULTS / "monthly_sens.parquet")
         print(f"sensitivity done {time.time()-t0:.0f}s", flush=True)
 
+    # 5. Paired research extensions. These do not change the established A-D benchmark.
+    n_research = 4 if a.quick else 24
+    studies = (
+        ("mixed", base.with_(initial_age_years=(0.0, 5.0, 10.0)), ("A_opt", "C", "C_T3", "C_LC")),
+        ("lifetime", base, ("C", "C_T3", "C_LC")),
+        ("guard_null", base, ("C", "C_G")),
+        ("guard_bias", base.with_(trend_bias=0.1, meas_bias=0.01), ("C", "C_G")),
+    )
+    jobs = [(cfgd(cfg), cond, seed, tag, False)
+            for tag, cfg, conds in studies for cond in conds for seed in range(n_research)]
+    if only in (None, "research"):
+        ev5, mo5, _ = run_set(jobs, a.workers)
+        ev5.to_parquet(RESULTS / "events_research.parquet")
+        mo5.to_parquet(RESULTS / "monthly_research.parquet")
+        print(f"research done {time.time()-t0:.0f}s", flush=True)
+
     manifest["seconds"] = round(time.time() - t0, 1)
     manifest["finished"] = time.strftime("%Y-%m-%d %H:%M:%S")
     if only:
         old = json.loads((RESULTS / "manifest.json").read_text()) if (RESULTS / "manifest.json").exists() else {}
         old.setdefault("partial_reruns", []).append(dict(part=only, finished=manifest["finished"],
                                                           git_commit=manifest["git_commit"], seconds=manifest["seconds"]))
+        if only == "research":
+            old["research"] = dict(n_runs=n_research, config_hash=base.hash(), finished=manifest["finished"])
         manifest = old
     (RESULTS / "manifest.json").write_text(json.dumps(manifest, indent=2, default=str))
     print("done", manifest["seconds"], "s")

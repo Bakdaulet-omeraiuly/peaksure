@@ -28,6 +28,11 @@ export default function Method() {
               a per-cell Kalman twin as its belief, and the chance-constrained commitment. Optional value-of-information probes switch single cells to measure them.</p>
           </S>
           <details className="surface disclosure"><summary>Data sources, assumptions and limitations</summary><div className="p-4 grid gap-4">
+          <S t="Research extensions">
+            <p><b className="text-ink">Mixed-age cells:</b> a separate paired simulation assigns distinct prior calendar ages within one chemistry. The age history is assumed, not measured from REON hardware.</p>
+            <p><b className="text-ink">Lifetime control:</b> a second resting-SOC policy allocates lower standby charge to cells with the fastest fade estimated by the twin. Its value and any negative outcome are reported against the original policy. Independent cell-level standby control and recharge readiness remain unconfirmed.</p>
+            <p><b className="text-ink">Model mismatch:</b> the robust commitment uses the lower of the cell twin and an independent annual pack-test belief. A smoothed disagreement signal raises an alert; it does not prove the twin is correct. The added conservatism may reduce savings.</p>
+          </S>
           <S t="What runs where">
             <p>Real data: ISO-NE SMD hourly files 2019&ndash;2025 (system monthly peaks, hours, WCMA temperatures), ISO-NE RNS and FCA rates, REON CES rating.</p>
             <p>Python model (repository <code>peaksure/</code>): 15-year cell ageing (calendar Arrhenius &times; SOC stress, DoD-weighted cycling, lognormal cell-to-cell spread

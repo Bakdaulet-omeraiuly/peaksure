@@ -6,7 +6,7 @@ from peaksure.config import Config, NA_ION
 from peaksure.decision import Decision, optimize, outcome, fixed_rule
 from peaksure.data import HE_GRID, hour_forecast, peak_events
 from peaksure.twin import CellTwin
-from peaksure.sim import simulate
+from peaksure.sim import simulate, draw_population
 
 
 # ----------------------------------------------------------- brief's 16-cell example
@@ -135,6 +135,24 @@ def test_common_random_numbers_same_events_across_conditions():
     a = simulate(cfg, "A", 1)["events"]
     c = simulate(cfg, "C", 1)["events"]
     assert (a.peak_he.values == c.peak_he.values).all() and (a.t_amb_c.values == c.t_amb_c.values).all()
+
+
+def test_mixed_age_cohorts_keep_one_chemistry_and_distinct_capacity():
+    cfg = Config(n_strings=1, n_series=90, initial_age_years=(0.0, 5.0, 10.0))
+    pop = draw_population(cfg, 3)
+    ages, counts = np.unique(pop.age0, return_counts=True)
+    assert ages.tolist() == [0.0, 5.0, 10.0] and counts.tolist() == [30, 30, 30]
+    means = [pop.q0[pop.age0 == age].mean() for age in ages]
+    assert means[0] > means[1] > means[2]
+    assert cfg.chemistry == "Na-ion"
+
+
+def test_independent_pack_envelope_reduces_systematic_bias_misses():
+    cfg = Config(years=2, meas_bias=0.01, trend_bias=0.10)
+    twin = simulate(cfg, "C", 0)["events"]
+    guarded = simulate(cfg, "C_G", 0)["events"]
+    assert (twin.peak_he.values == guarded.peak_he.values).all()
+    assert (guarded.d_true < guarded.d_p5).sum() < (twin.d_true < twin.d_p5).sum()
 
 
 def test_zero_twin_error_perfect_info_dominates_twin():

@@ -31,7 +31,9 @@ CONDITIONS = {
     "D":      dict(tier="bypass", info="twin",    rule="opt", probe="voi"),
     "D_rr":   dict(tier="bypass", info="twin",    rule="opt", probe="rr"),
     "D_rand": dict(tier="bypass", info="twin",    rule="opt", probe="random"),
-    "C_T3":   dict(tier="bypass", info="twin",    rule="opt", tier3=True),
+    "C_T3":   dict(tier="bypass", info="twin",    rule="opt", rest_policy="weak"),
+    "C_LC":   dict(tier="bypass", info="twin",    rule="opt", rest_policy="trend"),
+    "C_G":    dict(tier="bypass", info="twin",    rule="opt", guard=True),
 }
 
 LABELS = {
@@ -40,6 +42,8 @@ LABELS = {
     "C": "C  PeakSure: bypass + cell twin + optimized commitment",
     "D": "D  PeakSure + VoI diagnostic probes",
     "C_T3": "C + Tier 3 lifetime-aware resting SOC",
+    "C_LC": "C + twin-trend-informed resting SOC allocation",
+    "C_G": "C + independent pack-test safety envelope",
 }
 
 MIN_VOI_KW = 0.5   # smallest expected gain (kW shaved) worth a probe
@@ -65,6 +69,7 @@ class Population:
     m: np.ndarray
     z_r: np.ndarray
     t_off: np.ndarray
+    age0: np.ndarray
 
 
 def draw_population(cfg: Config, seed: int) -> Population:
@@ -75,7 +80,16 @@ def draw_population(cfg: Config, seed: int) -> Population:
     z_m = ch.rho_r_aging * z_r + np.sqrt(1 - ch.rho_r_aging ** 2) * z_i
     m = np.exp(ch.aging_sigma * z_m)
     t_off = cfg.sigma_t_cell * rng.standard_normal(shape)
-    return Population(q0, m, z_r, t_off)
+    cohorts = np.asarray(cfg.initial_age_years, float)
+    if cohorts.size == 0 or np.any(cohorts < 0):
+        raise ValueError("initial_age_years must contain nonnegative ages")
+    age0 = np.zeros(shape)
+    if cohorts.size > 1 or cohorts[0] > 0:
+        # A separate random stream keeps the physical cell draws paired across conditions.
+        order = _rng(seed, -1, S_NEW).permutation(q0.size)
+        age0.flat[order] = np.resize(cohorts, q0.size)
+        q0 = q0 * np.maximum(0.02, 1 - ch.cal_a * m * np.sqrt(age0))
+    return Population(q0, m, z_r, t_off, age0)
 
 
 def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
@@ -87,7 +101,8 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
     src_year) with a chosen historical peak."""
     spec = CONDITIONS[cond]
     tier, info, rule = spec["tier"], spec["info"], spec["rule"]
-    probe, tier3 = spec.get("probe", "none"), spec.get("tier3", False)
+    probe, rest_policy = spec.get("probe", "none"), spec.get("rest_policy", "none")
+    use_guard = spec.get("guard", False)
     ch = cfg.chem
     S, N, qn, v = cfg.n_strings, cfg.n_series, cfg.q_nom_ah, ch.v_nom
     p_str = cfg.p_max_kw / S
@@ -95,7 +110,7 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
 
     pop = draw_population(cfg, seed)
     q, m, z_r = pop.q0.copy(), pop.m.copy(), pop.z_r.copy()
-    age = np.zeros_like(q)
+    age = pop.age0.copy()
     faulted = np.zeros(q.shape, bool)
     seq = sample_event_sequence(_rng(seed, -1, S_SEQ), cfg.years)
     fade_m = nominal_fade_month(cfg)
@@ -110,6 +125,15 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
                               p_string_max=p_str, faulted=faulted, **phys)[0]
 
     pack = PackEstimator(d_ref_strings(q), cfg.sigma_pack_test, fade_m, _rng(seed, 0, S_TEST))
+    def audit_gap() -> float:
+        # Both inputs are observable estimates: the twin posterior and an independent noisy pack test.
+        estimated = float(d_ref_strings(twin.x0).sum())
+        measured = float(pack.d_test.sum())
+        return (estimated - measured) / max(measured, 1.0)
+
+    guard_gap = audit_gap()
+    guard_signal = guard_gap
+    guard_active = bool(use_guard and guard_signal > cfg.guard_threshold)
     rr_ptr = 0
     events, monthly, snaps = [], [], {}
     n_months = cfg.years * 12
@@ -157,6 +181,11 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
                     seed, mi, rr_ptr, tier)
             d_samp, p_av = _twin_belief(twin, cfg, soc0_f, t_cell_f, faulted, tier, phys, p_str,
                                         _rng(seed, mi, S_SAMP))
+            if use_guard:
+                # Dual-belief safety envelope uses an independent pack estimator, never true capacity.
+                tf = ph.cold_capacity_factor(t_cell_f.mean(axis=(1, 2)), ch.cold_slope) * soc0_f.mean(axis=(1, 2))
+                pack_samp = pack.belief(1.0, cfg.twin_samples, _rng(seed, mi, S_TEST)) * tf
+                d_samp = np.minimum(d_samp, pack_samp)
 
         dec = (optimize(d_samp, p_av, p_hour, cfg.alpha) if rule == "opt"
                else fixed_rule(float(np.percentile(d_samp, 5)), p_av, p_hour))
@@ -173,7 +202,8 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
             d_p95=float(np.percentile(d_samp, 95)), shaved_kw=shaved, success=success,
             delivered_full=bool(dec.power_kw > 0 and min(dec.power_kw, float(p_true.sum())) * dec.window_h
                                 <= d_true + 1e-9 and float(p_true.sum()) >= dec.power_kw - 1e-9),
-            probes=n_probes, voi_gain_kw=voi_gain))
+            probes=n_probes, voi_gain_kw=voi_gain,
+            guard_active=guard_active, guard_gap=guard_gap, guard_signal=guard_signal))
 
         if capturing:
             avail = q * soc0 * ph.cold_capacity_factor(t_cell, ch.cold_slope)
@@ -208,8 +238,13 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
 
         # ---------------- calendar ageing for the month
         t_month = ph.container_temp(MONTH_MEAN_C[mo - 1], cfg.t_hvac_set, cfg.k_hvac) + pop.t_off
-        if tier3:
-            weak = twin.x0 <= np.quantile(twin.x0, cfg.tier3_weak_share, axis=-1, keepdims=True)
+        if rest_policy != "none":
+            if rest_policy == "weak":
+                weak = twin.x0 <= np.quantile(twin.x0, cfg.tier3_weak_share, axis=-1, keepdims=True)
+            else:
+                n_rest = max(1, int(round(N * cfg.tier3_weak_share)))
+                weak = np.zeros_like(q, dtype=bool)
+                weak[np.arange(S)[:, None], np.argsort(twin.x1, axis=-1)[:, :n_rest]] = True
             frac_hi = min(1.0, (n_disp + 1) / 30.0)
             g = (frac_hi * ph.soc_stress(cfg.rest_soc, float(t_month.mean()), ch.beta_soc_25,
                                          ch.beta_soc_45, ch.low_soc_penalty)
@@ -260,6 +295,9 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
                 n_repl = n_new - int((repl & faulted).sum())
                 aug_kwh = n_repl * qn * v / 1000
             pack.test(d_ref_strings(q), _rng(seed, mi, S_TEST))
+            guard_gap = audit_gap()
+            guard_signal = 0.5 * guard_signal + guard_gap
+            guard_active = bool(use_guard and guard_signal > cfg.guard_threshold)
 
         soh = q / qn
         monthly.append(dict(cond=cond, run=seed, m=mi, sim_year=yr, month=mo,

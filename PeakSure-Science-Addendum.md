@@ -1009,6 +1009,20 @@ Sources checked:
 - The derived thermal spread makes the "hot cell" channel smaller with liquid cooling.
 - The four Discord questions shrink to two numbers that matter most: **switch R_on per cell path (with the number of parallel columns)**, and the **CES DC window / cells per column**.
 
+# AG. Mixed-Age, Lifetime-Control, and Twin-Mismatch Extensions
+
+The reproducible exploratory study is in `peaksure/experiments.py --only research`, with paired event and monthly records in `results/events_research.parquet` and `results/monthly_research.parquet`. `tools/report.py` generates the quantitative comparisons in `RESULTS.md` §T6 and `web/public/data/results.json`. The established A–D benchmark remains unchanged; exact-seed C and C_T3 outputs were checked against the saved baseline.
+
+**Mixed-age cohort.** Cells have the same chemistry and are assigned different assumed prior calendar ages. Their initial capacity follows the existing calendar-fade law, and the per-cell age clock continues from that age. The cohort is synthetic: prior cycling, provenance, screening, and second-life safety history are unavailable. The comparison pairs conditions on the same population and peak draws. A C versus A_opt contrast combines hardware and information effects, so it must not be attributed solely to REON hardware.
+
+**Lifetime control.** The existing weak-capacity resting-SOC policy is compared with a new policy that assigns the limited number of lower-SOC standby slots to cells with the fastest fade trend in the twin posterior. Both use the same assumed lower-SOC target and the same peak recharge assumption. The new policy uses estimated trends, never true capacities. End-of-horizon deliverable energy, augmentation, savings, NPV, and calibration are reported together, including null or negative results. This is an optimal allocation only within the simple fixed-slot, separable calendar-stress model; it is not an optimal battery lifetime controller. Per-cell independent standby SOC and sufficient recharge before a peak remain unconfirmed REON capabilities.
+
+**Twin mismatch.** The robust policy takes the lower of two independent predictive energy samples: the per-cell twin and the annually tested pack estimator. A smoothed, one-sided disagreement with the pack test is recorded as a diagnostic alert. The conservative envelope applies throughout, including before an alert. It uses noisy observations and model beliefs, not simulator truth. The study compares it with the unguarded twin under both no injected bias and systematic trend/measurement bias, reporting calibration and the economic trade-off. A low miss rate in these simulated cases is not a field reliability guarantee; common-mode errors in both estimators remain untested.
+
+**Remaining validation:** obtain REON cell paths and switch losses, the DC voltage window, independent pack and cell measurements across age cohorts, measured ageing under different standby SOC and temperature, and evidence that per-cell standby SOC and recharge are operationally possible. These are required before claiming lifetime or efficiency improvement on hardware.
+
+**Validation protocol before deployment on hardware:** split independent packs and calendar periods into development and held-out sets; fit ageing and measurement-noise parameters only on development data; lock the rest policy and guard threshold before evaluation. On held-out packs, report calibration by age cohort and temperature, false-alert frequency, peak miss rate, delivered AC energy, cell-level degradation, augmentation, and net value with pack-clustered uncertainty intervals. Measure recharge energy and round-trip efficiency separately: the current simulator has no charge-side energy balance, so it cannot establish an efficiency improvement. Inject common-mode sensor drift and pack-test bias, not only the current twin-only bias, before any reliability claim.
+
 # Z. Change Log (Part II)
 
 | # | Change | Type | Reason |
@@ -1040,6 +1054,7 @@ Sources checked:
 | 25 | Simulator, demo and automated results report implemented; five build-time corrections listed in §AE | Addition / correction | Implementation |
 | 27 | REON's open questions answered from public sources and engineering derivation (§AF). Switch loss = I·R_on/V_cell is first-order: the base 1% needs ~80 µΩ per cell path at 8 strings. The DC window (480 Vac → ≥ ~750 Vdc) bounds N_min | Addition | REON video, patent, PCS datasheets |
 | 26 | A teammate's Colab notebook independently reproduced the annual-peak dates and hours (it uses hour-beginning, we use hour-ending) | Verification | Cross-check |
+| 28 | Added paired synthetic mixed-age, twin-trend resting-SOC, and independent pack-test safety-envelope studies (§AG; generated results §T6). The baseline was verified unchanged. | Addition / limitation | Explicit scientific focus, with assumptions and negative outcomes retained |
 
 ---
 

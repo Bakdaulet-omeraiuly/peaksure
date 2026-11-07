@@ -13,6 +13,7 @@ interface R {
   cal: { mode: string; eps: number; cond: string; miss: number; lo: number; hi: number; width: number }[];
   probe: { tag: string; cond: string; budget: number | null; gain?: number; gain_lo?: number; gain_hi?: number; probes: number }[];
   bands: { cond: string; sim_year: number; p5: number; p50: number; p95: number }[];
+  research?: { study: string; baseline: string; candidate: string; n_runs: number; savings_yr: CI; end_energy_kwh: CI; p5_miss_baseline: number; p5_miss_candidate: number; guard_alert_rate: number }[];
 }
 
 const usd = (x: number) => (Math.abs(x) >= 1e6 ? `$${(x / 1e6).toFixed(2)}M` : Math.abs(x) >= 1e3 ? `$${(x / 1e3).toFixed(1)}K` : `$${x.toFixed(0)}`);
@@ -102,6 +103,9 @@ export default function Results() {
   const narrow = c0 && a0 ? a0.width / c0.width : NaN;
   const v4 = r.probe.find((p) => p.cond === "D" && p.budget === 4), rr4 = r.probe.find((p) => p.cond === "D_rr" && p.budget === 4);
   const fewer = v4 && rr4 && v4.probes > 0 ? rr4.probes / v4.probes : NaN;
+  const life = r.research?.find((x) => x.study === "lifetime" && x.candidate === "C_LC");
+  const guarded = r.research?.find((x) => x.study === "guard_bias" && x.candidate === "C_G");
+  const mixed = r.research?.find((x) => x.study === "mixed" && x.candidate === "C");
   return (
     <div className="site-shell">
       <AppBar />
@@ -115,9 +119,9 @@ export default function Results() {
             cells bind: 1-h and 4-h systems, weak cooling, and cell faults.
         </div>
         <div className="grid sm:grid-cols-3 gap-3 mb-5">
-          <div className="surface p-5"><div className="micro mb-2">Base case</div><p className="text-[13px] text-muted leading-relaxed">Peak timing dominates the 2-hour system.</p></div>
-          <div className="surface p-5"><div className="micro mb-2">Stronger cases</div><p className="text-[13px] text-muted leading-relaxed">Cell faults, weak cooling, and 1-hour or 4-hour systems.</p></div>
-          <div className="surface p-5"><div className="micro mb-2">Key uncertainty</div><p className="text-[13px] text-muted leading-relaxed">Switch loss and the CES DC operating window.</p></div>
+          <div className="surface p-5"><div className="micro mb-2">Lifetime control</div><p className="text-[13px] text-muted leading-relaxed">{life ? `${Math.abs(Math.round(life.end_energy_kwh[0])).toLocaleString()} kWh ${life.end_energy_kwh[0] >= 0 ? "more" : "less"} deliverable energy at the horizon; ${usd(life.savings_yr[0])}/yr change in peak savings.` : "Exploratory resting-charge policy."}</p></div>
+          <div className="surface p-5"><div className="micro mb-2">Twin uncertainty</div><p className="text-[13px] text-muted leading-relaxed">{guarded ? `Under injected bias, P5 miss: ${(guarded.p5_miss_baseline * 100).toFixed(1)}% → ${(guarded.p5_miss_candidate * 100).toFixed(1)}% with the pack-test envelope.` : "Independent pack-test safety envelope."}</p></div>
+          <div className="surface p-5"><div className="micro mb-2">Mixed-age cells</div><p className="text-[13px] text-muted leading-relaxed">{mixed ? `${mixed.n_runs} paired runs with assumed age cohorts of the same chemistry.` : "Synthetic same-chemistry cohorts."}</p></div>
         </div>
         <details className="surface disclosure"><summary>Explore the evidence</summary>
         <div className="results-grid p-4">
@@ -144,6 +148,18 @@ export default function Results() {
             </table>
             <div className="text-[11.5px] text-faint mt-2">Capture = shaved kW at the actual peak hour. P5 miss = share of peaks where true energy fell below the predicted 5th percentile (target 5%).</div>
           </Card>
+
+          {r.research?.length ? <Card title="Research extensions" sub="paired simulation · assumed mixed-age cohorts">
+            <table className="w-full min-w-[540px] text-[12px] num">
+              <thead className="text-faint"><tr><td className="font-sans">Study · comparison</td><td className="text-right">Δ savings/yr</td><td className="text-right">Δ end energy</td><td className="text-right">P5 miss</td></tr></thead>
+              <tbody>{r.research.map((x) => <tr key={`${x.study}-${x.candidate}`} className="border-t border-line">
+                <td className="py-2 font-sans">{x.study.replaceAll("_", " ")} · {x.candidate} vs {x.baseline}</td>
+                <td className="text-right">{usd(x.savings_yr[0])}</td><td className="text-right">{Math.round(x.end_energy_kwh[0]).toLocaleString()} kWh</td>
+                <td className="text-right">{(x.p5_miss_baseline * 100).toFixed(1)}% → {(x.p5_miss_candidate * 100).toFixed(1)}%</td>
+              </tr>)}</tbody>
+            </table>
+            <p className="text-[11px] text-faint mt-3">Exploratory model results. Per-cell resting SOC and initial mixed-age history are assumed; independent hardware validation remains open.</p>
+          </Card> : null}
 
           <Card title="Where the value comes from" sub="$/yr, Shapley over hardware x information">
             <Waterfall d={r.dec} title="2-h CES (base), A to D" />

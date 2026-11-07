@@ -99,6 +99,8 @@ class Config:
     rest_soc: float = 0.90            # ASSUMED standby SOC
     tier3_weak_share: float = 0.25    # Tier 3: share of cells (weakest by twin) rested low
     tier3_rest_soc: float = 0.35
+    initial_age_years: tuple = (0.0,)  # ASSUMED retrospective calendar ages; same chemistry
+    guard_threshold: float = 0.015    # ASSUMED one-sided smoothed pack-test discrepancy
     eol_retention: float = 0.70       # brief: stationary threshold 70%
     # --- thermal ---
     t_hvac_set: float = 23.0          # ASSUMED container setpoint, degC
@@ -155,6 +157,9 @@ SYSTEM_FLAGS = {
     "headroom": (ASSUMED, "DC-window headroom sets N_min; first-order driver (Lot Desk deck)"),
     "switch_loss": (ASSUMED, "0.5-2% sensitivity; MOSFET I^2 R_ds(on)"),
     "dispatch_days": (ASSUMED, "Operators dispatch on several candidate days per month"),
+    "initial_age_years": (ASSUMED, "Mixed-age cohort ages; historical duty and measured SOH unavailable"),
+    "tier3_weak_share / tier3_rest_soc": (ASSUMED, "Independent per-cell resting SOC and recharge before peaks are unconfirmed"),
+    "guard_threshold": (ASSUMED, "1.5% one-sided exponentially smoothed discrepancy versus annual pack test"),
     "k_hvac / sigma_t_cell": (ASSUMED, "No public CES thermal data; ask REON"),
     "sigma_meas": (ASSUMED, "Brief: per-cell SOH/capacity given; estimation error assumed"),
     "rns_2026": (CONFIRMED, "ISO-NE RNS $183.71/kW-yr, 1 Jan 2026"),
