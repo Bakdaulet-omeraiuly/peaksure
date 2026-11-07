@@ -19,6 +19,7 @@ export interface DischargeResult {
   energyKwh: number;               // delivered over the window
   events: DischargeEvent[];
   peakHourAvgKw: number;           // average delivered power during the actual peak hour
+  fullAh: Float64Array;            // per-cell usable Ah at full charge (incl. cold factor), for stranded-energy display
 }
 
 export interface DischargeInput {
@@ -115,7 +116,7 @@ export function discharge(inp: DischargeInput): DischargeResult {
   const h0 = (peakHe - 1) * 60;
   let ph = 0;
   for (let m = h0; m < h0 + 60; m++) ph += power[m] ?? 0;
-  return { startMin, nFrames, soc, active, temp, powerKw: power, stringsOnline: online, energyKwh: energy, events, peakHourAvgKw: ph / 60 };
+  return { startMin, nFrames, soc, active, temp, powerKw: power, stringsOnline: online, energyKwh: energy, events, peakHourAvgKw: ph / 60, fullAh: full };
 }
 
 function countAbove(a: Float64Array, off: number, n: number) {

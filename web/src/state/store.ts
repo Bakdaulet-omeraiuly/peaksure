@@ -10,6 +10,7 @@ interface StudioState {
   kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss: number;
   colorMode: ColorMode; town: string;
   baseline: "A" | "B";
+  view: "peak" | "drain"; drainMin: number; drainPlaying: boolean;
   minute: number; playing: boolean; speed: number;
   hover: HoverCell | null;
   set: (p: Partial<StudioState>) => void;
@@ -20,6 +21,7 @@ export const useStudio = create<StudioState>((set) => ({
   kHvac: 0.25, sigmaT: 2.5, probeBudget: 0, reportBias: 0, switchLoss: 0.01,
   colorMode: "soc", town: "Sterling",
   baseline: "B",
+  view: "peak", drainMin: 0, drainPlaying: false,
   minute: 16 * 60, playing: false, speed: 4,
   hover: null,
   set: (p) => set(p),

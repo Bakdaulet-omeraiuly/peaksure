@@ -28,6 +28,8 @@ export interface OperatorResult {
   twinMean?: Float64Array;
   twinSd?: Float64Array;
   limiting?: Int32Array;
+  drain?: DischargeResult;         // full-power discharge from full to cut-off (hardware comparison)
+  cellsReplaced: number;           // cumulative cells replaced by annual augmentation up to this age
 }
 
 export interface Scenario {
@@ -90,13 +92,21 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
       }
     }
     const run = discharge({ qAh: q, tBase, rRel, soc0, tier, chem, sys, decision, peakHe: ev.he, loadHeatingC: c.load_heating_c });
+    // Drain test: same cells, same day temperatures, full charge, full rated power until every string stops.
+    const drainH = Math.min(23, Math.ceil(eNom / c.p_max_kw) + 2);
+    const drain = key === "C" ? undefined : discharge({ qAh: q, tBase, rRel, soc0: 1, tier, chem, sys,
+      decision: { startHe: 1, windowH: drainH, powerKw: c.p_max_kw, expKw: 0 }, peakHe: 1, loadHeatingC: c.load_heating_c });
+    const cellKwh = (qNom * c.v_nom) / 1000;
+    let augKwh = 0;
+    for (let y = 0; y <= yi; y++) augKwh += life.tiers[tier][y].aug_kwh;
+    const cellsReplaced = Math.round(augKwh / cellKwh);
     const inWindow = ev.he >= decision.startHe && ev.he < decision.startHe + decision.windowH;
     const shaved = inWindow ? run.peakHourAvgKw : 0;
     return { key, tier, label: key === "A" ? "Conventional" : key === "B" ? "REON bypass (modeled baseline)" : "REON + PeakSure", qRel, belief, beforeProbes: undefined,
              beliefBeforeProbes: before, decision, truthKwh: truth.energyKwh, truthPowerKw: truth.powerKw, run,
-             shavedKw: shaved, valueUsd: shaved * rate, probes, twinMean, twinSd, limiting: truth.limiting } as OperatorResult;
+             shavedKw: shaved, valueUsd: shaved * rate, probes, twinMean, twinSd, limiting: truth.limiting, drain, cellsReplaced } as OperatorResult;
   };
 
   return { event: ev, age, calYear, durationKey: life.duration, eNom, qNom, sys, chem, tCell, tContainer: tCont,
-           rateUsdPerKw: rate, ops: { A: mk("A"), B: mk("B"), C: mk("C") } };
+           rateUsdPerKw: rate, ops: (() => { const A = mk("A"), B = mk("B"), C = mk("C"); C.drain = B.drain; return { A, B, C }; })() };
 }
