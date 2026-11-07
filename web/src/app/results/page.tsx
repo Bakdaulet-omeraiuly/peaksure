@@ -173,7 +173,7 @@ export default function Results() {
                 </table>
               </div>
             ))}
-            <div className="text-[11.5px] text-faint">The cell twin is calibrated and {narrow.toFixed(0)}x narrower at zero mismatch, but systematic bias makes it confidently wrong. Hence PeakSure&apos;s calibration watchdog with a conservative fallback.</div>
+            <div className="text-[11.5px] text-faint">The cell twin is calibrated and {narrow.toFixed(0)}x narrower at zero mismatch, but systematic bias makes it confidently wrong. Automatic detection and fallback remain open work.</div>
           </Card>
 
           <Card title="VoI probing (4-h system)" sub="extra $/yr vs no probing, paired">

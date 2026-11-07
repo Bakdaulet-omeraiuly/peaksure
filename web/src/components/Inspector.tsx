@@ -151,11 +151,11 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
           </div>
         ))}
       </Section>
-      <Section title="Calibration watchdog" right={<span className="num text-[11px] text-faint">bias {(reportBias * 100).toFixed(0)}%</span>}>
+      <Section title="Model mismatch" right={<span className="num text-[11px] text-faint">bias {(reportBias * 100).toFixed(0)}%</span>}>
         <input type="range" min={0} max={0.03} step={0.01} value={reportBias} onChange={(e) => set({ reportBias: +e.target.value })} />
         <div className="text-[11.5px] text-muted mt-1 leading-snug">
           Systematic error in per-cell capacity reports. Monte Carlo: twin P5 miss rate {sysMiss ? <b className="num text-ink">{(sysMiss.miss * 100).toFixed(1)}%</b> : "n/a"} (target 5%).
-          {reportBias > 0 ? " The twin is confidently wrong; the watchdog switches to conservative commitments when misses exceed their bound." : ""}
+          {reportBias > 0 ? " Systematic bias can make the twin overconfident. An automatic fallback is not implemented." : ""}
         </div>
       </Section>
       {hoverInfo && (
