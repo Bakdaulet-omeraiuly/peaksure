@@ -82,6 +82,10 @@ def main_table(ev: pd.DataFrame, mo: pd.DataFrame, cfg: Config, conds=("A", "B",
                    p5_hi=cov.loc[c, "hi"] if c in cov.index else np.nan,
                    width=cov.loc[c, "rel_width"] if c in cov.index else np.nan,
                    premium=paired_ci(rl, "A", c, "npv", cfg.e_nom_kwh) if c != "A" else (0.0, 0.0, 0.0),
+                   # same decision rule as the baseline: hardware + information only
+                   premium_same=(paired_ci(rl, "A", c, "npv", cfg.e_nom_kwh) if c == "B" else
+                                 paired_ci(rl, "A_opt", c, "npv", cfg.e_nom_kwh) if c != "A" and "A_opt" in rl.cond.values
+                                 else (0.0, 0.0, 0.0)),
                    n=r.run.nunique())
         rows.append(row)
     return pd.DataFrame(rows), rl
@@ -102,7 +106,7 @@ def sens_summary(ev: pd.DataFrame, mo: pd.DataFrame) -> pd.DataFrame:
             continue
         rl = econ.run_level(e, m, cfg)
         dec = econ.decomposition(rl).set_index("component")
-        prem_c = paired_ci(rl, "A", "C", "npv", cfg.e_nom_kwh)
+        prem_c = paired_ci(rl, "A_opt", "C", "npv", cfg.e_nom_kwh)   # same optimized rule
         prem_b = paired_ci(rl, "A", "B", "npv", cfg.e_nom_kwh)
         sav = rl.groupby("cond").savings_yr.mean()
         rows.append(dict(tag=tag[5:], e_nom=cfg.e_nom_kwh,

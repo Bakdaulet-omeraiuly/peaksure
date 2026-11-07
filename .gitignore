@@ -16,3 +16,7 @@ __pycache__/
 ~$*
 
 # experiment outputs are committed separately once a full run completes
+web/node_modules/
+web/.next/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo

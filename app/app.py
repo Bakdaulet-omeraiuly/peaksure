@@ -117,17 +117,20 @@ with tabs[0]:
     d1 = sens_row("duration_1h")
     base_cell = DEC.set_index("component")
     v12 = (base_cell.loc["V1 Physical (bypass)", "mean"] + base_cell.loc["V2 Informational (cell twin)", "mean"])
+    rule = base_cell.loc["Decision rule (optimized commitment)"]
     items = [
         ui.card("Annual peak savings, conventional (A)", ui.usd(a.savings[0]),
-                f"95% CI {ui.usd(a.savings[1])} to {ui.usd(a.savings[2])}", "neutral", "MODEL"),
-        ui.card("Annual peak savings, PeakSure (C)", ui.usd(c.savings[0]),
-                f"95% CI {ui.usd(c.savings[1])} to {ui.usd(c.savings[2])}", "good", "MODEL"),
-        ui.card("Break-even REON premium, 2-h CES", f"${c.premium[0]:,.1f}/kWh",
-                f"95% CI ${c.premium[1]:,.1f} to ${c.premium[2]:,.1f} (NPV C minus A)", "info", "MODEL"),
+                f"95% CI {ui.usd(a.savings[1])} to {ui.usd(a.savings[2])}; {a.capture[0]*100:.0f}% of peaks captured", "neutral", "MODEL"),
+        ui.card("Cell-level value, 2-h CES", ui.usd(v12) + "/yr",
+                f"break-even premium ${c.premium_same[0]:,.1f}/kWh [{c.premium_same[1]:,.1f}, {c.premium_same[2]:,.1f}]",
+                "warn" if c.premium_same[1] <= 0 else "good", "MODEL"),
     ]
     if d4 is not None:
         items.append(ui.card("Cell-level value, 4-h system", ui.usd(d4.v1 + d4.v2) + "/yr",
-                             f"Physical {ui.usd(d4.v1)} + informational {ui.usd(d4.v2)}", "good", "MODEL"))
+                             f"break-even premium ${d4.prem_c:,.1f}/kWh [{d4.prem_c_lo:,.1f}, {d4.prem_c_hi:,.1f}]", "good", "MODEL"))
+    if d1 is not None:
+        items.append(ui.card("Cell-level value, 1-h system", ui.usd(d1.v1 + d1.v2) + "/yr",
+                             f"break-even premium ${d1.prem_c:,.1f}/kWh [{d1.prem_c_lo:,.1f}, {d1.prem_c_hi:,.1f}]", "good", "MODEL"))
     ui.cards(items)
     st.write("")
 
@@ -155,8 +158,12 @@ with tabs[0]:
                      f"because PeakSure skips probes that would not change the decision.")
     f.append("<b>Lifetime.</b> Bypass avoids replacing weak cells to keep the fixed string above the 70% threshold "
              f"(augmentation: A {t1.loc['A'].aug[0]:,.0f} kWh vs C {t1.loc['C'].aug[0]:,.0f} kWh over 15 years).")
+    f.append(f"<b>Decision rule, reported separately.</b> At 2 h, the optimized chance-constrained commitment earns "
+             f"{ui.usd(rule['mean'])}/yr vs the simple full-power rule [{ui.usd(rule['lo'])}, {ui.usd(rule['hi'])}]: with seven years "
+             f"of peak-hour history, hedging the window does not beat discharging at full power in the modal hour. This is not "
+             f"cell-level value and is not credited to REON.")
     for x in f:
-        st.markdown(f"- {x}", unsafe_allow_html=True)
+        st.markdown(f"- {ui.esc(x)}", unsafe_allow_html=True)
 
     if not SENS.empty:
         dd = SENS[SENS.tag.str.startswith("duration")].copy()
@@ -208,9 +215,9 @@ with tabs[1]:
                              f"true deliverable {cp['d_true']:,.0f} kWh &middot; value {ui.usd(val)}",
                              "good" if ok else "bad", "MODEL"))
     ui.cards(items)
-    st.caption(f"Value at {cal_year} rates: RNS ${rns_m:,.2f}/kW for this monthly peak"
+    st.caption(ui.esc_md(f"Value at {cal_year} rates: RNS ${rns_m:,.2f}/kW for this monthly peak"
                + (f" + capacity ${cap_rate:,.2f}/kW (annual peak)." if r.is_annual else ".")
-               + " Probes are a capability stated in REON's hackathon brief; their physical accuracy is unconfirmed.")
+               + " Probes are a capability stated in REON's hackathon brief; their physical accuracy is unconfirmed."))
 
     # --- peak day curve
     shp = peak_day_shapes()
@@ -225,12 +232,12 @@ with tabs[1]:
         if dcs["power_kw"] <= 0:
             continue
         y0 = ymin + (ymax - ymin) * (0.02 + 0.07 * i)
-        fig.add_shape(type="rect", x0=dcs["start_he"] - 1, x1=dcs["start_he"] + dcs["window_h"] - 1,
+        fig.add_shape(type="rect", x0=dcs["start_he"] - 0.5, x1=dcs["start_he"] + dcs["window_h"] - 0.5,
                       y0=y0, y1=y0 + (ymax - ymin) * 0.06, fillcolor=ui.COLORS[cnd], opacity=0.85, line_width=0)
-        fig.add_annotation(x=dcs["start_he"] - 1, y=y0 + (ymax - ymin) * 0.03, text=f"{cnd}", showarrow=False,
+        fig.add_annotation(x=dcs["start_he"] - 0.55, y=y0 + (ymax - ymin) * 0.03, text=f"{cnd}", showarrow=False,
                            xanchor="right", font=dict(size=11, color=ui.COLORS[cnd]))
-    fig.add_vline(x=int(r.Hr_End) - 0.5, line=dict(color=ui.ACCENT["bad"], width=2, dash="dash"))
-    fig.add_annotation(x=int(r.Hr_End) - 0.5, y=ymax, text=f"actual peak HE{int(r.Hr_End)}", showarrow=False,
+    fig.add_vrect(x0=int(r.Hr_End) - 0.5, x1=int(r.Hr_End) + 0.5, fillcolor=ui.ACCENT["bad"], opacity=0.07, line_width=0)
+    fig.add_annotation(x=int(r.Hr_End), y=ymax, text=f"actual peak HE{int(r.Hr_End)}", showarrow=False,
                        yanchor="bottom", font=dict(color=ui.ACCENT["bad"]))
     fig.update_layout(title=f"{r.Date:%A %d %B %Y}: real ISO-NE load and the committed discharge windows",
                       height=380, xaxis=dict(title="Hour ending", dtick=2, range=[0.5, 24.5]),
@@ -320,7 +327,8 @@ with tabs[2]:
             "Mean deliverable kWh": f"{r.d_true[0]:,.0f}",
             "PSaR $/yr": ui.usd(r.psar),
             "P5 miss rate": "n/a (fixed rule)" if cnd in ("A", "B") else f"{r.p5miss*100:.1f}%",
-            "Break-even premium $/kWh": "baseline" if cnd == "A" else f"{r.premium[0]:,.1f} [{r.premium[1]:,.1f}, {r.premium[2]:,.1f}]",
+            "Cell-level premium $/kWh (same rule)": "baseline" if cnd == "A" else f"{r.premium_same[0]:,.1f} [{r.premium_same[1]:,.1f}, {r.premium_same[2]:,.1f}]",
+            "NPV vs A $/kWh": "baseline" if cnd == "A" else f"{r.premium[0]:,.1f}",
         })
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
     st.caption(f"N = {int(T1.n.min())} paired runs per condition (common random numbers). Peak capture = shaved kW > 0 "
@@ -348,7 +356,7 @@ with tabs[3]:
     if SENS.empty:
         st.info("Sensitivity results not available yet.")
     else:
-        st.markdown("#### When does cell-level intelligence pay? Paired NPV difference C minus A, per kWh of nameplate")
+        st.markdown("#### When does cell-level intelligence pay? Paired NPV difference C minus A_opt (same optimized rule), per kWh of nameplate")
         lab = {"headroom_0.02": "DC headroom 2% (N_min tight)", "headroom_0.05": "DC headroom 5%",
                "headroom_0.20": "DC headroom 20%", "aging_sigma_low": "Low cell-ageing spread (sigma 0.25)",
                "aging_sigma_high": "High cell-ageing spread (sigma 0.55)", "switch_loss_0.005": "Switch loss 0.5%",
@@ -359,7 +367,7 @@ with tabs[3]:
                "duration_1h": "1-h system (2.5 MWh)", "duration_3h": "3-h system (7.5 MWh)", "duration_4h": "4-h system (10 MWh)"}
         s = SENS.copy()
         s["label"] = s.tag.map(lab).fillna(s.tag)
-        base_prem = t1.loc["C"].premium
+        base_prem = t1.loc["C"].premium_same
         s = s.sort_values("prem_c")
         fig = go.Figure()
         fig.add_bar(y=s.label, x=s.prem_c, orientation="h", marker_color=[ui.COLORS["C"] if v > 0 else ui.ACCENT["bad"] for v in s.prem_c],
@@ -523,7 +531,7 @@ with tabs[7]:
         if len(th):
             rows = [dict(Scenario="Base HVAC (k=0.25, sigma_T 2.5 C)", **{"Max cell temp (A), C": f"{ev[ev.cond=='A'].t_cell_max.max():.1f}",
                          "Physical value $/yr": ui.usd(DEC.set_index('component').loc['V1 Physical (bypass)', 'mean']),
-                         "Break-even premium $/kWh": f"{t1.loc['C'].premium[0]:,.1f}"})]
+                         "Break-even premium $/kWh": f"{t1.loc['C'].premium_same[0]:,.1f}"})]
             for _, x in th.iterrows():
                 rows.append({"Scenario": "Weak HVAC (k=0.7, sigma_T 5 C)" if x.tag == "hvac_weak" else "Failing HVAC (k=1.0, sigma_T 6 C)",
                              "Max cell temp (A), C": f"{x.tcell_max:.1f}", "Physical value $/yr": ui.usd(x.v1),

@@ -1,0 +1,180 @@
+{
+ "p_max_kw": 2500.0,
+ "n_strings": 8,
+ "n_series": 240,
+ "headroom": 0.1,
+ "eta": 0.96,
+ "switch_loss": 0.01,
+ "v_nom": 3.1,
+ "cold_slope": 0.0067,
+ "t_charge_min": 0.0,
+ "t_derate": 45.0,
+ "t_max": 60.0,
+ "t_hvac_set": 23.0,
+ "k_hvac": 0.25,
+ "sigma_t_cell": 2.5,
+ "load_heating_c": 3.0,
+ "forecast_temp_sd": 2.0,
+ "sigma_meas": 0.02,
+ "sigma_pack_test": 0.02,
+ "sigma_probe": 0.005,
+ "alpha": 0.05,
+ "eol_retention": 0.7,
+ "start_year": 2027,
+ "rns_2026": 183.71,
+ "rns_increments": [
+  9.0,
+  11.0,
+  13.0,
+  10.0
+ ],
+ "fca_kw_month": 3.58,
+ "nominal_fade_month": 0.0008288305577012361,
+ "years": 15,
+ "he_grid": [
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22
+ ],
+ "durations": {
+  "2h": 5000.0,
+  "4h": 10000.0,
+  "1h": 2500.0
+ },
+ "seeds": [
+  0,
+  1,
+  2
+ ],
+ "chemistry": "Sodium-ion (layered oxide / hard carbon)",
+ "flags": {
+  "p_max_kw": [
+   "CONFIRMED",
+   "REON CES 2.5 MW (REON_WHO_WE_ARE.pdf)"
+  ],
+  "e_nom_kwh": [
+   "CONFIRMED",
+   "REON CES up to 5 MWh"
+  ],
+  "n_strings / n_series": [
+   "ASSUMED",
+   "CES string design not public; ask REON"
+  ],
+  "headroom": [
+   "ASSUMED",
+   "DC-window headroom sets N_min; first-order driver (Lot Desk deck)"
+  ],
+  "switch_loss": [
+   "ASSUMED",
+   "0.5-2% sensitivity; MOSFET I^2 R_ds(on)"
+  ],
+  "dispatch_days": [
+   "ASSUMED",
+   "Operators dispatch on several candidate days per month"
+  ],
+  "k_hvac / sigma_t_cell": [
+   "ASSUMED",
+   "No public CES thermal data; ask REON"
+  ],
+  "sigma_meas": [
+   "ASSUMED",
+   "Brief: per-cell SOH/capacity given; estimation error assumed"
+  ],
+  "rns_2026": [
+   "CONFIRMED",
+   "ISO-NE RNS $183.71/kW-yr, 1 Jan 2026"
+  ],
+  "rns_increments": [
+   "CONFIRMED",
+   "ISO-NE July 2025 forecast, labelled illustrative"
+  ],
+  "fca_kw_month": [
+   "CONFIRMED",
+   "FCA 18: $3.58/kW-month (2027/28); flat thereafter ASSUMED"
+  ],
+  "peak events": [
+   "DERIVED",
+   "ISO-NE SMD 2019-2025: system monthly peaks + WCMA dry bulb"
+  ],
+  "discount_rate": [
+   "ASSUMED",
+   "7.5%"
+  ],
+  "augment_cost_kwh": [
+   "ASSUMED",
+   "$150/kWh installed"
+  ],
+  "co2_kg_per_kwh": [
+   "LIT",
+   "31-92 kg CO2e/kWh cell manufacturing (J. Ind. Ecol. 2025 + others)"
+  ],
+  "Na-ion cap_cov": [
+   "LIT",
+   "Bahrke et al., EES Batteries 2026: capacity CoV 1.15% (94 cells)"
+  ],
+  "Na-ion r_cov": [
+   "LIT",
+   "Bahrke et al. 2026: R_DC CoV 10.4-11.9%"
+  ],
+  "Na-ion aging_sigma": [
+   "ASSUMED",
+   "Calibrated to the TUM within-test-point spread (3.1% vs 23.4% loss); sensitivity"
+  ],
+  "Na-ion rho_r_aging": [
+   "ASSUMED",
+   "TUM: R_DC vs coulombic efficiency r = -0.675; used as a proxy"
+  ],
+  "Na-ion cal_a": [
+   "ASSUMED",
+   "Order of magnitude; fit to the TUM dataset pending"
+  ],
+  "Na-ion cyc_b": [
+   "ASSUMED",
+   "Order of magnitude; REON claims 20,000 cycles for EBS Na+"
+  ],
+  "Na-ion beta_soc": [
+   "LIT",
+   "TUM: SOC effect clear at 45 C, not at 25 C (qualitative)"
+  ],
+  "Na-ion low_soc_penalty": [
+   "LIT",
+   "TUM: anode LAM highest at 10% SOC (qualitative)"
+  ],
+  "Na-ion cold_slope": [
+   "LIT",
+   "Leeds, Appl. Energy 2026: 51-62% capacity at -40 C (linearised)"
+  ],
+  "Na-ion t_charge_min": [
+   "ASSUMED",
+   "Vendor Na-ion datasheet: charge 0-40 C (not REON)"
+  ],
+  "Na-ion t_derate": [
+   "ASSUMED",
+   "Vendor datasheet discharge limit 60 C; derate onset assumed 45 C"
+  ],
+  "Na-ion fault_hazard_yr": [
+   "ASSUMED",
+   "Base case 0; scenario only (TUM observed plating in lab cycling)"
+  ]
+ },
+ "towns": {
+  "Holden": {
+   "customers": 8653,
+   "peak_mw": 26.4,
+   "src": "MMWEC 'who we serve' page"
+  },
+  "Sterling": {
+   "customers": 4013,
+   "peak_mw": 13.6,
+   "src": "MMWEC 'who we serve' page (year not stated)"
+  }
+ }
+}

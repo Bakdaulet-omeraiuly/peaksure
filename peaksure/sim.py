@@ -77,7 +77,8 @@ def draw_population(cfg: Config, seed: int) -> Population:
 
 
 def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
-             capture_month: int | None = None, override: dict | None = None) -> dict:
+             capture_month: int | None = None, override: dict | None = None,
+             snap_months: tuple | None = None) -> dict:
     """Run one condition. If capture_month is given, the simulation stops after that month's
     peak event and returns a detailed 'capture' of cell states, beliefs and the decision
     (used by the live demo). `override` replaces that month's event (he, t_amb_c, is_annual,
@@ -265,8 +266,11 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
                             soh_mean=float(soh.mean()), soh_min=float(soh.min()),
                             soh_p5=float(np.percentile(soh, 5)), soh_sd=float(soh.std()),
                             aug_kwh=aug_kwh, n_repl=n_repl))
-        if snapshots and mi in (0, 59, 119, n_months - 1):
-            snaps[mi] = dict(soh=soh.copy(), twin_mean=twin.x0 / qn, twin_sd=twin.sd / qn)
+        want = snap_months if snap_months is not None else (0, 59, 119, n_months - 1)
+        if snapshots and mi in want:
+            snaps[mi] = dict(soh=soh.copy(), twin_mean=twin.x0 / qn, twin_sd=twin.sd / qn,
+                             d_ref=float(d_ref_strings(q).sum()), aug_kwh=aug_kwh,
+                             pack_d_test=float(pack.d_test.sum()))
 
     out = dict(events=pd.DataFrame(events), monthly=pd.DataFrame(monthly))
     if snapshots:

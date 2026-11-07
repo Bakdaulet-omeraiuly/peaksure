@@ -29,6 +29,7 @@
     "probe_energy_kwh": 0.05,
     "probe_budget": 0,
     "twin_samples": 64,
+    "alpha": 0.05,
     "rns_2026": 183.71,
     "rns_increments": [
       9.0,
@@ -48,11 +49,11 @@
     "n_runs": 64,
     "seed0": 0
   },
-  "config_hash": "dfc22411ce",
-  "n_main": 12,
-  "n_side": 8,
-  "started": "2026-11-07 13:10:17",
+  "config_hash": "ec5f93d741",
+  "n_main": 64,
+  "n_side": 24,
+  "started": "2026-11-07 13:17:45",
   "git_commit": "a202565",
-  "seconds": 200.8,
-  "finished": "2026-11-07 13:13:38"
+  "seconds": 929.0,
+  "finished": "2026-11-07 13:33:14"
 }

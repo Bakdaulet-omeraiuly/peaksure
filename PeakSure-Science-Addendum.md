@@ -959,6 +959,31 @@ Annual peaks by year (WCMA dry bulb): 2019 84 °F · 2020 90 · 2021 92 · 2022 
 
 **Pitch use:** "what each household's battery is worth", using the model output for the chosen town, with Holden's own projection shown as a reality check.
 
+# AE. Implemented Simulator (7 Nov 2026): Design Decisions and Corrections Found While Building
+
+Code: `peaksure/` (physics, twin, decision, sim, econ, experiments), demo `app/`, tests `tests/`. The numbers are in **RESULTS.md**, which `tools/report.py` generates from `results/`; none are typed by hand.
+
+**Physics.** Each condition simulates 8 strings × 240 switchable cell units. Fixed string: usable Ah = the minimum over the string's cells, and the hottest cell derates the whole string. Bypass: cells leave the path as they empty, while at least N_min stay active. Faulted or hot cells are excluded. Ageing:
+- calendar: Arrhenius × SOC stress, with SOC sensitivity rising with temperature (TUM);
+- cycle: DoD-weighted, with per-cell lognormal rate multipliers correlated with initial resistance.
+
+The tests reproduce the brief's 16-cell example: 70 Ah fixed, 84.06% average, and the N_min-bounded bypass.
+
+**Information.**
+- *Pack estimator:* an annual 25 °C capacity test plus nominal fade extrapolation.
+- *Cell twin:* a per-cell Kalman filter (level + trend) on noisy per-cell capacity reports.
+- Both beliefs include the **day-ahead temperature forecast error**.
+- Ground truth and belief are separate objects throughout.
+
+**Decision.** Choose window start, length and power to maximize expected shaved kW, subject to **P(D ≥ P·W) ≥ 95%**. The peak-hour forecast is empirical, leave-one-year-out by season.
+
+**Corrections made during the build (all affect results; recorded for transparency):**
+1. **The baseline rule was too weak at first.** The first version committed P5/3 over a fixed 3-h window, which overstated optimizer gains. It was replaced by the conventional practice: full available power for floor(P5 energy / power) hours, centred on the modal hour.
+2. **The twin was overconfident at first.** It ignored temperature-forecast error: P5 miss was 12% vs the 5% target. Forecast uncertainty is now sampled inside the belief.
+3. **The optimizer was unconstrained at first** (risk-neutral expected value). The 95% deliverability chance constraint now matches the PeakSure promise.
+4. **The forecast smoothing was too heavy.** Add-α was 0.5; it was chosen by out-of-sample log-likelihood and set to 0.1. The modal hour captures the actual peak **65.5%** of the time. Peak timing, not energy, is the dominant uncertainty for a 2-h system.
+5. **Premium definition.** The premium is reported as the **same-rule** comparison (C vs A_opt, B vs A), so the decision-rule effect is never credited to REON hardware.
+
 # Z. Change Log (Part II)
 
 | # | Change | Type | Reason |
@@ -987,6 +1012,8 @@ Annual peaks by year (WCMA dry bulb): 2019 84 °F · 2020 90 · 2021 92 · 2022 
 | 22 | Thermal angle assessed with **real ISO-NE data**: annual peaks are summer HE 18–19 at 84–97 °F; winter monthly peaks fall to −18 °C. Reframed as "both temperature extremes"; container throttling is a hypothesis (AC) | Addition / correction | `peak_temps.csv` |
 | 23 | Real MLP numbers (Sterling, Holden, Reading) and a per-household upper bound; Holden's projection ≈ 44% of the bound is a calibration anchor (AD) | Addition | MMWEC, HMLD |
 | 24 | New tool `tools/peak_temps.py`, tested on synthetic data, then run on the 2019–2026 SMD files | Addition | Reproducibility |
+| 25 | Simulator, demo and automated results report implemented; five build-time corrections listed in §AE | Addition / correction | Implementation |
+| 26 | A teammate's Colab notebook independently reproduced the annual-peak dates and hours (it uses hour-beginning, we use hour-ending) | Verification | Cross-check |
 
 ---
 

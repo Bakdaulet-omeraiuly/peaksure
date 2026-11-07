@@ -99,8 +99,14 @@ def css() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
 
 
+def esc(text: str) -> str:
+    """Prevent Streamlit from treating pairs of $ as LaTeX."""
+    return text.replace("$", "&#36;")
+
+
 def card(label: str, value: str, note: str = "", accent: str = "info", flag: str | None = None) -> str:
     color = ACCENT.get(accent, accent)
+    label, value, note = esc(label), esc(value), esc(note)
     fl = f'<span class="ps-flag {flag}">{flag}</span>' if flag else ""
     return (f'<div class="ps-card" style="--accent:{color}"><div class="lbl">{label}{fl}</div>'
             f'<div class="val">{value}</div><div class="note">{note}</div></div>')
@@ -113,11 +119,11 @@ def cards(items: list[str]) -> None:
 
 
 def callout(text: str, kind: str = "") -> None:
-    st.markdown(f'<div class="ps-callout {kind}">{text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="ps-callout {kind}">{esc(text)}</div>', unsafe_allow_html=True)
 
 
 def note(text: str) -> None:
-    st.markdown(f'<div class="ps-note">{text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="ps-note">{esc(text)}</div>', unsafe_allow_html=True)
 
 
 def flag(f: str) -> str:
@@ -142,3 +148,8 @@ def rgba(hex_color: str, alpha: float) -> str:
     h = hex_color.lstrip("#")
     r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
     return f"rgba({r},{g},{b},{alpha})"
+
+
+def esc_md(text: str) -> str:
+    """Escape $ for plain-markdown contexts (captions) where HTML entities are not rendered."""
+    return text.replace("$", "\\$")
