@@ -1,5 +1,6 @@
-// Assemble one live scenario: a real ISO-NE peak, a battery age, and the two operators.
+// Assemble one live scenario: a real ISO-NE peak, a battery age, and three modeled operators.
 //   Conventional (A): fixed strings + annual pack test + full-power rule.
+//   REON baseline (B): bypass + annual pack test + full-power rule (assumed policy).
 //   PeakSure (C/D):   REON bypass + per-cell twin + 95%-confidence commitment (+ optional VoI probes).
 import { Constants, Life, PeakEvent, decodeI16, decodeU16, rnsRate } from "./data";
 import { Chem, SystemSpec, Tier, containerTemp, deliverable } from "./physics";
@@ -11,7 +12,7 @@ import { Probe, runVoi } from "./voi";
 export interface Knobs { kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss?: number }
 
 export interface OperatorResult {
-  key: "A" | "C";
+  key: "A" | "B" | "C";
   tier: Tier;
   label: string;
   qRel: Float64Array;              // true capacity / nominal
@@ -32,7 +33,7 @@ export interface OperatorResult {
 export interface Scenario {
   event: PeakEvent; age: number; calYear: number; durationKey: string; eNom: number; qNom: number;
   sys: SystemSpec; chem: Chem; tCell: Float64Array; tContainer: number; rateUsdPerKw: number;
-  ops: { A: OperatorResult; C: OperatorResult };
+  ops: { A: OperatorResult; B: OperatorResult; C: OperatorResult };
 }
 
 export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: number, knobs: Knobs): Scenario {
@@ -56,7 +57,7 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
   const yi = Math.min(age - 1, life.tiers.fixed.length - 1);
   const seedBase = life.seed * 1000 + age * 37 + ev.month;
 
-  const mk = (key: "A" | "C"): OperatorResult => {
+  const mk = (key: "A" | "B" | "C"): OperatorResult => {
     const tier: Tier = key === "A" ? "fixed" : "bypass";
     const st = life.tiers[tier][yi];
     const qRel = decodeU16(st.soh, 20000);
@@ -64,7 +65,7 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
     const truth = deliverable(q, tier, soc0, tCell, chem, sys);
     let belief: Belief, before: Belief | undefined, decision: Decision, probes: Probe[] = [];
     let twinMean: Float64Array | undefined, twinSd: Float64Array | undefined;
-    if (key === "A") {
+    if (key !== "C") {
       const ref = deliverable(q, tier, 1, new Float64Array(q.length).fill(25), chem, sys).energyKwh;
       belief = packBelief(ref, ev.month - 1, c.nominal_fade_month, c.sigma_pack_test, ev.t_amb_c, thBelief, chem, sys, seedBase);
       decision = fixedRule(belief.p5, belief.pAvail, ev.p_hour, c.he_grid);
@@ -91,11 +92,11 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
     const run = discharge({ qAh: q, tBase, rRel, soc0, tier, chem, sys, decision, peakHe: ev.he, loadHeatingC: c.load_heating_c });
     const inWindow = ev.he >= decision.startHe && ev.he < decision.startHe + decision.windowH;
     const shaved = inWindow ? run.peakHourAvgKw : 0;
-    return { key, tier, label: key === "A" ? "Conventional" : "REON + PeakSure", qRel, belief, beforeProbes: undefined,
+    return { key, tier, label: key === "A" ? "Conventional" : key === "B" ? "REON bypass (modeled baseline)" : "REON + PeakSure", qRel, belief, beforeProbes: undefined,
              beliefBeforeProbes: before, decision, truthKwh: truth.energyKwh, truthPowerKw: truth.powerKw, run,
              shavedKw: shaved, valueUsd: shaved * rate, probes, twinMean, twinSd, limiting: truth.limiting } as OperatorResult;
   };
 
   return { event: ev, age, calYear, durationKey: life.duration, eNom, qNom, sys, chem, tCell, tContainer: tCont,
-           rateUsdPerKw: rate, ops: { A: mk("A"), C: mk("C") } };
+           rateUsdPerKw: rate, ops: { A: mk("A"), B: mk("B"), C: mk("C") } };
 }

@@ -21,9 +21,10 @@ export default function Method() {
               Before each forecast peak, the battery operator commits a discharge power over a window. PeakSure commits only what the battery can deliver with 95% confidence:
               P(deliverable energy &ge; power &times; window) &ge; 95%.</p>
           </S>
-          <S t="Two operators, same cells">
+          <S t="Three modeled operators">
             <p><b className="text-ink">Conventional:</b> fixed series strings (same current through every cell; the first empty cell stops the string; the hottest cell derates it),
               an annual system capacity test as its belief, and the common rule: full power for as many whole hours as the P5 energy allows, centred on the most likely hour.</p>
+            <p><b className="text-ink">REON baseline (assumed):</b> per-cell bypass with the same annual pack-test belief and full-power rule. This is a modeled comparison policy, not a verified description of REON&apos;s current control software.</p>
             <p><b className="text-ink">REON + PeakSure:</b> per-cell bypass (an empty or hot cell leaves the path; the string runs while at least N_min cells keep the DC voltage valid),
               a per-cell Kalman twin as its belief, and the chance-constrained commitment. Optional value-of-information probes switch single cells to measure them.</p>
           </S>
@@ -38,7 +39,7 @@ export default function Method() {
             <p>Python model (repository <code>peaksure/</code>): 15-year cell ageing (calendar Arrhenius &times; SOC stress, DoD-weighted cycling, lognormal cell-to-cell spread
               informed by TUM&apos;s sodium-ion data), the twin, Monte Carlo with paired runs and bootstrap confidence intervals.</p>
             <p>Browser (this site): the same physics re-implemented in TypeScript and tested against the Python model (agreement to 0.001 kWh), minute-by-minute discharge
-              of every cell, both beliefs, the commitment, and the probes, computed live from the exported cell states.</p>
+              of every cell, three operator cases, their beliefs, commitments, and probes, computed live from the exported cell states.</p>
           </S>
           <S t="REON's open questions, answered from public sources">
             <p>From REON&apos;s challenge video, the brief, REON_WHO_WE_ARE, patent US 2023/0341471, inverter datasheets and the TUM sodium-ion paper:</p>

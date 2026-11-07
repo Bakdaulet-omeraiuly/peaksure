@@ -10,7 +10,7 @@ import { useStudio, ColorMode } from "@/state/store";
 const COLS = 12, ROWS = 20, P = 0.07, CELL: [number, number, number] = [0.058, 0.058, 0.16];
 const RACK_X = [-1.44, -0.48, 0.48, 1.44];
 const TIER_Y = [1.78, 0.18];                       // strings 0-3 top tier, 4-7 bottom tier
-const OFFSET_X = { A: -2.35, C: 2.35 };
+const OFFSET_X = { A: -2.35, B: -2.35, C: 2.35 };
 const SHELL = { w: 4.15, h: 3.42, d: 0.62 };
 
 function cellPos(s: number, j: number) {
@@ -48,7 +48,7 @@ function cellColor(op: OperatorResult, f: number, i: number, mode: ColorMode, ou
   return op.twinSd ? ramp(SD, op.twinSd[i] / 0.03, out) : out.set("#262b31");
 }
 
-function Container({ op, which, minuteRef }: { op: OperatorResult; which: "A" | "C"; minuteRef: React.MutableRefObject<number> }) {
+function Container({ op, which, minuteRef }: { op: OperatorResult; which: "A" | "B" | "C"; minuteRef: React.MutableRefObject<number> }) {
   const S = 8, N = op.qRel.length / S, SN = op.qRel.length;
   const mesh = useRef<THREE.InstancedMesh>(null);
   const flow = useRef<THREE.InstancedMesh>(null);
@@ -134,7 +134,7 @@ function Container({ op, which, minuteRef }: { op: OperatorResult; which: "A" | 
   );
 }
 
-export default function Battery3D({ scenario }: { scenario: Scenario }) {
+export default function Battery3D({ scenario, baseline }: { scenario: Scenario; baseline: "A" | "B" }) {
   const minuteRef = useRef(useStudio.getState().minute);
   useEffect(() => useStudio.subscribe((s) => { minuteRef.current = s.minute; }), []);
   return (
@@ -144,7 +144,7 @@ export default function Battery3D({ scenario }: { scenario: Scenario }) {
       <hemisphereLight args={["#d6dee9", "#0b0d10", 0.75]} />
       <directionalLight position={[-3, 6, 8]} intensity={1.1} />
       <directionalLight position={[4, 3, 5]} intensity={0.35} />
-      <Container op={scenario.ops.A} which="A" minuteRef={minuteRef} />
+      <Container key={baseline} op={scenario.ops[baseline]} which={baseline} minuteRef={minuteRef} />
       <Container op={scenario.ops.C} which="C" minuteRef={minuteRef} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[14, 6]} />

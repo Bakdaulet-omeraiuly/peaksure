@@ -24,7 +24,7 @@ function Commit({ op, sc, minute }: { op: OperatorResult; sc: Scenario; minute: 
   const hit = op.shavedKw > 0;
   return (
     <div className="rounded-md border border-line bg-panel-2 p-2.5" style={{ borderLeft: `3px solid ${color}` }}>
-      <div className="text-[12px] font-semibold" style={{ color }}>{op.key === "A" ? "Conventional" : "REON + PeakSure"}</div>
+      <div className="text-[12px] font-semibold" style={{ color }}>{op.label}</div>
       <div className="num text-[25px] font-semibold tracking-tight mt-2">{Math.round(d.powerKw).toLocaleString()} <span className="text-muted text-[12px] font-normal">kW</span></div>
       <div className="text-[12px] text-muted mt-1">{d.windowH} hour window · starts HE{d.startHe}</div>
       <div className="mt-1.5 pt-1.5 border-t border-line text-[12px] flex justify-between">
@@ -37,8 +37,8 @@ function Commit({ op, sc, minute }: { op: OperatorResult; sc: Scenario; minute: 
   );
 }
 
-function BeliefChart({ sc }: { sc: Scenario }) {
-  const ops = [sc.ops.A, sc.ops.C];
+function BeliefChart({ sc, baseline }: { sc: Scenario; baseline: "A" | "B" }) {
+  const ops = [sc.ops[baseline], sc.ops.C];
   const qs = ops.flatMap((o) => { const v = [...o.belief.samples].sort((a, b) => a - b); return [v[0], v[v.length - 1], o.truthKwh]; });
   const lo = Math.min(...qs) * 0.985, hi = Math.max(...qs) * 1.01;
   const W = 272, H = 132, X = (v: number) => 10 + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (W - 20);
@@ -63,7 +63,7 @@ function BeliefChart({ sc }: { sc: Scenario }) {
   return (
     <div>
       <svg width={W} height={H} className="block">
-        {row(sc.ops.A, 52, "#9aa6b8", "Conventional: annual pack test")}
+        {row(sc.ops[baseline], 52, "#9aa6b8", `${baseline === "A" ? "Conventional" : "REON baseline"}: annual pack test`)}
         {row(sc.ops.C, 116, "#7bd88f", "PeakSure: per-cell twin")}
       </svg>
       <div className="flex justify-between text-[10.5px] text-faint num"><span>{Math.round(lo).toLocaleString()} kWh</span><span>{Math.round(hi).toLocaleString()} kWh</span></div>
@@ -86,12 +86,12 @@ function telemetry(op: OperatorResult, minute: number) {
   return { p: r.powerKw[Math.min(1439, Math.floor(minute))] ?? 0, e, act, tmax, smin: act ? smin : 0, on };
 }
 
-export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
+export default function Inspector({ sc, c, baseline }: { sc: Scenario; c: Constants; baseline: "A" | "B" }) {
   const { minute, probeBudget, reportBias, hover, set, town } = useStudio();
   const [cal, setCal] = useState<{ mode: string; eps: number; cond: string; miss: number }[] | null>(null);
   useEffect(() => { fetchJson<{ cal: { mode: string; eps: number; cond: string; miss: number }[] }>("/data/results.json").then((r) => setCal(r.cal)); }, []);
-  const tA = telemetry(sc.ops.A, minute), tC = telemetry(sc.ops.C, minute);
-  const evs = [...sc.ops.A.run.events.map((e) => ({ ...e, op: "A" as const })), ...sc.ops.C.run.events.map((e) => ({ ...e, op: "C" as const }))]
+  const tA = telemetry(sc.ops[baseline], minute), tC = telemetry(sc.ops.C, minute);
+  const evs = [...sc.ops[baseline].run.events.map((e) => ({ ...e, op: baseline })), ...sc.ops.C.run.events.map((e) => ({ ...e, op: "C" as const }))]
     .filter((e) => e.minute <= minute).sort((a, b) => b.minute - a.minute);
   const sysMiss = cal?.find((r) => r.mode === "sys" && r.cond === "C" && Math.abs(r.eps - Math.round(reportBias * 1000) / 100) < 1e-6);
   const cust = c.towns[town]?.customers ?? 1;
@@ -107,22 +107,22 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
     <aside className="studio-inspector surface min-w-0 overflow-hidden">
       <div className="panel-h"><span className="micro">Peak commitment</span></div>
       <div className="p-3 flex flex-col gap-2">
-        <Commit op={sc.ops.A} sc={sc} minute={minute} />
+        <Commit op={sc.ops[baseline]} sc={sc} minute={minute} />
         <Commit op={sc.ops.C} sc={sc} minute={minute} />
         {minute >= sc.event.he * 60 && (
           <div className="text-[11.5px] text-muted">
-            Difference at this peak: <span className="num text-ink">{usd(sc.ops.C.valueUsd - sc.ops.A.valueUsd)}</span>
-            {" "}(<span className="num">{((sc.ops.C.valueUsd - sc.ops.A.valueUsd) / cust).toFixed(2)}</span> $ per {town} customer)
+            Difference at this peak (PeakSure − {baseline === "A" ? "conventional" : "modeled REON baseline"}): <span className="num text-ink">{usd(sc.ops.C.valueUsd - sc.ops[baseline].valueUsd)}</span>
+            {" "}(<span className="num">{((sc.ops.C.valueUsd - sc.ops[baseline].valueUsd) / cust).toFixed(2)}</span> $ per {town} customer)
           </div>
         )}
       </div>
       <details className="disclosure"><summary>Technical diagnostics</summary>
       <Section title="Deliverable energy: belief vs truth">
-        <BeliefChart sc={sc} />
+        <BeliefChart sc={sc} baseline={baseline} />
       </Section>
       <Section title="Live telemetry" right={<span className="num text-[11px] text-faint">{fmt(minute)}</span>}>
         <table className="w-full text-[11.5px] num">
-          <thead><tr className="text-faint"><td></td><td className="text-right">Conv.</td><td className="text-right">PeakSure</td></tr></thead>
+          <thead><tr className="text-faint"><td></td><td className="text-right">{baseline === "A" ? "Conv." : "REON"}</td><td className="text-right">PeakSure</td></tr></thead>
           <tbody>
             {[["Power kW", Math.round(tA.p).toLocaleString(), Math.round(tC.p).toLocaleString()],
               ["Delivered kWh", Math.round(tA.e).toLocaleString(), Math.round(tC.e).toLocaleString()],
@@ -159,7 +159,7 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
         </div>
       </Section>
       {hoverInfo && (
-        <Section title={`Cell ${hover!.string + 1}-${hover!.cell + 1} · ${hoverInfo.op.key === "A" ? "conventional" : "REON"}`}>
+        <Section title={`Cell ${hover!.string + 1}-${hover!.cell + 1} · ${hoverInfo.op.label}`}>
           <div className="grid grid-cols-2 text-[11.5px] num gap-y-0.5">
             <span className="text-faint font-sans">state of health</span><span className="text-right">{(hoverInfo.soh * 100).toFixed(1)}%</span>
             <span className="text-faint font-sans">charge now</span><span className="text-right">{(hoverInfo.soc * 100).toFixed(0)}%</span>
@@ -176,7 +176,7 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
           {evs.slice(0, 60).map((e, k) => (
             <div key={k} className="flex gap-2 py-0.5 border-t border-line">
               <span className="text-faint">{fmt(e.minute)}</span>
-              <span style={{ color: e.op === "A" ? "var(--conv)" : "var(--accent)" }}>{e.op === "A" ? "CONV" : "REON"}</span>
+              <span style={{ color: e.op === "C" ? "var(--accent)" : "var(--conv)" }}>{e.op === "A" ? "CONV" : e.op === "B" ? "REON" : "PEAKSURE"}</span>
               <span className="font-sans text-muted">{e.text}</span>
             </div>
           ))}

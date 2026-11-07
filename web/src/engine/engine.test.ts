@@ -72,5 +72,9 @@ describe("scenario", () => {
     const sc = buildScenario(C, life, ev, 9, { kHvac: C.k_hvac, sigmaT: C.sigma_t_cell, probeBudget: 0, reportBias: 0 });
     expect(sc.ops.C.truthKwh).toBeGreaterThan(sc.ops.A.truthKwh);
     expect(sc.ops.A.run.energyKwh).toBeGreaterThan(0);
+    expect(sc.ops.B.tier).toBe("bypass");
+    expect(sc.ops.B.qRel).toEqual(sc.ops.C.qRel);
+    expect(sc.ops.B.truthKwh).toBe(sc.ops.C.truthKwh);
+    expect(sc.ops.B.decision).toEqual(fixedRule(sc.ops.B.belief.p5, sc.ops.B.belief.pAvail, ev.p_hour, C.he_grid));
   });
 });
