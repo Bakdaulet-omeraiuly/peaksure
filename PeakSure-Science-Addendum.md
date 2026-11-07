@@ -1045,6 +1045,43 @@ The reproducible exploratory study is in `peaksure/experiments.py --only researc
 
 **AH3. R_on and DC window: what we model and what we ask REON.** The conduction-loss map (I·R_on/V_cell; §AF) is now code (`switch_loss_from_ron`). `breakeven_switch_loss` gives, year by year, the switch loss at which bypass delivers no more than a fixed string on the same cells. Questions to send: `REON_QUESTIONS.md`.
 
+# AI. Product Update, Chemistry Comparison and Price Ranges (7 Nov 2026)
+
+## AI1. Which REON product has cell-level control (from REON)
+- **CESS (container, 2.5 MW / 5 MWh) and OES (cabinets) are white-label products from other vendors.** REON's website still describes the CESS as using "REON's cell-level intelligence"; REON's direct statement takes precedence.
+- **EBS (Energy Block System) is the product with REON's cell-level control BMS.** Public specs: Na+ version 30 kW / 60 kWh, 20,000-cycle claim, −40 to +140 °F; Li+ version holds "more than twice the energy in the same form factor" (no kWh given).
+- **What this means for the model:**
+  - Condition A = a conventional-BMS battery (for example the white-label CESS). B, C and D = the same 2.5 MW / 5 MWh built from about 84 EBS blocks (2,500 / 30 = 5,000 / 60 = 83.3).
+  - The power-to-energy ratio is still 2 h, so existing results carry over as a first approximation.
+  - The string design changes: a 60 kWh block holds roughly 120 cells at 3.1 V / 160 Ah, so strings are shorter than our 240-cell assumption. Bypassing one cell then costs a larger share of string voltage, and the DC window matters more.
+- **New questions for REON:** EBS cells per block and block DC voltage; whether each block has its own DC/DC or inverter stage; how blocks are paralleled; EBS Li+ energy per block; EBS price or price premium.
+
+## AI2. Lithium-ion (LFP) next to sodium-ion
+- The simulator already supports both chemistries. Na-ion is the main study (64 runs); LFP is the chemistry sensitivity (24 runs, conditions A–C).
+- `peaksure/curves.py` adds representative voltage curves: Na-ion slopes over 1.5–3.8 V (energy average about 3.13 V); LFP sits on a 3.25–3.34 V plateau (about 3.28 V).
+- **Finding (illustrative, not yet in the simulator):** with a 480 V AC inverter (about 750 V DC minimum) and a 240-cell string, the sloped Na-ion curve reaches the DC floor at roughly half charge, and earlier still once cells are bypassed; LFP stays above it until nearly empty. The exact SOCs are computed live by `curves.min_soc_above_floor` in the Streamlit *Chemistry & cost* tab. Unless the EBS has a wide-range DC/DC stage or many more cells in series, the DC window could cap Na-ion usable energy. The simulator tracks Ah only and does not yet apply this limit.
+
+## AI3. Installed-cost ranges (REON gave no price signal)
+All prices are installed $/kWh for a conventional 2-h, few-MWh US municipal project. Code: `peaksure/costs.py`.
+
+| Chemistry | Low | Central | High | Basis |
+|---|---|---|---|---|
+| LFP | 219 | 400 | 846 | Low: BNEF 2025 US turnkey average. High: Concord 2024 all-in. Central: our assumption |
+| Na-ion (**provisional**) | 219 | 435 | 921 | LFP + $0–75/kWh pack difference, until the team supplies its own prices |
+| EBS premium over conventional | −5% | +10% | +20% | No REON price. Relectrify claims cell-level electronics cost less than a standard BMS; Chalmers reports higher upfront cost; ROI sheet uses +10% |
+| O&M | $60k/yr conventional | $65k/yr EBS | | REON ROI sheet (hypothetical), per 5 MWh |
+
+Public benchmarks used (scope differs; never compare without it):
+- BNEF 2025 (via Energy-Storage.news): stationary pack $70/kWh; turnkey system $117 global, $73 China, $177 Europe, $219 US; global 2-h $124, 4-h $110.
+- China tender (CNESA, Sep 2026, 100 MW / 400 MWh): Na-ion system bids about $153/kWh vs LFP about $79/kWh.
+- Cells (Wood Mackenzie 2025): LFP about $52/kWh, Na-ion about $59/kWh. CATL's ~$19/kWh Na-ion figure is a claim or forecast.
+- US C&I installed, larger containers: about $180–320/kWh (vendor and industry guides, indicative).
+- Massachusetts projects (REON ROI sheet): Concord 2024 $657/kWh equipment and $846/kWh all-in; Sterling 2016 $692/kWh.
+
+**Results** (cost does not change the simulation, so no rerun is needed): `costs.breakeven_capex` gives, per run, the installed $/kWh at which 15-year NPV (savings − augmentation − O&M − capex) is zero, and `costs.npv_at_price` gives NPV at any price and EBS premium. Both are computed live from `results/` in the Streamlit *Chemistry & cost* tab; numbers are not copied here (AGENTS.md rule 1). At 2 h, the break-even price for conventional and EBS + PeakSure is close, so the installed price per kWh, not the chemistry or cell-level control, decides the business case.
+
+---
+
 # Z. Change Log (Part II)
 
 | # | Change | Type | Reason |
@@ -1079,6 +1116,9 @@ The reproducible exploratory study is in `peaksure/experiments.py --only researc
 | 28 | Added paired synthetic mixed-age, twin-trend resting-SOC, and independent pack-test safety-envelope studies (§AG; generated results §T6). The baseline was verified unchanged. | Addition / limitation | Explicit scientific focus, with assumptions and negative outcomes retained |
 | 29 | **Ageing fitted to TUM Tables 4–5** (§AH1): cal_a 0.030→0.014, Ea 35→28.4, β25 0.10→2.0, β45 0.90→1.79, low-SOC penalty 0.30→0, cyc_b 1e-4→2.1e-5. Full study, RESULTS.md and web data regenerated | Correction (ASSUMED→DERIVED) | Fit to published data |
 | 30 | Bypass transient and R_on break-even checks added (§AH2–AH3); minute-step assumption confirmed for energy | Addition / verification | Model validity |
+| 31 | REON: CESS and OES are white-label; the EBS carries the cell-level BMS. A = conventional BMS, B/C/D = ~84 EBS blocks (§AI1) | Correction (framing) | Statement from REON |
+| 32 | Na-ion vs LFP voltage curves and DC-floor check (`peaksure/curves.py`, §AI2) | Addition | Chemistry comparison |
+| 33 | Installed-cost ranges per chemistry, EBS premium range, O&M, capex-aware NPV and break-even price (`peaksure/costs.py`, §AI3); Na-ion range provisional | Addition (ASSUMED) | No REON price signal |
 
 ---
 

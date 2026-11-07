@@ -21,7 +21,7 @@ from plotly.subplots import make_subplots
 
 import analysis as an
 import ui
-from peaksure import econ
+from peaksure import econ, costs, curves
 from peaksure.config import Config, CHEMISTRIES, SYSTEM_FLAGS, NA_ION
 from peaksure.data import HE_GRID, peak_events, peak_day_shapes, SEASON
 from peaksure.sim import simulate
@@ -77,7 +77,7 @@ man = an.manifest()
 st.markdown(
     f"""<div class="ps-hero"><h1>PeakSure</h1>
     <div class="sub">Know what your battery can deliver when it counts. A cell-aware commitment tool for
-    REON's CES (2.5 MW / up to 5 MWh) at Massachusetts municipal light plants, tested on real ISO-NE
+    a 2.5 MW / 5 MWh plant built from REON EBS blocks (cell-level control) vs a conventional-BMS battery at Massachusetts municipal light plants, tested on real ISO-NE
     coincident peaks 2019&ndash;2025 over a 15-year Monte Carlo.</div>
     <div class="sub" style="margin-top:8px;font-size:.84rem">Independent analysis, not endorsed by REON.
     Results: {man.get('n_main','?')} seeded runs per condition &middot; config {man.get('config_hash','?')}
@@ -96,7 +96,7 @@ t1 = T1.set_index("cond")
 
 tabs = st.tabs(["Overview", "Peak day (live)", "Benchmark", "Where it pays", "Value decomposition",
                 "Twin calibration", "VoI probing", "Temperature", "Economics", "Lifetime & CO2",
-                "Assumptions & evidence"])
+                "Chemistry & cost", "Assumptions & evidence"])
 
 
 def sens_row(tag):
@@ -610,8 +610,128 @@ with tabs[9]:
                "Environmental value here is embodied: fewer cells manufactured.", "warn")
 
 
-# =============================================================== 11. assumptions
+# =============================================================== 10b. chemistry & cost
+@st.cache_data(show_spinner=False)
+def load_lfp_rl():
+    ev_, mo_ = an.load("events_sens"), an.load("monthly_sens")
+    if ev_.empty:
+        return pd.DataFrame()
+    e, m = ev_[ev_.tag == "sens_chem_LFP"], mo_[mo_.tag == "sens_chem_LFP"]
+    return econ.run_level(e, m, CFG.with_(chemistry="LFP")) if len(e) else pd.DataFrame()
+
+
 with tabs[10]:
+    ui.callout("<b>Product update from REON.</b> The CESS container (2.5 MW / 5 MWh) and the OES cabinets are white-label "
+               "products from other vendors. The product with REON's cell-level control BMS is the <b>EBS (Energy Block "
+               "System)</b>: 30 kW / 60 kWh per block in the Na+ version; the Li+ version holds more than twice the energy in "
+               "the same footprint. In this model, condition A is a conventional-BMS battery (such as the white-label "
+               "container) and B, C and D are the same 2.5 MW / 5 MWh built from about 84 EBS blocks. The power-to-energy "
+               "ratio is the same (2 h), so the results carry over; the EBS string design (cells per block, block voltage, "
+               "how blocks connect to the inverter) is not yet known.", "warn")
+
+    st.markdown("#### Cell voltage curves: sodium-ion vs LFP")
+    k1, k2, k3 = st.columns(3)
+    crate = k1.slider("C-rate", 0.1, 1.0, 0.5, 0.1, key="cc_crate")
+    n_ser = k2.slider("Cells in series (active)", 150, 420, 240, 2, key="cc_nser")
+    v_floor = k3.slider("Inverter DC floor (V)", 500, 900, 750, 10, key="cc_floor")
+    soc = np.linspace(0, 1, 201)
+    chem_col = {"Na-ion": ui.COLORS["C"], "LFP": ui.COLORS["B"]}
+    c1, c2 = st.columns(2)
+    fig = go.Figure()
+    for ch, col in chem_col.items():
+        fig.add_scatter(x=soc * 100, y=curves.terminal_v(ch, soc, crate, True), name=f"{ch} charge",
+                        line=dict(color=col, width=2, dash="dot"))
+        fig.add_scatter(x=soc * 100, y=curves.ocv(ch, soc), name=f"{ch} open circuit", line=dict(color=col, width=1), opacity=0.5)
+        fig.add_scatter(x=soc * 100, y=curves.terminal_v(ch, soc, crate, False), name=f"{ch} discharge",
+                        line=dict(color=col, width=2.5))
+    fig.update_layout(title=f"Cell voltage vs state of charge at {crate:.1f}C", xaxis_title="State of charge (%)",
+                      yaxis_title="Cell voltage (V)", height=420, yaxis_range=[1.4, 3.9])
+    c1.plotly_chart(fig, width="stretch")
+    fig = go.Figure()
+    for ch, col in chem_col.items():
+        fig.add_scatter(x=soc * 100, y=n_ser * curves.terminal_v(ch, soc, crate, False), name=f"{ch}, {n_ser} cells",
+                        line=dict(color=col, width=2.5))
+    fig.add_hline(y=v_floor, line=dict(color=ui.ACCENT["bad"], dash="dash"), annotation_text=f"DC floor {v_floor} V")
+    fig.update_layout(title="String voltage while discharging", xaxis_title="State of charge (%)",
+                      yaxis_title="String voltage (V)", height=420)
+    c2.plotly_chart(fig, width="stretch")
+    items = []
+    for ch in chem_col:
+        m_soc = curves.min_soc_above_floor(ch, n_ser, v_floor, crate)
+        items.append(ui.card(f"{ch}: lowest usable SOC", f"{m_soc*100:.0f}%",
+                             f"{n_ser} cells at {crate:.1f}C stay above {v_floor} V down to this SOC",
+                             "bad" if m_soc > 0.3 else "warn" if m_soc > 0.1 else "good", "ILLUSTRATIVE"))
+        items.append(ui.card(f"{ch}: average voltage", f"{curves.energy_avg_v(ch):.2f} V",
+                             f"window {curves.V_LIMITS[ch][0]}-{curves.V_LIMITS[ch][1]} V", "neutral", "LIT"))
+    ui.cards(items)
+    ui.note("Representative curve shapes from the literature, not REON cells. The simulator tracks charge (Ah), not voltage, "
+            "so it does not yet apply this floor. With a sloped Na-ion curve and a 480 V AC inverter (about 750 V DC minimum), "
+            "a 240-cell string reaches the floor around half charge, and bypassing cells raises that point further. A wider-range "
+            "DC/DC stage or more cells in series removes the limit; REON's EBS design decides which applies.")
+
+    st.markdown("#### Installed cost: public benchmarks and our ranges")
+    bm = pd.DataFrame([dict(Benchmark=p.name, **{"$/kWh": p.usd_kwh}, Scope=p.scope, Chemistry=p.chemistry, Year=p.year,
+                            Flag=p.flag, Source=p.source) for p in costs.BENCHMARKS])
+    fig = go.Figure()
+    fig.add_bar(y=bm.Benchmark, x=bm["$/kWh"], orientation="h",
+                marker_color=[ui.COLORS["C"] if c == "Na-ion" else ui.COLORS["B"] if c == "LFP" else ui.COLORS["A"] for c in bm.Chemistry],
+                hovertext=bm.Scope, showlegend=False)
+    for ch, col in chem_col.items():
+        r = costs.PRICE_RANGES[ch]
+        fig.add_vrect(x0=r.low, x1=r.high, fillcolor=col, opacity=0.07, line_width=0)
+        fig.add_vline(x=r.central, line=dict(color=col, dash="dash"), annotation_text=f"{ch} central ${r.central:.0f}",
+                      annotation_position="top" if ch == "LFP" else "bottom")
+    fig.update_layout(title="Public price points ($/kWh); bands show our installed-cost ranges", xaxis_title="$ per kWh",
+                      height=440, yaxis=dict(autorange="reversed"))
+    st.plotly_chart(fig, width="stretch")
+    rng = pd.DataFrame([dict(Chemistry=ch, Low=r.low, Central=r.central, High=r.high, Flag=r.flag, Basis=r.note)
+                        for ch, r in costs.PRICE_RANGES.items()])
+    st.dataframe(rng, hide_index=True, width="stretch")
+    with st.expander("All benchmarks with scope and source"):
+        st.dataframe(bm, hide_index=True, width="stretch")
+
+    st.markdown("#### Does the project pay back, and how much extra can EBS cost?")
+    p1, p2 = st.columns(2)
+    prem = p1.slider("EBS price premium over a conventional battery", -0.05, 0.20, float(costs.REON_PREMIUM["central"]), 0.01,
+                     format="%.2f", key="cc_prem")
+    p2.markdown("<div class='ps-note'>" + ui.esc(f"No price signal from REON. Range {costs.REON_PREMIUM['low']:+.0%} to "
+                f"{costs.REON_PREMIUM['high']:+.0%}: Relectrify claims cell-level electronics can cost less than a standard BMS; "
+                f"Chalmers reports higher upfront cost; the ROI sheet uses +10%. O&amp;M: ${costs.OM_USD_YR_PER_5MWH['conventional']:,.0f}/yr "
+                f"conventional, ${costs.OM_USD_YR_PER_5MWH['reon']:,.0f}/yr EBS (ROI sheet, hypothetical).") + "</div>", unsafe_allow_html=True)
+    sets = [("Na-ion", RL, CFG)]
+    rl_lfp = load_lfp_rl()
+    if len(rl_lfp):
+        sets.append(("LFP", rl_lfp, CFG.with_(chemistry="LFP")))
+    prices = np.linspace(100, 950, 35)
+    fig = go.Figure()
+    rows = []
+    for ch, rl_, cfg_ in sets:
+        r = costs.PRICE_RANGES[ch]
+        for cnd, dash in (("A", "dot"), ("C", "solid")):
+            ys = [costs.npv_at_price(rl_[rl_.cond == cnd], cfg_, p, prem).npv_full.mean() / 1e6 for p in prices]
+            fig.add_scatter(x=prices, y=ys, name=f"{ch}: {'conventional BMS (A)' if cnd == 'A' else 'EBS + PeakSure (C)'}",
+                            line=dict(color=chem_col[ch], dash=dash, width=2.5))
+            be = costs.breakeven_capex(rl_[rl_.cond == cnd], cfg_)
+            be_c = econ.ci((be.breakeven_kwh / (1 + (prem if costs.is_reon(cnd) else 0.0))).values)
+            row = {"Chemistry": ch, "System": "Conventional BMS (A)" if cnd == "A" else "EBS + PeakSure (C)",
+                   "Runs": int(be.run.nunique()), "Break-even conventional price $/kWh": f"{be_c[0]:,.0f} [{be_c[1]:,.0f}, {be_c[2]:,.0f}]"}
+            for lab in ("low", "central", "high"):
+                n = costs.npv_at_price(rl_[rl_.cond == cnd], cfg_, getattr(r, lab), prem)
+                row[f"NPV at {lab} (${getattr(r, lab):.0f})"] = ui.usd(n.npv_full.mean())
+            rows.append(row)
+    fig.add_hline(y=0, line=dict(color=ui.MUTED, width=1))
+    fig.update_layout(title=f"15-year NPV vs installed price of a conventional battery (EBS pays {prem:+.0%})",
+                      xaxis_title="Conventional installed price ($/kWh)", yaxis_title="NPV ($ million)", height=440)
+    st.plotly_chart(fig, width="stretch")
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    ui.note(f"NPV = present value of peak savings - augmentation - O&amp;M - upfront cost, {CFG.years} years at "
+            f"{CFG.discount_rate:.1%}. Break-even price: the conventional $/kWh at which NPV is zero (for C, after paying the "
+            "premium). Na-ion uses the main study (64 runs); LFP uses the chemistry sensitivity run (24 runs). The Na-ion price "
+            "range is provisional until the team's own prices are added.")
+
+
+# =============================================================== 11. assumptions
+with tabs[11]:
     st.markdown("#### Evidence and assumptions (every parameter in the model)")
     rows = [dict(Parameter=k, Flag=v[0], Source=v[1]) for k, v in SYSTEM_FLAGS.items()]
     rows += [dict(Parameter=f"Na-ion: {k}", Flag=v[0], Source=v[1]) for k, v in NA_ION.flags.items()]
@@ -631,7 +751,10 @@ with tabs[10]:
     ]:
         st.markdown(f"- {x}")
     st.markdown("##### Questions for REON")
-    for q in ["CES chemistry, cells per string, DC window and N_min?", "Bypass switch losses and round-trip efficiency?",
+    for q in ["EBS price or price premium over a conventional battery?",
+              "EBS cells per block, block DC voltage, and whether each block has its own DC/DC stage?",
+              "EBS Li+ energy per block?",
+              "Chemistry, cells per string, DC window and N_min?", "Bypass switch losses and round-trip efficiency?",
               "Per-cell measurement accuracy and data access?", "Can a cell be driven with a diagnostic current step during operation?",
               "Can cells be held at different SOC at rest?", "Cell-to-cell temperature spread inside a container on a hot afternoon?",
               "Typical MLP duty cycle and dispatch days per year?"]:

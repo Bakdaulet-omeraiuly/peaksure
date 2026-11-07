@@ -18,3 +18,9 @@ On the same aged cells, bypass only beats a fixed string while the switch loss s
 We assume 240 cells per string and N_min = 216 (10% headroom). With 480 Vac, PCS units we found need about 750 Vdc or more, which leaves little headroom for a sodium-ion voltage curve.
 
 Optional third question: is bypass make-before-break, and what are the commutation time and dead time? From published half-bridge measurements (Hanzl et al. 2021), we model one cell leaving a 240-cell string as a 0.44% DC step that settles within about 1.3 ms. That is negligible for our 1-minute model, but we want to confirm it.
+
+**EBS questions (after REON said the CESS and OES are white-label and the EBS carries the cell-level BMS):**
+- How many cells per EBS block, and what is the block DC voltage?
+- Does each block have its own DC/DC or inverter stage, and how are blocks paralleled at MW scale?
+- What is the energy per block for the EBS Li+ version?
+- Any price, or price premium over a conventional battery of the same size?

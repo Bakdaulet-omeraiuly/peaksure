@@ -159,3 +159,33 @@ def test_zero_twin_error_perfect_info_dominates_twin():
     cfg = Config(years=2)
     p = simulate(cfg, "C_perf", 0)["events"].exp_kw.mean()
     assert p > 0
+
+
+# ----------------------------------------------------------- cost ranges and voltage curves
+def test_price_ranges_ordered():
+    from peaksure import costs
+    for r in costs.PRICE_RANGES.values():
+        assert r.low <= r.central <= r.high
+    assert costs.REON_PREMIUM["low"] <= costs.REON_PREMIUM["central"] <= costs.REON_PREMIUM["high"]
+
+
+def test_breakeven_capex_zeroes_npv():
+    import pandas as pd
+    from peaksure import costs
+    cfg = Config()
+    rl = pd.DataFrame(dict(cond=["A", "C"], run=[0, 0], npv=[4.0e6, 4.1e6], savings_yr=[4.5e5, 4.6e5]))
+    be = costs.breakeven_capex(rl, cfg)
+    for i, row in be.iterrows():
+        n = costs.npv_at_price(rl.iloc[[i]], cfg, row.breakeven_kwh, premium=0.0)
+        assert n.npv_full.iloc[0] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_voltage_curves():
+    from peaksure import curves
+    assert curves.energy_avg_v("Na-ion") == pytest.approx(NA_ION.v_nom, abs=0.1)
+    assert 3.2 < curves.energy_avg_v("LFP") < 3.35
+    # flat LFP keeps a 240-cell string above 750 V far deeper than sloped Na-ion
+    assert curves.min_soc_above_floor("LFP", 240, 750) < 0.1 < 0.4 < curves.min_soc_above_floor("Na-ion", 240, 750)
+    # discharge sits below charge
+    assert np.all(curves.terminal_v("Na-ion", np.linspace(0.1, 0.9, 9), 0.5, False)
+                  < curves.terminal_v("Na-ion", np.linspace(0.1, 0.9, 9), 0.5, True))
