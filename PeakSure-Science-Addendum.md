@@ -1023,6 +1023,28 @@ The reproducible exploratory study is in `peaksure/experiments.py --only researc
 
 **Validation protocol before deployment on hardware:** split independent packs and calendar periods into development and held-out sets; fit ageing and measurement-noise parameters only on development data; lock the rest policy and guard threshold before evaluation. On held-out packs, report calibration by age cohort and temperature, false-alert frequency, peak miss rate, delivered AC energy, cell-level degradation, augmentation, and net value with pack-clustered uncertainty intervals. Measure recharge energy and round-trip efficiency separately: the current simulator has no charge-side energy balance, so it cannot establish an efficiency improvement. Inject common-mode sensor drift and pack-test bias, not only the current twin-only bias, before any reliability claim.
 
+# AH. Ageing Fitted to TUM Data, Switching Transient, and R_on Break-even (7 Nov 2026)
+
+**AH1. Na-ion ageing fitted to the TUM tables** (`peaksure/fit_tum.py`, data `data/processed/tum_naion_tables.csv`, output `results/tum_fit.json`).
+- Data: Bahrke et al. 2026, Table 5 (calendar, 630 d, 25/45 °C × SOC) and Tables 2/4 (cycling at 25 °C, 1C, by SOC window). Only end-of-test table values are used. The raw check-up trajectories (doi:10.14459/2026mp1840745) need a browser download and are **not** fitted yet.
+- Calendar fit (same model form as the simulator, least squares on 6 points): **cal_a = 0.014 /√yr, Ea = 28.4 kJ/mol, β_SOC(25 °C) = 2.0, β_SOC(45 °C) = 1.79, low-SOC penalty = 0**. Leave-one-out ranges: cal_a 0.011–0.016, Ea 24–37 kJ/mol, β25 1.7–3.0 (upper bound hit, so β25 is poorly identified).
+- Excluded: 25 °C / 50% and 70% SOC (6.9% and 14.3% loss). The authors attribute these to plating and high initial R_DC, and exclude the 50% cell from their own temperature comparison. Our monotone SOC law cannot reproduce them.
+- At the operating point (25 °C, 90% standby SOC) the fit reproduces the measured 3.3% loss in 630 d. The old assumed set gave about 25% faster fade there and about 2× faster at 45 °C.
+- Cycle fade: after subtracting the fitted calendar loss, TP8/TP9 (60–80% and 80–100% windows, about 4,300 EFC) give **cyc_b ≈ 2.1×10⁻⁵ per EFC** (old assumption 1×10⁻⁴). Full 0–100% windows (TP1–3) fade more than 10× faster (2.5–4.2×10⁻⁴). They are outside the CES duty, which keeps DC headroom and discharges from the top.
+- Peak duty is about 22 EFC/yr, so calendar ageing dominates and the cycle change is second-order.
+- Caveats: 3–4 cells per test point; only two temperatures (the authors say this is not enough for kinetics); cylindrical lab cells, not REON's CES cells. Flags changed from ASSUMED to DERIVED.
+- Consequence to watch: β_SOC is now large, so lower standby SOC slows calendar fade strongly in the model. The §AG/§T6 resting-SOC results inherit this and rest on 3-cell points.
+- **Effect on results (regenerated, RESULTS.md):** savings are almost unchanged. V1 (bypass) rises from about $5.9k to $9.9k/yr. V2 (cell twin) falls from −$4.1k to −$10.4k/yr. **The cell twin's P5 miss rate rises from 4.4% to 9.8% (target 5%).** The twin's prior trend and process noise are scaled to the nominal fade (`sim.py`, `prior_trend`). With slower and more SOC-dependent fitted fade, the per-cell spread (aging_sigma 0.40) dominates and the twin is over-confident (interval width 0.7%). Retuning the twin's process noise is an open fix. We did not tune it to make the number look better.
+
+**AH2. Bypass transient** (`peaksure/switching.py`, `results/switching.json`, tests `tests/test_switching.py`).
+- Setup: one cell commutates out of a 240-cell string at full power into a DC link with an ideal constant-power inverter (worst case: negative incremental resistance).
+- Commutation times are LIT (Hanzl et al., IET Power Electron. 2021: 0.21 µs out, 0.9 µs in). Loop L (1–20 µH), DC-link C (1–10 mF) and unit resistance are ASSUMED and swept.
+- Result: the DC voltage steps by 1/240 (0.44%). Undershoot is ≤ 0.19% and current overshoot ≤ 1.5%. It settles to within 0.1% in **0.12–1.3 ms** across the sweep.
+- Switching energy: 276 µJ at 125 A (measured, Hanzl 2021), scaled linearly to 440 A, gives about 1 mJ per event. A full discharge has at most 192 events, about 0.19 J, which is **≈1×10⁻¹¹ of rated energy**.
+- Conclusion: the minute-step, instantaneous-bypass assumption is valid for energy and economics. EMI, protection and gate-drive design are out of scope (the brief: "you do not need to design the switch hardware").
+
+**AH3. R_on and DC window: what we model and what we ask REON.** The conduction-loss map (I·R_on/V_cell; §AF) is now code (`switch_loss_from_ron`). `breakeven_switch_loss` gives, year by year, the switch loss at which bypass delivers no more than a fixed string on the same cells. Questions to send: `REON_QUESTIONS.md`.
+
 # Z. Change Log (Part II)
 
 | # | Change | Type | Reason |
@@ -1055,6 +1077,8 @@ The reproducible exploratory study is in `peaksure/experiments.py --only researc
 | 27 | REON's open questions answered from public sources and engineering derivation (§AF). Switch loss = I·R_on/V_cell is first-order: the base 1% needs ~80 µΩ per cell path at 8 strings. The DC window (480 Vac → ≥ ~750 Vdc) bounds N_min | Addition | REON video, patent, PCS datasheets |
 | 26 | A teammate's Colab notebook independently reproduced the annual-peak dates and hours (it uses hour-beginning, we use hour-ending) | Verification | Cross-check |
 | 28 | Added paired synthetic mixed-age, twin-trend resting-SOC, and independent pack-test safety-envelope studies (§AG; generated results §T6). The baseline was verified unchanged. | Addition / limitation | Explicit scientific focus, with assumptions and negative outcomes retained |
+| 29 | **Ageing fitted to TUM Tables 4–5** (§AH1): cal_a 0.030→0.014, Ea 35→28.4, β25 0.10→2.0, β45 0.90→1.79, low-SOC penalty 0.30→0, cyc_b 1e-4→2.1e-5. Full study, RESULTS.md and web data regenerated | Correction (ASSUMED→DERIVED) | Fit to published data |
+| 30 | Bypass transient and R_on break-even checks added (§AH2–AH3); minute-step assumption confirmed for energy | Addition / verification | Model validity |
 
 ---
 

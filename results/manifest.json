@@ -15,6 +15,10 @@
     "rest_soc": 0.9,
     "tier3_weak_share": 0.25,
     "tier3_rest_soc": 0.35,
+    "initial_age_years": [
+      0.0
+    ],
+    "guard_threshold": 0.015,
     "eol_retention": 0.7,
     "t_hvac_set": 23.0,
     "k_hvac": 0.25,
@@ -49,42 +53,11 @@
     "n_runs": 64,
     "seed0": 0
   },
-  "config_hash": "ec5f93d741",
+  "config_hash": "8f1d2b3cf5",
   "n_main": 64,
   "n_side": 24,
-  "started": "2026-11-07 13:17:45",
-  "git_commit": "a202565",
-  "seconds": 929.0,
-  "finished": "2026-11-07 13:33:14",
-  "partial_reruns": [
-    {
-      "part": "probe",
-      "finished": "2026-11-07 13:54:50",
-      "git_commit": "1a8f5cf",
-      "seconds": 315.2
-    },
-    {
-      "part": "main",
-      "finished": "2026-11-07 13:59:02",
-      "git_commit": "1a8f5cf",
-      "seconds": 192.6
-    },
-    {
-      "part": "research",
-      "finished": "2026-11-07 15:10:30",
-      "git_commit": "307e25a",
-      "seconds": 66.7
-    },
-    {
-      "part": "research",
-      "finished": "2026-11-07 15:16:43",
-      "git_commit": "420fbe9",
-      "seconds": 69.8
-    }
-  ],
-  "research": {
-    "n_runs": 24,
-    "config_hash": "8f1d2b3cf5",
-    "finished": "2026-11-07 15:16:43"
-  }
+  "started": "2026-11-07 17:45:27",
+  "git_commit": "7d80ffb",
+  "seconds": 938.0,
+  "finished": "2026-11-07 18:01:05"
 }

@@ -41,18 +41,21 @@ class Chemistry:
 NA_ION = Chemistry(
     name="Sodium-ion (layered oxide / hard carbon)",
     v_nom=3.1, cap_cov=0.0115, r_cov=0.11, aging_sigma=0.40, rho_r_aging=0.6,
-    cal_a=0.030, cyc_b=1.0e-4, ea_kj=35.0, beta_soc_25=0.10, beta_soc_45=0.90,
-    low_soc_penalty=0.30, cold_slope=0.0067, t_charge_min=0.0, t_derate=45.0, t_max=60.0,
+    # ageing fitted to TUM Tables 4-5 by peaksure/fit_tum.py (results/tum_fit.json); previous ASSUMED values:
+    # cal_a=0.030, cyc_b=1.0e-4, ea_kj=35, beta_soc_25=0.10, beta_soc_45=0.90, low_soc_penalty=0.30
+    cal_a=0.014, cyc_b=2.1e-5, ea_kj=28.4, beta_soc_25=2.0, beta_soc_45=1.79,
+    low_soc_penalty=0.0, cold_slope=0.0067, t_charge_min=0.0, t_derate=45.0, t_max=60.0,
     fault_hazard_yr=0.0,
     flags={
         "cap_cov": (LIT, "Bahrke et al., EES Batteries 2026: capacity CoV 1.15% (94 cells)"),
         "r_cov": (LIT, "Bahrke et al. 2026: R_DC CoV 10.4-11.9%"),
         "aging_sigma": (ASSUMED, "Calibrated to the TUM within-test-point spread (3.1% vs 23.4% loss); sensitivity"),
         "rho_r_aging": (ASSUMED, "TUM: R_DC vs coulombic efficiency r = -0.675; used as a proxy"),
-        "cal_a": (ASSUMED, "Order of magnitude; fit to the TUM dataset pending"),
-        "cyc_b": (ASSUMED, "Order of magnitude; REON claims 20,000 cycles for EBS Na+"),
-        "beta_soc": (LIT, "TUM: SOC effect clear at 45 C, not at 25 C (qualitative)"),
-        "low_soc_penalty": (LIT, "TUM: anode LAM highest at 10% SOC (qualitative)"),
+        "cal_a": (DERIVED, "Fit to TUM Table 5 (630 d storage, 6 clean points); leave-one-out 0.011-0.016"),
+        "ea_kj": (DERIVED, "Fit to TUM 25 vs 45 C only; leave-one-out 24-37 kJ/mol; authors: two temperatures are not enough"),
+        "cyc_b": (DERIVED, "TUM TP8/TP9 (60-100% SOC windows, ~4300 EFC) minus fitted calendar loss; full 0-100% windows fade >10x faster"),
+        "beta_soc": (DERIVED, "Fit to TUM Table 5; 25 C value poorly identified (leave-one-out 1.7 to bound 3.0); 25 C 50/70% SOC cells excluded (plating per authors)"),
+        "low_soc_penalty": (DERIVED, "Set 0: TUM capacity loss is lowest at 10% SOC (anode LAM highest but not capacity-limiting)"),
         "cold_slope": (LIT, "Leeds, Appl. Energy 2026: 51-62% capacity at -40 C (linearised)"),
         "t_charge_min": (ASSUMED, "Vendor Na-ion datasheet: charge 0-40 C (not REON)"),
         "t_derate": (ASSUMED, "Vendor datasheet discharge limit 60 C; derate onset assumed 45 C"),

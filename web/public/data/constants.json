@@ -29,7 +29,7 @@
   10.0
  ],
  "fca_kw_month": 3.58,
- "nominal_fade_month": 0.0008288305577012361,
+ "nominal_fade_month": 0.0003397320380383546,
  "years": 15,
  "he_grid": [
   12,
@@ -145,20 +145,24 @@
    "TUM: R_DC vs coulombic efficiency r = -0.675; used as a proxy"
   ],
   "Na-ion cal_a": [
-   "ASSUMED",
-   "Order of magnitude; fit to the TUM dataset pending"
+   "DERIVED",
+   "Fit to TUM Table 5 (630 d storage, 6 clean points); leave-one-out 0.011-0.016"
+  ],
+  "Na-ion ea_kj": [
+   "DERIVED",
+   "Fit to TUM 25 vs 45 C only; leave-one-out 24-37 kJ/mol; authors: two temperatures are not enough"
   ],
   "Na-ion cyc_b": [
-   "ASSUMED",
-   "Order of magnitude; REON claims 20,000 cycles for EBS Na+"
+   "DERIVED",
+   "TUM TP8/TP9 (60-100% SOC windows, ~4300 EFC) minus fitted calendar loss; full 0-100% windows fade >10x faster"
   ],
   "Na-ion beta_soc": [
-   "LIT",
-   "TUM: SOC effect clear at 45 C, not at 25 C (qualitative)"
+   "DERIVED",
+   "Fit to TUM Table 5; 25 C value poorly identified (leave-one-out 1.7 to bound 3.0); 25 C 50/70% SOC cells excluded (plating per authors)"
   ],
   "Na-ion low_soc_penalty": [
-   "LIT",
-   "TUM: anode LAM highest at 10% SOC (qualitative)"
+   "DERIVED",
+   "Set 0: TUM capacity loss is lowest at 10% SOC (anode LAM highest but not capacity-limiting)"
   ],
   "Na-ion cold_slope": [
    "LIT",

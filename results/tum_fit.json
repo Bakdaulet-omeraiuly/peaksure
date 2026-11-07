@@ -1,0 +1,189 @@
+{
+  "source": "Bahrke et al., EES Batteries 2026, 2, 1157-1175, Tables 2/4/5 (end-of-test values only)",
+  "calendar": {
+    "cal_a": 0.01399645218444148,
+    "ea_kj": 28.369564785889406,
+    "beta_soc_25": 2.0000000652823884,
+    "beta_soc_45": 1.7886178221335038,
+    "low_soc_penalty": 0.0,
+    "loo_min": {
+      "cal_a": 0.0114,
+      "ea_kj": 24.1801,
+      "beta_soc_25": 1.6949,
+      "beta_soc_45": 1.596
+    },
+    "loo_max": {
+      "cal_a": 0.0156,
+      "ea_kj": 36.5219,
+      "beta_soc_25": 3.0,
+      "beta_soc_45": 1.856
+    },
+    "excluded": [
+      {
+        "temp_c": 25,
+        "soc": 0.5,
+        "soh_pct": 93.1
+      },
+      {
+        "temp_c": 25,
+        "soc": 0.7,
+        "soh_pct": 85.7
+      }
+    ],
+    "table": [
+      {
+        "temp_c": 25,
+        "soc": 0.1,
+        "loss_pct": 0.1,
+        "model_pct": 0.37
+      },
+      {
+        "temp_c": 25,
+        "soc": 0.3,
+        "loss_pct": 1.3,
+        "model_pct": 1.1
+      },
+      {
+        "temp_c": 25,
+        "soc": 0.5,
+        "loss_pct": 6.9,
+        "model_pct": 1.84
+      },
+      {
+        "temp_c": 25,
+        "soc": 0.7,
+        "loss_pct": 14.3,
+        "model_pct": 2.57
+      },
+      {
+        "temp_c": 25,
+        "soc": 0.9,
+        "loss_pct": 3.3,
+        "model_pct": 3.31
+      },
+      {
+        "temp_c": 45,
+        "soc": 0.1,
+        "loss_pct": 1.0,
+        "model_pct": 1.07
+      },
+      {
+        "temp_c": 45,
+        "soc": 0.5,
+        "loss_pct": 3.9,
+        "model_pct": 3.77
+      },
+      {
+        "temp_c": 45,
+        "soc": 0.9,
+        "loss_pct": 6.4,
+        "model_pct": 6.47
+      }
+    ]
+  },
+  "cycle": {
+    "cyc_b": 2.1229369775625633e-05,
+    "basis": "mean of TP8 (60-80%) and TP9 (80-100%) after subtracting fitted calendar loss",
+    "table": [
+      {
+        "tp": 1,
+        "window": "0%-100%",
+        "efc": 2835.0,
+        "years": 0.86,
+        "total_loss": 0.817,
+        "calendar_part": 0.012998,
+        "cycle_part": 0.804002,
+        "cyc_b": 0.000254,
+        "full_window": true
+      },
+      {
+        "tp": 2,
+        "window": "0%-100%",
+        "efc": 1449.0,
+        "years": 0.22,
+        "total_loss": 0.692,
+        "calendar_part": 0.006571,
+        "cycle_part": 0.685429,
+        "cyc_b": 0.000423,
+        "full_window": true
+      },
+      {
+        "tp": 3,
+        "window": "0%-100%",
+        "efc": 1600.0,
+        "years": 0.97,
+        "total_loss": 0.601,
+        "calendar_part": 0.013809,
+        "cycle_part": 0.587191,
+        "cyc_b": 0.000328,
+        "full_window": true
+      },
+      {
+        "tp": 4,
+        "window": "20%-80%",
+        "efc": 5136.0,
+        "years": 1.56,
+        "total_loss": 0.031,
+        "calendar_part": 0.017495,
+        "cycle_part": 0.013505,
+        "cyc_b": 3e-06,
+        "full_window": false
+      },
+      {
+        "tp": 5,
+        "window": "0%-20%",
+        "efc": 4127.0,
+        "years": 1.26,
+        "total_loss": -0.005,
+        "calendar_part": 0.003137,
+        "cycle_part": -0.008137,
+        "cyc_b": -4e-06,
+        "full_window": false
+      },
+      {
+        "tp": 6,
+        "window": "20%-40%",
+        "efc": 4013.0,
+        "years": 1.22,
+        "total_loss": 0.007,
+        "calendar_part": 0.009279,
+        "cycle_part": -0.002279,
+        "cyc_b": -1e-06,
+        "full_window": false
+      },
+      {
+        "tp": 7,
+        "window": "40%-60%",
+        "efc": 4326.0,
+        "years": 1.32,
+        "total_loss": 0.022,
+        "calendar_part": 0.016056,
+        "cycle_part": 0.005944,
+        "cyc_b": 3e-06,
+        "full_window": false
+      },
+      {
+        "tp": 8,
+        "window": "60%-80%",
+        "efc": 4284.0,
+        "years": 1.3,
+        "total_loss": 0.062,
+        "calendar_part": 0.022369,
+        "cycle_part": 0.039631,
+        "cyc_b": 1.9e-05,
+        "full_window": false
+      },
+      {
+        "tp": 9,
+        "window": "80%-100%",
+        "efc": 4279.0,
+        "years": 1.3,
+        "total_loss": 0.08,
+        "calendar_part": 0.028744,
+        "cycle_part": 0.051256,
+        "cyc_b": 2.4e-05,
+        "full_window": false
+      }
+    ]
+  }
+}

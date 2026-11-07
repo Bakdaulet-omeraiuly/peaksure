@@ -41,6 +41,9 @@ SENS = {
     "chem_LFP": dict(chemistry="LFP"),
     "duration_1h": dict(e_nom_kwh=2500.0), "duration_3h": dict(e_nom_kwh=7500.0),
     "duration_4h": dict(e_nom_kwh=10000.0),
+    # derived from public sources (Addendum AF)
+    "switch_loss_0.034": dict(switch_loss=0.034),     # 0.25 mOhm per cell path, 8 strings, ~420 A
+    "liquid_cooling": dict(sigma_t_cell=0.6),         # ~2-3 C cell-to-cell range (vendor practice)
     "fault_scenario": dict(),
 }
 

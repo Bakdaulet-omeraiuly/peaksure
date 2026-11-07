@@ -1,0 +1,235 @@
+{
+  "string_current_a": 437.52800179211476,
+  "implied_r_on_mohm_at_base_switch_loss": 0.070852608,
+  "switch_loss_pct": [
+    {
+      "r_on_mohm": 0.1,
+      "strings_8": 1.41,
+      "strings_16": 0.71,
+      "strings_32": 0.35
+    },
+    {
+      "r_on_mohm": 0.25,
+      "strings_8": 3.53,
+      "strings_16": 1.76,
+      "strings_32": 0.88
+    },
+    {
+      "r_on_mohm": 0.5,
+      "strings_8": 7.06,
+      "strings_16": 3.53,
+      "strings_32": 1.76
+    },
+    {
+      "r_on_mohm": 1.0,
+      "strings_8": 14.11,
+      "strings_16": 7.06,
+      "strings_32": 3.53
+    },
+    {
+      "r_on_mohm": 2.0,
+      "strings_8": 28.23,
+      "strings_16": 14.11,
+      "strings_32": 7.06
+    }
+  ],
+  "heat_per_switch_w": {
+    "0.1 mOhm": 19.1,
+    "0.25 mOhm": 47.9,
+    "0.5 mOhm": 95.7,
+    "1 mOhm": 191.4,
+    "2 mOhm": 382.9
+  },
+  "transient": [
+    {
+      "l_uh": 1.0,
+      "c_mf": 1.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": -9.692584932532499e-14,
+      "i_overshoot_pct": -1.9841919751775576e-12,
+      "settle_ms": 0.12399999999999997,
+      "ok": true
+    },
+    {
+      "l_uh": 1.0,
+      "c_mf": 3.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": -3.8770339730129997e-13,
+      "i_overshoot_pct": -7.463122074377523e-12,
+      "settle_ms": 0.38599999999999984,
+      "ok": true
+    },
+    {
+      "l_uh": 1.0,
+      "c_mf": 10.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": -1.4798961761155035e-10,
+      "i_overshoot_pct": -2.8428094484103597e-09,
+      "settle_ms": 1.3049999999999997,
+      "ok": true
+    },
+    {
+      "l_uh": 5.0,
+      "c_mf": 1.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": 0.045857108029364185,
+      "i_overshoot_pct": 0.5333538991505838,
+      "settle_ms": 0.14099999999999985,
+      "ok": true
+    },
+    {
+      "l_uh": 5.0,
+      "c_mf": 3.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": -2.1000600687153747e-13,
+      "i_overshoot_pct": -4.173203767147638e-12,
+      "settle_ms": 0.369,
+      "ok": true
+    },
+    {
+      "l_uh": 5.0,
+      "c_mf": 10.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": -3.602410733257912e-11,
+      "i_overshoot_pct": -7.365832661401075e-10,
+      "settle_ms": 1.278,
+      "ok": true
+    },
+    {
+      "l_uh": 20.0,
+      "c_mf": 1.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": 0.19084986700411968,
+      "i_overshoot_pct": 1.5427846417509243,
+      "settle_ms": 0.6359999999999999,
+      "ok": true
+    },
+    {
+      "l_uh": 20.0,
+      "c_mf": 3.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": 0.0720558863360682,
+      "i_overshoot_pct": 0.7841319656519199,
+      "settle_ms": 0.4599999999999999,
+      "ok": true
+    },
+    {
+      "l_uh": 20.0,
+      "c_mf": 10.0,
+      "i0_a": 442.0934338094998,
+      "i1_a": 444.0462431885808,
+      "v0_v": 706.864151560002,
+      "v1_v": 703.7555317572752,
+      "v_step_pct": 0.4397761289586273,
+      "v_undershoot_pct": 4.42464011498867e-05,
+      "i_overshoot_pct": 0.000614358215520459,
+      "settle_ms": 1.2349999999999999,
+      "ok": true
+    }
+  ],
+  "breakeven_2h": [
+    {
+      "year": 1,
+      "breakeven_switch_loss_pct": 1.76
+    },
+    {
+      "year": 2,
+      "breakeven_switch_loss_pct": 3.25
+    },
+    {
+      "year": 3,
+      "breakeven_switch_loss_pct": 4.59
+    },
+    {
+      "year": 4,
+      "breakeven_switch_loss_pct": 5.62
+    },
+    {
+      "year": 5,
+      "breakeven_switch_loss_pct": 6.6
+    },
+    {
+      "year": 6,
+      "breakeven_switch_loss_pct": 7.52
+    },
+    {
+      "year": 7,
+      "breakeven_switch_loss_pct": 8.38
+    },
+    {
+      "year": 8,
+      "breakeven_switch_loss_pct": 9.2
+    },
+    {
+      "year": 9,
+      "breakeven_switch_loss_pct": 9.97
+    },
+    {
+      "year": 10,
+      "breakeven_switch_loss_pct": 10.67
+    },
+    {
+      "year": 11,
+      "breakeven_switch_loss_pct": 11.36
+    },
+    {
+      "year": 12,
+      "breakeven_switch_loss_pct": 12.04
+    },
+    {
+      "year": 13,
+      "breakeven_switch_loss_pct": 12.7
+    },
+    {
+      "year": 14,
+      "breakeven_switch_loss_pct": 13.34
+    },
+    {
+      "year": 15,
+      "breakeven_switch_loss_pct": 13.96
+    }
+  ],
+  "switching_energy": {
+    "per_event_j": 0.0009660618279569894,
+    "events_per_full_discharge": 192,
+    "per_full_discharge_j": 0.18548387096774197,
+    "share_of_rated_energy": 1.0304659498207886e-11
+  },
+  "evidence": {
+    "commutation": "LIT Hanzl et al. 2021 (0.21 us out, 0.9 us in)",
+    "switching_energy": "LIT Hanzl et al. 2021, 276 uJ at 125 A; linear current scaling ASSUMED",
+    "l_c_r": "ASSUMED, swept"
+  }
+}

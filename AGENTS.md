@@ -63,7 +63,7 @@ cd web && vercel deploy --prod --yes             # deploy (project peaksure-ener
 ## Current findings (see `RESULTS.md` for numbers)
 - On REON's 2-h CES doing coincident-peak duty, cell-level value is **near zero**: peak timing dominates, and energy rarely binds.
 - It pays with cell faults, weak or failing cooling, 1-h systems and 4-h systems.
-- The cell twin is calibrated in the base simulation but breaks under **systematic** bias. The exploratory independent pack-test safety envelope reduces misses in the simulated bias study; the diagnostic alert is imperfect and hardware validation is open.
+- Since the TUM ageing fit (Addendum §AH), the cell twin is **over-confident even in the base case** (P5 miss 9.8% vs 5% target; open fix: retune process noise), and it breaks under **systematic** bias. The exploratory independent pack-test safety envelope reduces misses in the simulated bias study; the diagnostic alert is imperfect and hardware validation is open.
 - Mixed-age cohorts and lifetime resting-SOC policies are exploratory synthetic studies (§AG, RESULTS §T6). Do not claim a measured lifetime or efficiency gain.
 - VoI probes pay in only ~4% of peaks; PeakSure skips the rest.
 - **Switch loss = I·R_on / V_cell** is first-order (each cell's switch carries the full string current, ~420 A at 8 strings).
@@ -73,5 +73,6 @@ cd web && vercel deploy --prod --yes             # deploy (project peaksure-ener
   - switch R_on per cell path, and the number of parallel columns;
   - the CES DC window and cells per column.
 - Read the Nature Energy (Zhou et al. 2026) and Chalmers (Nat. Commun. 2026) papers in full; we only have press numbers so far.
-- Fit the ageing parameters to the TUM Na-ion / Naumann LFP raw datasets (not done; current values are order-of-magnitude).
+- Na-ion ageing is fitted to the TUM **tables** (`peaksure/fit_tum.py`); fit to the raw TUM trajectories and LFP (Naumann) is still open.
+- Switching: `peaksure/switching.py` (R_on → switch loss, bypass transient, break-even). Questions to REON: `REON_QUESTIONS.md`.
 - Pitch deck.

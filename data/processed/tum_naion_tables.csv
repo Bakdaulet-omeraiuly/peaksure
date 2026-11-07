@@ -1,0 +1,22 @@
+# Bahrke, Rehm, Natterer, Wendlandt, Jossen. EES Batteries 2026, 2, 1157-1175 (open access). Transcribed from Table 2, 4 and 5.
+# kind=calendar: storage for 630 d at temp_c and soc (3 cells per point; table value per test point).
+# kind=cycle: 1C CCCV cycling at 25 C between soc_lo and soc_hi until end of test (efc); t_cvp_s = CV phase + pause per half-cycle.
+# soh_pct = capacity state of health at end of test. flag: outlier rows named by the authors.
+kind,tp,temp_c,soc,soc_lo,soc_hi,c_rate,efc,days,t_cvp_s,soh_pct,flag
+calendar,,25,0.10,,,,,630,,99.9,
+calendar,,25,0.30,,,,,630,,98.7,
+calendar,,25,0.50,,,,,630,,93.1,authors: low coulombic efficiency / plating in check-ups; excluded by authors from T comparison
+calendar,,25,0.70,,,,,630,,85.7,authors: same plating signature and high initial R_DC
+calendar,,25,0.90,,,,,630,,96.7,
+calendar,,45,0.10,,,,,630,,99.0,
+calendar,,45,0.50,,,,,630,,96.1,
+calendar,,45,0.90,,,,,630,,93.6,
+cycle,1,25,,0.0,1.0,1.0,2835,,1200,18.3,full window (1.5-3.8 V)
+cycle,2,25,,0.0,1.0,2.0,1449,,600,30.8,full window
+cycle,3,25,,0.0,1.0,0.5,1600,,2400,39.9,full window
+cycle,4,25,,0.2,0.8,1.0,5136,,720,96.9,
+cycle,5,25,,0.0,0.2,1.0,4127,,240,100.5,
+cycle,6,25,,0.2,0.4,1.0,4013,,240,99.3,
+cycle,7,25,,0.4,0.6,1.0,4326,,240,97.8,
+cycle,8,25,,0.6,0.8,1.0,4284,,240,93.8,
+cycle,9,25,,0.8,1.0,1.0,4279,,240,92.0,
