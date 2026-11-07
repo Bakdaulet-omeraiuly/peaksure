@@ -115,6 +115,7 @@ class Config:
     probe_energy_kwh: float = 0.05    # ASSUMED energy per probe
     probe_budget: int = 0             # probes before each peak (condition D)
     twin_samples: int = 64
+    alpha: float = 0.05               # deliverability chance constraint: P(D >= P*W) >= 1 - alpha
     # --- economics ---
     rns_2026: float = 183.71          # $/kW-yr, CONFIRMED (ISO-NE)
     rns_increments: tuple = (9.0, 11.0, 13.0, 10.0)  # 2027-2030, ISO-NE "illustrative"

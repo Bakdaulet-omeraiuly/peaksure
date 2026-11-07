@@ -35,8 +35,14 @@ def _coverage(p_hour: np.ndarray, start_idx: int, w: int) -> np.ndarray:
     return p_hour[start_idx:start_idx + w]
 
 
-def optimize(d_samples: np.ndarray, p_avail: float, p_hour: np.ndarray) -> Decision:
-    """Expected-value-optimal commitment under a sample-based belief over deliverable energy."""
+def optimize(d_samples: np.ndarray, p_avail: float, p_hour: np.ndarray,
+             alpha: float | None = 0.05) -> Decision:
+    """Optimal commitment under a sample-based belief over deliverable energy.
+
+    Maximizes expected shaved kW subject to a deliverability chance constraint:
+    P(D >= P * W) >= 1 - alpha, i.e. the battery can sustain the committed power for the whole
+    window with the stated confidence. alpha=None gives the unconstrained expected-value optimum.
+    """
     d = np.sort(np.asarray(d_samples, dtype=float))
     k_s = d.size
     p_grid = np.linspace(p_avail / N_P, p_avail, N_P)
@@ -45,23 +51,31 @@ def optimize(d_samples: np.ndarray, p_avail: float, p_hour: np.ndarray) -> Decis
         ks = np.arange(1, w + 1)
         need = p_grid[:, None] * ks[None, :]                       # (P, k)
         prob_ok = 1.0 - np.searchsorted(d, need, side="left") / k_s  # P(D >= need)
+        feasible = np.ones(N_P, bool) if alpha is None else prob_ok[:, -1] >= 1.0 - alpha
+        if not feasible.any():
+            continue
         for si in range(0, len(HE_GRID) - w + 1):
             cov = _coverage(p_hour, si, w)
-            u = p_grid * (prob_ok * cov[None, :]).sum(axis=1)
+            u = np.where(feasible, p_grid * (prob_ok * cov[None, :]).sum(axis=1), -1.0)
             j = int(np.argmax(u))
             if u[j] > best.exp_value_kw:
                 best = Decision(int(HE_GRID[si]), w, float(p_grid[j]), float(u[j]))
+    if best.exp_value_kw < 0:
+        best = Decision(int(HE_GRID[int(np.argmax(p_hour))]), 1, 0.0, 0.0)
     return best
 
 
-def fixed_rule(d_p5: float, p_avail: float, p_hour: np.ndarray, window_h: int = 3) -> Decision:
-    """Conventional rule (PeakSure's original 'commit P95'): fixed 3-h window centred on the
-    most likely hour; power = P5 deliverable energy / window, capped at available power."""
+def fixed_rule(d_p5: float, p_avail: float, p_hour: np.ndarray) -> Decision:
+    """Conventional practice: discharge at full available power for as many whole hours as the
+    (conservative, P5) energy estimate allows, centred on the most likely peak hour."""
+    if p_avail <= 0 or d_p5 <= 0:
+        return Decision(int(HE_GRID[int(np.argmax(p_hour))]), 1, 0.0, 0.0)
+    w = int(np.clip(np.floor(d_p5 / p_avail), 1, W_MAX))
+    p = float(min(p_avail, d_p5 / w))
     mode_idx = int(np.argmax(p_hour))
-    si = int(np.clip(mode_idx - window_h // 2, 0, len(HE_GRID) - window_h))
-    p = float(np.clip(d_p5 / window_h, 0.0, p_avail))
-    ev = p * float(_coverage(p_hour, si, window_h).sum())
-    return Decision(int(HE_GRID[si]), window_h, p, ev)
+    si = int(np.clip(mode_idx - (w - 1) // 2, 0, len(HE_GRID) - w))
+    ev = p * float(_coverage(p_hour, si, w).sum())
+    return Decision(int(HE_GRID[si]), w, p, ev)
 
 
 def outcome(dec: Decision, actual_he: int, d_true: float, p_true: float) -> tuple[float, float, bool]:

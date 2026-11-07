@@ -34,7 +34,7 @@ def peak_day_shapes() -> pd.DataFrame:
     return pd.read_csv(PROCESSED / "peak_day_shapes.csv", parse_dates=["Date"])
 
 
-def hour_forecast(month: int, exclude_year: int | None, alpha: float = 0.5) -> np.ndarray:
+def hour_forecast(month: int, exclude_year: int | None, alpha: float = 0.1) -> np.ndarray:
     """P(peak hour = HE) for a month, from other years' peaks in the same season (leave-one-year-out),
     with add-alpha smoothing over HE_GRID. Peak day is assumed known (MMWEC reported peak-calling
     accuracy), so only the hour is uncertain."""

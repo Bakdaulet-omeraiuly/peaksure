@@ -76,7 +76,12 @@ def draw_population(cfg: Config, seed: int) -> Population:
     return Population(q0, m, z_r, t_off)
 
 
-def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False) -> dict:
+def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False,
+             capture_month: int | None = None, override: dict | None = None) -> dict:
+    """Run one condition. If capture_month is given, the simulation stops after that month's
+    peak event and returns a detailed 'capture' of cell states, beliefs and the decision
+    (used by the live demo). `override` replaces that month's event (he, t_amb_c, is_annual,
+    src_year) with a chosen historical peak."""
     spec = CONDITIONS[cond]
     tier, info, rule = spec["tier"], spec["info"], spec["rule"]
     probe, tier3 = spec.get("probe", "none"), spec.get("tier3", False)
@@ -109,36 +114,48 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False) -> dict
     for mi in range(n_months):
         yr, mo = mi // 12, mi % 12 + 1
         ev = seq[(seq.sim_year == yr) & (seq.month == mo)].iloc[0]
+        capturing = capture_month is not None and mi == capture_month
+        if capturing and override:
+            ev = ev.copy()
+            for k_, v_ in override.items():
+                ev[k_] = v_
         p_hour = hour_forecast(mo, exclude_year=int(ev.src_year))
 
         # ---------------- peak event: forecast, belief, (probes), decision, truth
-        t_fore = ev.t_amb_c + cfg.forecast_temp_sd * _rng(seed, mi, S_FORE).standard_normal()
-        t_cont_f = ph.container_temp(t_fore, cfg.t_hvac_set, cfg.k_hvac)
+        # day-ahead temperature forecast; the belief samples the forecast error (K samples)
+        rf = _rng(seed, mi, S_FORE)
+        t_fore = ev.t_amb_c + cfg.forecast_temp_sd * rf.standard_normal()
+        t_amb_s = t_fore + cfg.forecast_temp_sd * rf.standard_normal(cfg.twin_samples)
+        t_cont_s = ph.container_temp(t_amb_s, cfg.t_hvac_set, cfg.k_hvac)[:, None, None]
+        t_cell_f = t_cont_s + pop.t_off[None] + cfg.load_heating_c            # (K,S,N)
+        soc0_f = np.broadcast_to(np.where(t_cont_s >= ch.t_charge_min, 1.0, 0.7), t_cell_f.shape)
         t_cont = ph.container_temp(ev.t_amb_c, cfg.t_hvac_set, cfg.k_hvac)
-        t_cell_f = t_cont_f + pop.t_off + cfg.load_heating_c
         t_cell = t_cont + pop.t_off + cfg.load_heating_c
         soc0 = np.full_like(q, 1.0 if t_cont >= ch.t_charge_min else 0.7)
-        soc0_f = np.full_like(q, 1.0 if t_cont_f >= ch.t_charge_min else 0.7)
 
-        n_probes, voi_gain = 0, 0.0
+        n_probes, voi_gain, probed, d_pre = 0, 0.0, [], None
         if info == "perfect":
             e_true, p_true = ph.deliverable(q, tier=tier, soc0=soc0, t_cell=t_cell,
                                             p_string_max=p_str, faulted=faulted, **phys)
             d_samp, p_av = np.array([e_true.sum()]), float(p_true.sum())
         elif info == "pack":
-            tf = float(ph.cold_capacity_factor(np.array(t_cell_f.mean()), ch.cold_slope)) * soc0_f.mean()
-            d_samp = pack.belief(tf, cfg.twin_samples, _rng(seed, mi, S_SAMP))
-            p_av = float((p_str * ph.fixed_string_power_derate(
-                t_cell_f.max(axis=-1), ch.t_derate, ch.t_max)).sum())
+            tf = (ph.cold_capacity_factor(t_cell_f.mean(axis=(1, 2)), ch.cold_slope)
+                  * soc0_f.mean(axis=(1, 2)))                                  # per sample
+            d_samp = pack.belief(1.0, cfg.twin_samples, _rng(seed, mi, S_SAMP)) * tf
+            p_av = float(np.median((p_str * ph.fixed_string_power_derate(
+                t_cell_f.max(axis=-1), ch.t_derate, ch.t_max)).sum(axis=-1)))
         else:
+            if capturing:
+                d_pre, _ = _twin_belief(twin, cfg, soc0_f, t_cell_f, faulted, tier, phys, p_str,
+                                        _rng(seed, mi, S_SAMP))
             if probe != "none" and cfg.probe_budget > 0:
-                rr_ptr, n_probes, voi_gain = _run_probes(
+                rr_ptr, n_probes, voi_gain, probed = _run_probes(
                     probe, cfg, twin, q, faulted, soc0_f, t_cell_f, p_hour, phys, p_str,
                     seed, mi, rr_ptr, tier)
             d_samp, p_av = _twin_belief(twin, cfg, soc0_f, t_cell_f, faulted, tier, phys, p_str,
                                         _rng(seed, mi, S_SAMP))
 
-        dec = (optimize(d_samp, p_av, p_hour) if rule == "opt"
+        dec = (optimize(d_samp, p_av, p_hour, cfg.alpha) if rule == "opt"
                else fixed_rule(float(np.percentile(d_samp, 5)), p_av, p_hour))
         e_true, p_true = ph.deliverable(q, tier=tier, soc0=soc0, t_cell=t_cell,
                                         p_string_max=p_str, faulted=faulted, **phys)
@@ -151,7 +168,26 @@ def simulate(cfg: Config, cond: str, seed: int, snapshots: bool = False) -> dict
             power_kw=dec.power_kw, exp_kw=dec.exp_value_kw, d_true=d_true, p_true=float(p_true.sum()),
             d_p5=float(np.percentile(d_samp, 5)), d_p50=float(np.percentile(d_samp, 50)),
             d_p95=float(np.percentile(d_samp, 95)), shaved_kw=shaved, success=success,
+            delivered_full=bool(dec.power_kw > 0 and min(dec.power_kw, float(p_true.sum())) * dec.window_h
+                                <= d_true + 1e-9 and float(p_true.sum()) >= dec.power_kw - 1e-9),
             probes=n_probes, voi_gain_kw=voi_gain))
+
+        if capturing:
+            avail = q * soc0 * ph.cold_capacity_factor(t_cell, ch.cold_slope)
+            hot = t_cell > ch.t_derate
+            _, cutoff = ph.bypass_string_energy_ah(avail, cfg.n_min, hot | faulted)
+            cap = dict(cond=cond, tier=tier, info=info, month=mi, sim_year=yr, cal_month=mo,
+                       soh=q / qn, twin_mean=twin.x0 / qn, twin_sd=twin.sd / qn, t_cell=t_cell,
+                       avail_rel=avail / qn, limiting=(avail == avail.min(axis=-1, keepdims=True)),
+                       exhausted=(avail < cutoff[:, None]) & ~hot, hot=hot, cutoff_rel=cutoff / qn,
+                       d_samp=np.asarray(d_samp), d_pre=None if d_pre is None else np.asarray(d_pre),
+                       d_true=d_true, p_true=float(p_true.sum()), e_true_strings=e_true,
+                       decision=dict(start_he=dec.start_he, window_h=dec.window_h,
+                                     power_kw=dec.power_kw, exp_kw=dec.exp_value_kw),
+                       shaved_kw=shaved, success=success, probed=probed, p_hour=p_hour,
+                       peak_he=int(ev.he), t_amb_c=float(ev.t_amb_c), is_annual=bool(ev.is_annual),
+                       n_min=cfg.n_min, n_series=N, n_strings=S)
+            return dict(events=pd.DataFrame(events), capture=cap)
 
         # ---------------- cycle ageing from dispatch days (same energy each candidate day)
         n_disp = cfg.dispatch_days_summer if mo in (6, 7, 8, 9) else cfg.dispatch_days_other
@@ -252,18 +288,22 @@ def _twin_belief(twin, cfg, soc0, t_cell, faulted, tier, phys, p_str, rng):
     return e.sum(axis=-1), float(np.median(p.sum(axis=-1)))
 
 
-def _u_fixed_window(d, dec: Decision, p_hour, p_grid):
-    """Best expected shaved kW over power, holding the window fixed (restricted re-optimization)."""
+def _u_fixed_window(d, dec: Decision, p_hour, p_grid, alpha=0.05):
+    """Best expected shaved kW over power, holding the window fixed (restricted re-optimization),
+    subject to the same deliverability chance constraint as the main optimizer."""
     d = np.sort(d)
     si = int(np.where(HE_GRID == dec.start_he)[0][0])
     ks = np.arange(1, dec.window_h + 1)
     prob = 1.0 - np.searchsorted(d, p_grid[:, None] * ks[None, :], side="left") / d.size
-    return float((p_grid * (prob * p_hour[si:si + dec.window_h][None, :]).sum(axis=1)).max())
+    u = p_grid * (prob * p_hour[si:si + dec.window_h][None, :]).sum(axis=1)
+    if alpha is not None:
+        u = np.where(prob[:, -1] >= 1.0 - alpha, u, 0.0)
+    return float(u.max())
 
 
 def _run_probes(policy, cfg, twin, q_true, faulted, soc0, t_cell, p_hour, phys, p_str, seed, mi,
                 rr_ptr, tier, n_cand=8, n_out=6):
-    """Execute up to cfg.probe_budget probes. Returns (rr_ptr, n_probes_used, sum_expected_voi_kw).
+    """Execute up to cfg.probe_budget probes. Returns (rr_ptr, n_used, sum_expected_voi_kw, probed).
 
     VoI policy: greedy, decision-focused. Candidates are pre-screened by 'criticality' (how often
     a cell sits at the rank that limits the string in the belief samples) x posterior sd; for each
@@ -271,7 +311,7 @@ def _run_probes(policy, cfg, twin, q_true, faulted, soc0, t_cell, p_hour, phys, 
     fixed (a conservative lower bound on the full VoI)."""
     S, N = q_true.shape
     rng_p = _rng(seed, mi, S_PROBE)
-    used, gain = 0, 0.0
+    used, gain, probed = 0, 0.0, []
     r_probe = (cfg.sigma_probe * cfg.q_nom_ah) ** 2
     if policy in ("rr", "random"):
         if policy == "rr":
@@ -283,7 +323,7 @@ def _run_probes(policy, cfg, twin, q_true, faulted, soc0, t_cell, p_hour, phys, 
         mask.flat[flat] = True
         z = q_true * (1 + cfg.meas_bias) + np.sqrt(r_probe) * rng_p.standard_normal((S, N))
         twin.update(z, r=r_probe, mask=mask)
-        return rr_ptr, int(mask.sum()), 0.0
+        return rr_ptr, int(mask.sum()), 0.0, [tuple(map(int, x)) for x in np.argwhere(mask)]
 
     qn_norm = np.array([-1.383, -0.674, -0.210, 0.210, 0.674, 1.383])[:n_out]  # Gauss-like quantiles
     p_grid = None
@@ -294,11 +334,11 @@ def _run_probes(policy, cfg, twin, q_true, faulted, soc0, t_cell, p_hour, phys, 
         e, p = _string_energy(qs, soc0, t_cell, faulted, tier, phys, p_str)
         d = e.sum(axis=-1)
         p_av = float(np.median(p.sum(axis=-1)))
-        dec0 = optimize(d, p_av, p_hour)
+        dec0 = optimize(d, p_av, p_hour, cfg.alpha)
         if dec0.power_kw <= 0:
             break
         p_grid = np.linspace(p_av / 80, p_av, 80)
-        u0 = _u_fixed_window(d, dec0, p_hour, p_grid)
+        u0 = _u_fixed_window(d, dec0, p_hour, p_grid, cfg.alpha)
         # criticality: rank position that limits the string
         avail = qs * soc0
         ranks = np.argsort(np.argsort(avail, axis=-1), axis=-1)
@@ -319,9 +359,9 @@ def _run_probes(policy, cfg, twin, q_true, faulted, soc0, t_cell, p_hour, phys, 
                 post_mean = twin.x0[si, ni] + p00 / (p00 + r_probe) * (pred_sd * qz)
                 qs_c = qs[:, si:si + 1, :].copy()
                 qs_c[:, 0, ni] = np.maximum(post_mean + post_sd * zs[:, si, ni], 0.0)
-                e_c, _ = _string_energy(qs_c, soc0[si:si + 1], t_cell[si:si + 1], faulted[si:si + 1],
-                                        tier, phys, p_str)
-                vals.append(_u_fixed_window(d - e[:, si] + e_c[:, 0], dec0, p_hour, p_grid))
+                e_c, _ = _string_energy(qs_c, soc0[:, si:si + 1], t_cell[:, si:si + 1],
+                                        faulted[si:si + 1], tier, phys, p_str)
+                vals.append(_u_fixed_window(d - e[:, si] + e_c[:, 0], dec0, p_hour, p_grid, cfg.alpha))
             v_c = float(np.mean(vals)) - u0
             if v_c > best_v:
                 best_c, best_v = (si, ni), v_c
@@ -333,4 +373,5 @@ def _run_probes(policy, cfg, twin, q_true, faulted, soc0, t_cell, p_hour, phys, 
         twin.update(z, r=r_probe, mask=mask)
         used += 1
         gain += best_v
-    return rr_ptr, used, gain
+        probed.append((int(best_c[0]), int(best_c[1])))
+    return rr_ptr, used, gain, probed
