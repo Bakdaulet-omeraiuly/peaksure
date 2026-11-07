@@ -1,0 +1,203 @@
+zone,peak_type,year,month,Date,Hr_End,load_mw,load_col,dry_bulb_f,dry_bulb_c,dew_point_f,source_file
+ISO NE CA,annual,2019,7,2019-07-30,18,24361.0,System_Load,89,31.7,69,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,1,2019-01-21,18,20773.0,System_Load,4,-15.6,-9,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,2,2019-02-01,19,18585.0,System_Load,16,-8.9,-3,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,3,2019-03-06,19,17876.0,System_Load,20,-6.7,-2,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,4,2019-04-09,20,15034.0,System_Load,39,3.9,37,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,5,2019-05-20,18,15748.0,System_Load,78,25.6,63,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,6,2019-06-28,18,19913.0,System_Load,86,30.0,57,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,7,2019-07-30,18,24361.0,System_Load,89,31.7,69,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,8,2019-08-19,16,23365.0,System_Load,88,31.1,70,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,9,2019-09-23,17,19162.0,System_Load,86,30.0,65,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,10,2019-10-02,15,16138.0,System_Load,74,23.3,64,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,11,2019-11-13,18,17548.0,System_Load,26,-3.3,3,2019_smd_hourly.xlsx
+ISO NE CA,monthly,2019,12,2019-12-19,18,19065.0,System_Load,18,-7.8,1,2019_smd_hourly.xlsx
+WCMA,annual,2019,7,2019-07-30,19,3131.989,RT_Demand,84,28.9,71,2019_smd_hourly.xlsx
+WCMA,monthly,2019,1,2019-01-21,18,2871.384,RT_Demand,-1,-18.3,-13,2019_smd_hourly.xlsx
+WCMA,monthly,2019,2,2019-02-01,9,2551.932,RT_Demand,2,-16.7,-12,2019_smd_hourly.xlsx
+WCMA,monthly,2019,3,2019-03-06,19,2470.332,RT_Demand,16,-8.9,-5,2019_smd_hourly.xlsx
+WCMA,monthly,2019,4,2019-04-09,19,2080.637,RT_Demand,37,2.8,36,2019_smd_hourly.xlsx
+WCMA,monthly,2019,5,2019-05-20,21,2106.545,RT_Demand,69,20.6,66,2019_smd_hourly.xlsx
+WCMA,monthly,2019,6,2019-06-28,18,2600.047,RT_Demand,85,29.4,56,2019_smd_hourly.xlsx
+WCMA,monthly,2019,7,2019-07-30,19,3131.989,RT_Demand,84,28.9,71,2019_smd_hourly.xlsx
+WCMA,monthly,2019,8,2019-08-19,15,2941.65,RT_Demand,85,29.4,69,2019_smd_hourly.xlsx
+WCMA,monthly,2019,9,2019-09-23,20,2542.579,RT_Demand,75,23.9,67,2019_smd_hourly.xlsx
+WCMA,monthly,2019,10,2019-10-02,15,2076.808,RT_Demand,73,22.8,66,2019_smd_hourly.xlsx
+WCMA,monthly,2019,11,2019-11-13,18,2405.066,RT_Demand,22,-5.6,0,2019_smd_hourly.xlsx
+WCMA,monthly,2019,12,2019-12-19,18,2591.231,RT_Demand,14,-10.0,-2,2019_smd_hourly.xlsx
+ISO NE CA,annual,2020,7,2020-07-27,18,25121.0,System_Load,93,33.9,65,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,1,2020-01-20,18,18097.0,System_Load,24,-4.4,-2,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,2,2020-02-14,19,16991.0,System_Load,18,-7.8,-6,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,3,2020-03-01,19,15888.0,System_Load,31,-0.6,6,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,4,2020-04-27,18,14254.0,System_Load,41,5.0,36,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,5,2020-05-29,18,16593.0,System_Load,77,25.0,67,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,6,2020-06-23,18,21519.0,System_Load,85,29.4,65,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,7,2020-07-27,18,25121.0,System_Load,93,33.9,65,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,8,2020-08-11,18,24335.0,System_Load,89,31.7,68,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,9,2020-09-10,18,19260.0,System_Load,77,25.0,71,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,10,2020-10-30,19,15616.0,System_Load,33,0.6,27,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,11,2020-11-18,18,17157.0,System_Load,28,-2.2,9,2020_smd_hourly.xlsx
+ISO NE CA,monthly,2020,12,2020-12-17,18,18922.0,System_Load,23,-5.0,16,2020_smd_hourly.xlsx
+WCMA,annual,2020,7,2020-07-27,19,3208.454,RT_Demand,90,32.2,64,2020_smd_hourly.xlsx
+WCMA,monthly,2020,1,2020-01-20,18,2472.068,RT_Demand,20,-6.7,-2,2020_smd_hourly.xlsx
+WCMA,monthly,2020,2,2020-02-14,19,2314.83,RT_Demand,14,-10.0,-7,2020_smd_hourly.xlsx
+WCMA,monthly,2020,3,2020-03-23,18,2167.313,RT_Demand,30,-1.1,28,2020_smd_hourly.xlsx
+WCMA,monthly,2020,4,2020-04-30,14,1936.135,RT_Demand,43,6.1,41,2020_smd_hourly.xlsx
+WCMA,monthly,2020,5,2020-05-27,19,2294.146,RT_Demand,79,26.1,59,2020_smd_hourly.xlsx
+WCMA,monthly,2020,6,2020-06-23,18,2914.44,RT_Demand,85,29.4,67,2020_smd_hourly.xlsx
+WCMA,monthly,2020,7,2020-07-27,19,3208.454,RT_Demand,90,32.2,64,2020_smd_hourly.xlsx
+WCMA,monthly,2020,8,2020-08-11,18,3154.141,RT_Demand,88,31.1,68,2020_smd_hourly.xlsx
+WCMA,monthly,2020,9,2020-09-08,18,2543.955,RT_Demand,81,27.2,61,2020_smd_hourly.xlsx
+WCMA,monthly,2020,10,2020-10-30,13,2177.349,RT_Demand,30,-1.1,26,2020_smd_hourly.xlsx
+WCMA,monthly,2020,11,2020-11-18,18,2329.28,RT_Demand,26,-3.3,8,2020_smd_hourly.xlsx
+WCMA,monthly,2020,12,2020-12-17,18,2565.864,RT_Demand,22,-5.6,15,2020_smd_hourly.xlsx
+ISO NE CA,annual,2021,6,2021-06-29,16,25801.0,System_Load,94,34.4,68,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,1,2021-01-29,18,18839.0,System_Load,16,-8.9,-1,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,2,2021-02-01,18,18181.0,System_Load,28,-2.2,24,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,3,2021-03-02,19,17767.0,System_Load,24,-4.4,-4,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,4,2021-04-16,12,14684.0,System_Load,37,2.8,34,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,5,2021-05-26,18,18882.0,System_Load,85,29.4,64,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,6,2021-06-29,16,25801.0,System_Load,94,34.4,68,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,7,2021-07-16,16,23152.0,System_Load,89,31.7,69,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,8,2021-08-12,18,25241.0,System_Load,91,32.8,71,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,9,2021-09-15,17,20032.0,System_Load,82,27.8,69,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,10,2021-10-14,19,15218.0,System_Load,69,20.6,60,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,11,2021-11-30,18,17039.0,System_Load,35,1.7,23,2021_smd_hourly.xlsx
+ISO NE CA,monthly,2021,12,2021-12-20,18,17970.0,System_Load,29,-1.7,13,2021_smd_hourly.xlsx
+WCMA,annual,2021,6,2021-06-29,18,3317.441,RT_Demand,92,33.3,69,2021_smd_hourly.xlsx
+WCMA,monthly,2021,1,2021-01-29,18,2554.584,RT_Demand,13,-10.6,-2,2021_smd_hourly.xlsx
+WCMA,monthly,2021,2,2021-02-01,18,2492.211,RT_Demand,26,-3.3,22,2021_smd_hourly.xlsx
+WCMA,monthly,2021,3,2021-03-02,19,2447.671,RT_Demand,22,-5.6,-4,2021_smd_hourly.xlsx
+WCMA,monthly,2021,4,2021-04-16,12,2052.35,RT_Demand,34,1.1,32,2021_smd_hourly.xlsx
+WCMA,monthly,2021,5,2021-05-26,18,2561.7,RT_Demand,85,29.4,61,2021_smd_hourly.xlsx
+WCMA,monthly,2021,6,2021-06-29,18,3317.441,RT_Demand,92,33.3,69,2021_smd_hourly.xlsx
+WCMA,monthly,2021,7,2021-07-16,15,2905.528,RT_Demand,87,30.6,68,2021_smd_hourly.xlsx
+WCMA,monthly,2021,8,2021-08-26,18,3235.918,RT_Demand,89,31.7,69,2021_smd_hourly.xlsx
+WCMA,monthly,2021,9,2021-09-15,18,2648.729,RT_Demand,80,26.7,68,2021_smd_hourly.xlsx
+WCMA,monthly,2021,10,2021-10-14,19,2061.654,RT_Demand,70,21.1,59,2021_smd_hourly.xlsx
+WCMA,monthly,2021,11,2021-11-29,18,2351.775,RT_Demand,31,-0.6,18,2021_smd_hourly.xlsx
+WCMA,monthly,2021,12,2021-12-20,18,2453.899,RT_Demand,27,-2.8,12,2021_smd_hourly.xlsx
+ISO NE CA,annual,2022,8,2022-08-04,18,24780.0,System_Load,91,32.8,67,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,1,2022-01-11,18,19756.0,System_Load,10,-12.2,-11,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,2,2022-02-14,19,18500.0,System_Load,16,-8.9,-7,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,3,2022-03-01,19,16932.0,System_Load,36,2.2,29,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,4,2022-04-07,20,14438.0,System_Load,46,7.8,40,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,5,2022-05-22,18,18939.0,System_Load,87,30.6,64,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,6,2022-06-26,18,19972.0,System_Load,88,31.1,63,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,7,2022-07-20,18,24644.0,System_Load,90,32.2,66,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,8,2022-08-04,18,24780.0,System_Load,91,32.8,67,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,9,2022-09-12,18,17749.0,System_Load,76,24.4,66,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,10,2022-10-26,19,14688.0,System_Load,65,18.3,63,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,11,2022-11-21,18,16827.0,System_Load,35,1.7,17,2022_smd_hourly.xlsx
+ISO NE CA,monthly,2022,12,2022-12-12,18,17956.0,System_Load,30,-1.1,16,2022_smd_hourly.xlsx
+WCMA,annual,2022,8,2022-08-08,18,3281.698,RT_Demand,88,31.1,70,2022_smd_hourly.xlsx
+WCMA,monthly,2022,1,2022-01-11,18,2721.363,RT_Demand,7,-13.9,-9,2022_smd_hourly.xlsx
+WCMA,monthly,2022,2,2022-02-14,19,2525.482,RT_Demand,13,-10.6,-6,2022_smd_hourly.xlsx
+WCMA,monthly,2022,3,2022-03-01,19,2338.683,RT_Demand,33,0.6,29,2022_smd_hourly.xlsx
+WCMA,monthly,2022,4,2022-04-07,18,1974.669,RT_Demand,48,8.9,34,2022_smd_hourly.xlsx
+WCMA,monthly,2022,5,2022-05-22,19,2649.44,RT_Demand,87,30.6,59,2022_smd_hourly.xlsx
+WCMA,monthly,2022,6,2022-06-26,19,2634.445,RT_Demand,84,28.9,65,2022_smd_hourly.xlsx
+WCMA,monthly,2022,7,2022-07-20,19,3177.066,RT_Demand,89,31.7,67,2022_smd_hourly.xlsx
+WCMA,monthly,2022,8,2022-08-08,18,3281.698,RT_Demand,88,31.1,70,2022_smd_hourly.xlsx
+WCMA,monthly,2022,9,2022-09-12,20,2361.773,RT_Demand,72,22.2,66,2022_smd_hourly.xlsx
+WCMA,monthly,2022,10,2022-10-04,19,1977.446,RT_Demand,52,11.1,49,2022_smd_hourly.xlsx
+WCMA,monthly,2022,11,2022-11-21,18,2277.152,RT_Demand,33,0.6,17,2022_smd_hourly.xlsx
+WCMA,monthly,2022,12,2022-12-12,18,2422.682,RT_Demand,30,-1.1,18,2022_smd_hourly.xlsx
+ISO NE CA,annual,2023,9,2023-09-07,18,24043.0,System_Load,88,31.1,70,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,1,2023-01-16,18,17304.0,System_Load,33,0.6,23,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,2,2023-02-03,19,19662.0,System_Load,4,-15.6,-19,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,3,2023-03-07,19,16202.0,System_Load,32,0.0,18,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,4,2023-04-13,20,14604.0,System_Load,82,27.8,45,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,5,2023-05-31,19,14798.0,System_Load,76,24.4,45,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,6,2023-06-26,18,18684.0,System_Load,76,24.4,67,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,7,2023-07-06,18,22999.0,System_Load,86,30.0,69,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,8,2023-08-21,18,19705.0,System_Load,83,28.3,65,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,9,2023-09-07,18,24043.0,System_Load,88,31.1,70,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,10,2023-10-04,18,16511.0,System_Load,77,25.0,63,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,11,2023-11-29,18,17277.0,System_Load,32,0.0,14,2023_smd_hourly.xlsx
+ISO NE CA,monthly,2023,12,2023-12-07,18,17697.0,System_Load,31,-0.6,17,2023_smd_hourly.xlsx
+WCMA,annual,2023,9,2023-09-07,18,3147.855,RT_Demand,89,31.7,67,2023_smd_hourly.xlsx
+WCMA,monthly,2023,1,2023-01-16,18,2337.211,RT_Demand,30,-1.1,20,2023_smd_hourly.xlsx
+WCMA,monthly,2023,2,2023-02-03,19,2690.063,RT_Demand,3,-16.1,-18,2023_smd_hourly.xlsx
+WCMA,monthly,2023,3,2023-03-07,19,2223.191,RT_Demand,30,-1.1,15,2023_smd_hourly.xlsx
+WCMA,monthly,2023,4,2023-04-14,19,2028.869,RT_Demand,81,27.2,50,2023_smd_hourly.xlsx
+WCMA,monthly,2023,5,2023-05-31,19,2037.444,RT_Demand,78,25.6,36,2023_smd_hourly.xlsx
+WCMA,monthly,2023,6,2023-06-02,16,2489.91,RT_Demand,78,25.6,59,2023_smd_hourly.xlsx
+WCMA,monthly,2023,7,2023-07-06,18,2953.485,RT_Demand,83,28.3,68,2023_smd_hourly.xlsx
+WCMA,monthly,2023,8,2023-08-08,18,2552.081,RT_Demand,80,26.7,67,2023_smd_hourly.xlsx
+WCMA,monthly,2023,9,2023-09-07,18,3147.855,RT_Demand,89,31.7,67,2023_smd_hourly.xlsx
+WCMA,monthly,2023,10,2023-10-04,19,2233.161,RT_Demand,79,26.1,61,2023_smd_hourly.xlsx
+WCMA,monthly,2023,11,2023-11-29,18,2366.603,RT_Demand,28,-2.2,14,2023_smd_hourly.xlsx
+WCMA,monthly,2023,12,2023-12-07,18,2398.231,RT_Demand,28,-2.2,16,2023_smd_hourly.xlsx
+ISO NE CA,annual,2024,7,2024-07-16,18,24871.0,System_Load,91,32.8,70,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,1,2024-01-17,18,18433.0,System_Load,22,-5.6,6,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,2,2024-02-14,19,17207.0,System_Load,28,-2.2,6,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,3,2024-03-21,20,15694.0,System_Load,33,0.6,7,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,4,2024-04-03,19,15654.0,System_Load,39,3.9,35,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,5,2024-05-22,19,17346.0,System_Load,83,28.3,61,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,6,2024-06-20,17,24166.0,System_Load,91,32.8,70,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,7,2024-07-16,18,24871.0,System_Load,91,32.8,70,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,8,2024-08-01,18,23791.0,System_Load,89,31.7,68,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,9,2024-09-01,19,17055.0,System_Load,79,26.1,68,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,10,2024-10-28,19,14773.0,System_Load,48,8.9,28,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,11,2024-11-26,18,15837.0,System_Load,41,5.0,38,2024_smd_hourly.xlsx
+ISO NE CA,monthly,2024,12,2024-12-23,18,19038.0,System_Load,22,-5.6,6,2024_smd_hourly.xlsx
+WCMA,annual,2024,7,2024-07-16,19,3171.73,RT_Demand,87,30.6,69,2024_smd_hourly.xlsx
+WCMA,monthly,2024,1,2024-01-17,18,2509.472,RT_Demand,20,-6.7,3,2024_smd_hourly.xlsx
+WCMA,monthly,2024,2,2024-02-29,19,2337.513,RT_Demand,25,-3.9,4,2024_smd_hourly.xlsx
+WCMA,monthly,2024,3,2024-03-21,20,2153.822,RT_Demand,29,-1.7,5,2024_smd_hourly.xlsx
+WCMA,monthly,2024,4,2024-04-04,12,2171.281,RT_Demand,32,0.0,31,2024_smd_hourly.xlsx
+WCMA,monthly,2024,5,2024-05-22,19,2496.078,RT_Demand,83,28.3,60,2024_smd_hourly.xlsx
+WCMA,monthly,2024,6,2024-06-19,17,3160.311,RT_Demand,90,32.2,71,2024_smd_hourly.xlsx
+WCMA,monthly,2024,7,2024-07-16,19,3171.73,RT_Demand,87,30.6,69,2024_smd_hourly.xlsx
+WCMA,monthly,2024,8,2024-08-01,18,2995.939,RT_Demand,86,30.0,66,2024_smd_hourly.xlsx
+WCMA,monthly,2024,9,2024-09-01,19,2266.042,RT_Demand,78,25.6,68,2024_smd_hourly.xlsx
+WCMA,monthly,2024,10,2024-10-29,19,2011.529,RT_Demand,50,10.0,38,2024_smd_hourly.xlsx
+WCMA,monthly,2024,11,2024-11-26,18,2179.344,RT_Demand,40,4.4,36,2024_smd_hourly.xlsx
+WCMA,monthly,2024,12,2024-12-23,18,2576.652,RT_Demand,20,-6.7,0,2024_smd_hourly.xlsx
+ISO NE CA,annual,2025,6,2025-06-24,18,26592.0,System_Load,97,36.1,67,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,1,2025-01-22,19,19631.0,System_Load,16,-8.9,-6,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,2,2025-02-18,19,18773.0,System_Load,21,-6.1,3,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,3,2025-03-03,19,17346.0,System_Load,29,-1.7,4,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,4,2025-04-08,20,15335.0,System_Load,34,1.1,15,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,5,2025-05-16,19,14646.0,System_Load,75,23.9,63,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,6,2025-06-24,18,26592.0,System_Load,97,36.1,67,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,7,2025-07-29,19,25315.0,System_Load,93,33.9,65,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,8,2025-08-11,18,23086.0,System_Load,88,31.1,60,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,9,2025-09-06,16,17218.0,System_Load,80,26.7,68,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,10,2025-10-06,19,15935.0,System_Load,75,23.9,56,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,11,2025-11-17,18,16530.0,System_Load,37,2.8,22,2025_smd_hourly.xlsx
+ISO NE CA,monthly,2025,12,2025-12-15,18,19474.0,System_Load,22,-5.6,6,2025_smd_hourly.xlsx
+WCMA,annual,2025,6,2025-06-24,19,3354.115,RT_Demand,94,34.4,65,2025_smd_hourly.xlsx
+WCMA,monthly,2025,1,2025-01-22,09,2710.675,RT_Demand,7,-13.9,-9,2025_smd_hourly.xlsx
+WCMA,monthly,2025,2,2025-02-06,12,2550.489,RT_Demand,22,-5.6,18,2025_smd_hourly.xlsx
+WCMA,monthly,2025,3,2025-03-03,19,2355.442,RT_Demand,26,-3.3,-3,2025_smd_hourly.xlsx
+WCMA,monthly,2025,4,2025-04-08,20,2126.916,RT_Demand,29,-1.7,12,2025_smd_hourly.xlsx
+WCMA,monthly,2025,5,2025-05-16,19,2066.44,RT_Demand,75,23.9,62,2025_smd_hourly.xlsx
+WCMA,monthly,2025,6,2025-06-24,19,3354.115,RT_Demand,94,34.4,65,2025_smd_hourly.xlsx
+WCMA,monthly,2025,7,2025-07-29,19,3210.815,RT_Demand,90,32.2,64,2025_smd_hourly.xlsx
+WCMA,monthly,2025,8,2025-08-13,16,2993.591,RT_Demand,85,29.4,71,2025_smd_hourly.xlsx
+WCMA,monthly,2025,9,2025-09-05,18,2190.544,RT_Demand,75,23.9,61,2025_smd_hourly.xlsx
+WCMA,monthly,2025,10,2025-10-07,19,2121.335,RT_Demand,70,21.1,58,2025_smd_hourly.xlsx
+WCMA,monthly,2025,11,2025-11-17,18,2251.694,RT_Demand,33,0.6,21,2025_smd_hourly.xlsx
+WCMA,monthly,2025,12,2025-12-15,18,2642.676,RT_Demand,18,-7.8,4,2025_smd_hourly.xlsx
+ISO NE CA,annual,2026,7,2026-07-02,19,25832.0,System_Load,96,35.6,70,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,1,2026-01-25,14,20216.0,System_Load,6,-14.4,0,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,2,2026-02-08,18,20182.0,System_Load,13,-10.6,-6,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,3,2026-03-03,19,17876.0,System_Load,29,-1.7,27,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,4,2026-04-02,20,15123.0,System_Load,37,2.8,33,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,5,2026-05-20,18,19489.0,System_Load,85,29.4,61,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,6,2026-06-12,18,22772.0,System_Load,86,30.0,69,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,7,2026-07-02,19,25832.0,System_Load,96,35.6,70,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,8,2026-08-07,18,24191.0,System_Load,90,32.2,68,2026_smd_hourly.xlsx
+ISO NE CA,monthly,2026,9,2026-09-10,18,18669.0,System_Load,82,27.8,55,2026_smd_hourly.xlsx
+WCMA,annual,2026,7,2026-07-02,19,3242.032,RT_Demand,92,33.3,70,2026_smd_hourly.xlsx
+WCMA,monthly,2026,1,2026-01-25,13,2753.439,RT_Demand,3,-16.1,-2,2026_smd_hourly.xlsx
+WCMA,monthly,2026,2,2026-02-08,18,2706.611,RT_Demand,10,-12.2,-6,2026_smd_hourly.xlsx
+WCMA,monthly,2026,3,2026-03-03,19,2475.938,RT_Demand,26,-3.3,25,2026_smd_hourly.xlsx
+WCMA,monthly,2026,4,2026-04-02,18,2085.273,RT_Demand,33,0.6,32,2026_smd_hourly.xlsx
+WCMA,monthly,2026,5,2026-05-19,17,2703.243,RT_Demand,90,32.2,62,2026_smd_hourly.xlsx
+WCMA,monthly,2026,6,2026-06-12,18,3020.396,RT_Demand,86,30.0,69,2026_smd_hourly.xlsx
+WCMA,monthly,2026,7,2026-07-02,19,3242.032,RT_Demand,92,33.3,70,2026_smd_hourly.xlsx
+WCMA,monthly,2026,8,2026-08-06,19,3047.562,RT_Demand,85,29.4,74,2026_smd_hourly.xlsx
+WCMA,monthly,2026,9,2026-09-10,19,2325.479,RT_Demand,77,25.0,54,2026_smd_hourly.xlsx

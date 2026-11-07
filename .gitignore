@@ -1,0 +1,16 @@
+# Raw / third-party data: not redistributed (re-download per DATA_SOURCES.md)
+data/brief/
+data/isone/*.xlsx
+data/*.pdf
+data/papers/
+data/tum-naion/
+data/tum-lfp/
+data/batteryarchive/
+# Python / OS
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+.venv/
+*.docx#
+~$*
