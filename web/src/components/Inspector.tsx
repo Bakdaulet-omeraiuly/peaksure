@@ -5,7 +5,6 @@ import { Constants, fetchJson } from "@/engine/data";
 import { useStudio } from "@/state/store";
 
 const usd = (x: number) => (Math.abs(x) >= 1000 ? `$${(x / 1000).toFixed(1)}K` : `$${x.toFixed(0)}`);
-const kwh = (x: number) => `${Math.round(x).toLocaleString()} kWh`;
 const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
 
 function Section({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
@@ -25,15 +24,9 @@ function Commit({ op, sc, minute }: { op: OperatorResult; sc: Scenario; minute: 
   const hit = op.shavedKw > 0;
   return (
     <div className="rounded-md border border-line bg-panel-2 p-2.5" style={{ borderLeft: `3px solid ${color}` }}>
-      <div className="flex justify-between items-baseline">
-        <span className="text-[12px] font-semibold" style={{ color }}>{op.key === "A" ? "Conventional" : "REON + PeakSure"}</span>
-        <span className="text-[10.5px] text-faint">{op.key === "A" ? "pack test · full-power rule" : "cell twin · 95% commit"}</span>
-      </div>
-      <div className="num text-[15px] mt-1">{Math.round(d.powerKw).toLocaleString()} kW <span className="text-muted text-[12px]">x {d.windowH} h from HE{d.startHe}</span></div>
-      <div className="grid grid-cols-2 gap-x-2 mt-1 text-[11.5px]">
-        <span className="text-faint">believed P5</span><span className="num text-right">{kwh(op.belief.p5)}</span>
-        <span className="text-faint">true deliverable</span><span className="num text-right">{kwh(op.truthKwh)}</span>
-      </div>
+      <div className="text-[12px] font-semibold" style={{ color }}>{op.key === "A" ? "Conventional" : "REON + PeakSure"}</div>
+      <div className="num text-[25px] font-semibold tracking-tight mt-2">{Math.round(d.powerKw).toLocaleString()} <span className="text-muted text-[12px] font-normal">kW</span></div>
+      <div className="text-[12px] text-muted mt-1">{d.windowH} hour window · starts HE{d.startHe}</div>
       <div className="mt-1.5 pt-1.5 border-t border-line text-[12px] flex justify-between">
         {decided ? (
           <><span style={{ color: hit ? "var(--ok)" : "var(--error)" }}>{hit ? `Shaved ${Math.round(op.shavedKw).toLocaleString()} kW at the peak` : "Missed the peak hour"}</span>
@@ -112,7 +105,7 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
 
   return (
     <aside className="studio-inspector surface min-w-0 overflow-hidden">
-      <div className="panel-h"><span className="micro">Decision comparison</span><span className="text-[11px] text-faint num">{usd(sc.rateUsdPerKw)}/kW</span></div>
+      <div className="panel-h"><span className="micro">Peak commitment</span></div>
       <div className="p-3 flex flex-col gap-2">
         <Commit op={sc.ops.A} sc={sc} minute={minute} />
         <Commit op={sc.ops.C} sc={sc} minute={minute} />
