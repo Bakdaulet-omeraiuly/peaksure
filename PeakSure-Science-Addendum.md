@@ -984,6 +984,31 @@ The tests reproduce the brief's 16-cell example: 70 Ah fixed, 84.06% average, an
 4. **The forecast smoothing was too heavy.** Add-α was 0.5; it was chosen by out-of-sample log-likelihood and set to 0.1. The modal hour captures the actual peak **65.5%** of the time. Peak timing, not energy, is the dominant uncertainty for a 2-h system.
 5. **Premium definition.** The premium is reported as the **same-rule** comparison (C vs A_opt, B vs A), so the decision-rule effect is never credited to REON hardware.
 
+# AF. The Open REON Questions, Answered as Far as Public Sources Allow (7 Nov 2026)
+
+Sources checked:
+- REON's challenge video (Tim Ren, CTO), with slides read frame by frame and the speech transcribed locally;
+- the official brief;
+- REON_WHO_WE_ARE.pdf and reoncorp.com;
+- REON patent US 2023/0341471 (full text);
+- vendor PCS datasheets;
+- the TUM sodium-ion paper.
+
+| Question | What public sources say | Status / what we use |
+|---|---|---|
+| **CES chemistry** | REON is "chemistry agnostic" (site). The EBS product ships in Na+ and Li+ versions. The patent lists Li-ion, LiFePO4, **sodium-ion**, solid-state and others. **No source names the CES chemistry.** | Open. Na-ion is the base case and LFP the sensitivity (both run) |
+| **Cells per string** | Patent: cells in series form a **column**, columns run in parallel; "a quantity of series cells chosen to reach a target voltage". No number given. CES AC side is **480 V 3φ** (confirmed). 480 Vac PCS units need **≥ ~750 Vdc** (Delta PCS125: 750–1,000 Vdc; MW class: 695–865 Vdc minimum). With a 1,000 V maximum and 3.8 V cell maximum, **N_series ≤ ~263** | **Derived:** about 240–300 cells per string |
+| **N_min** | Set by the DC floor. At 750 V: **242 cells at 3.1 V**, 268 at 2.8 V, 300 at 2.5 V. Na-ion's sloped voltage curve (1.5–3.8 V, TUM) makes the window tight. **Implication:** with a sloped chemistry, deep discharge needs either a wide-range PCS or REON switching extra cells in as the voltage sags (the patent's "N+1 / 2N redundancy"). | **Derived:** our headroom of 2–20% (N_min = 192–235 of 240) brackets this. Base 10% is optimistic at low SOC, and the **Lot Desk deck reached the same "inverter decides" conclusion** |
+| **Switch losses** | Patent: "isolated-gate transistor" switches; no ratings. **Ohm's law:** each cell's in-path switch carries the full string current, so loss fraction = I·R_on / V_cell. For 2.5 MW over 240 cells at 3.1 V: **8 strings ≈ 420 A**, 16 strings ≈ 210 A, 24 strings ≈ 140 A. Loss at 0.25 / 0.5 / 1.0 mΩ: **3.4% / 6.8% / 13.5%** (8 strings), 1.7% / 3.4% / 6.8% (16 strings), 1.1% / 2.3% / 4.5% (24 strings). | **Derived and important:** our base 1% needs about **80 µΩ per cell path at 8 strings**, i.e. several paralleled MOSFETs per cell, or more parallel columns. The 2% sensitivity already pushes the 2-h premium to about 0. **The single most decision-relevant number to get from REON** |
+| **Cell temperature spread** | Vendor practice: liquid-cooled containers about **2–3 °C** cell-to-cell, air-cooled about **5–10 °C** (vendor blogs, not a standard). The patent mentions per-cell temperature and "rapid increase" triggers, with no numbers. | Literature range. Our base σ_T = 2.5 °C means a max-min range of about 15 °C across 1,920 cells, which is air-cooled-like. A liquid-cooled CES would make the thermal channel **smaller** than our base case. The weak/failing HVAC scenarios remain stress tests |
+| **Can a cell be probed?** | Brief: teams may assume per-cell **voltage, temperature, SOC, SOH, capacity, resistance, OCV and history**, and can **include or remove any cell**. Patent: per-cell **voltage, current, temperature and impedance sensors**, plus per-cell couple/decouple switches. Video: "a switch at every cell … Sense, Protect, Balance, Decide, Isolate, Mix". | **Supported:** switching a cell in or out is a current step, and the per-cell impedance sensing exists. A dedicated test current is not described, and probe accuracy remains assumed (0.5%) |
+| How REON allocates current | Video (Tim Ren): cells charge and discharge "according to their state of health, from minimum to total sum" | Consistent with our bypass model (each cell runs to its own end; usable = sum, bounded by N_min) |
+
+**Net effect on our conclusions:** none reverses them.
+- The derived DC-window and switch-loss physics make the 2-h base case slightly **less** favourable than modelled.
+- The derived thermal spread makes the "hot cell" channel smaller with liquid cooling.
+- The four Discord questions shrink to two numbers that matter most: **switch R_on per cell path (with the number of parallel columns)**, and the **CES DC window / cells per column**.
+
 # Z. Change Log (Part II)
 
 | # | Change | Type | Reason |
@@ -1013,6 +1038,7 @@ The tests reproduce the brief's 16-cell example: 70 Ah fixed, 84.06% average, an
 | 23 | Real MLP numbers (Sterling, Holden, Reading) and a per-household upper bound; Holden's projection ≈ 44% of the bound is a calibration anchor (AD) | Addition | MMWEC, HMLD |
 | 24 | New tool `tools/peak_temps.py`, tested on synthetic data, then run on the 2019–2026 SMD files | Addition | Reproducibility |
 | 25 | Simulator, demo and automated results report implemented; five build-time corrections listed in §AE | Addition / correction | Implementation |
+| 27 | REON's open questions answered from public sources and engineering derivation (§AF). Switch loss = I·R_on/V_cell is first-order: the base 1% needs ~80 µΩ per cell path at 8 strings. The DC window (480 Vac → ≥ ~750 Vdc) bounds N_min | Addition | REON video, patent, PCS datasheets |
 | 26 | A teammate's Colab notebook independently reproduced the annual-peak dates and hours (it uses hour-beginning, we use hour-ending) | Verification | Cross-check |
 
 ---
