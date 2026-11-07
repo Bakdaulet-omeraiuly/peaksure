@@ -111,8 +111,8 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
   })() : null;
 
   return (
-    <aside className="panel w-[300px] shrink-0 overflow-y-auto scroll" style={{ borderTop: "none", borderBottom: "none" }}>
-      <div className="panel-h"><span className="micro">Peak commitment</span><span className="text-[11px] text-faint num">{usd(sc.rateUsdPerKw)}/kW this peak</span></div>
+    <aside className="studio-inspector surface min-w-0 overflow-hidden">
+      <div className="panel-h"><span className="micro">Decision comparison</span><span className="text-[11px] text-faint num">{usd(sc.rateUsdPerKw)}/kW</span></div>
       <div className="p-3 flex flex-col gap-2">
         <Commit op={sc.ops.A} sc={sc} minute={minute} />
         <Commit op={sc.ops.C} sc={sc} minute={minute} />
@@ -123,6 +123,7 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
           </div>
         )}
       </div>
+      <details className="disclosure"><summary>Technical diagnostics</summary>
       <Section title="Deliverable energy: belief vs truth">
         <BeliefChart sc={sc} />
       </Section>
@@ -188,6 +189,7 @@ export default function Inspector({ sc, c }: { sc: Scenario; c: Constants }) {
           ))}
         </div>
       </Section>
+      </details>
     </aside>
   );
 }

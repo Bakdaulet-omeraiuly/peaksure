@@ -1,5 +1,5 @@
 "use client";
-import { Canvas, useFrame, ThreeEvent } from "@react-three/fiber";
+import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -139,6 +139,7 @@ export default function Battery3D({ scenario }: { scenario: Scenario }) {
   useEffect(() => useStudio.subscribe((s) => { minuteRef.current = s.minute; }), []);
   return (
     <Canvas camera={{ position: [0, 1.9, 9.4], fov: 40 }} dpr={[1, 2]} gl={{ antialias: true }}>
+      <FitCamera />
       <color attach="background" args={["#050608"]} />
       <hemisphereLight args={["#d6dee9", "#0b0d10", 0.75]} />
       <directionalLight position={[-3, 6, 8]} intensity={1.1} />
@@ -152,4 +153,13 @@ export default function Battery3D({ scenario }: { scenario: Scenario }) {
       <OrbitControls target={[0, 1.62, 0]} maxPolarAngle={Math.PI / 1.95} minDistance={3} maxDistance={14} enablePan={false} />
     </Canvas>
   );
+}
+
+function FitCamera() {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    camera.position.set(0, 1.9, size.width / size.height < 1.2 ? 16 : size.width / size.height < 1.8 ? 12 : 9.4);
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height]);
+  return null;
 }

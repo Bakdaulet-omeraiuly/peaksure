@@ -25,13 +25,14 @@ const LAB: Record<string, string> = {
   "sigma_meas_0.04": "Cell estimate noise 4%", "discount_0.10": "Discount 10%", "headroom_0.05": "DC headroom 5%",
   "switch_loss_0.02": "Switch loss 2%", "sigma_meas_0.01": "Cell estimate noise 1%", chem_LFP: "LFP chemistry",
   "headroom_0.02": "DC headroom 2%", dispatch_low: "Few dispatch days", aging_sigma_low: "Low ageing spread",
+  "switch_loss_0.034": "Switch loss 3.4% (0.25 mΩ, derived)", liquid_cooling: "Liquid cooling (~3 C spread)",
 };
 
 function Card({ title, sub, children }: { title: string; sub?: string; children: React.ReactNode }) {
   return (
-    <section className="panel rounded-lg">
+    <section className="surface overflow-hidden">
       <div className="panel-h"><span className="micro">{title}</span>{sub && <span className="text-[11px] text-faint">{sub}</span>}</div>
-      <div className="p-4">{children}</div>
+      <div className="p-4 chart-scroll">{children}</div>
     </section>
   );
 }
@@ -92,7 +93,7 @@ function Waterfall({ d, title }: { d: R["dec"]; title: string }) {
 export default function Results() {
   const [r, setR] = useState<R | null>(null);
   useEffect(() => { fetchJson<R>("/data/results.json").then(setR); }, []);
-  if (!r) return <div className="h-screen flex flex-col"><AppBar /><div className="p-6 text-faint">Loading…</div></div>;
+  if (!r) return <div className="site-shell"><AppBar /><div className="page-wrap text-faint">Loading…</div></div>;
   const sens = [...r.sens].sort((a, b) => b.prem_c - a.prem_c);
   const calRows = (mode: string) => r.cal.filter((x) => x.mode === mode).sort((a, b) => a.eps - b.eps);
   const probes = r.probe.filter((p) => p.budget != null && p.budget > 0 && p.gain !== undefined);
@@ -102,16 +103,24 @@ export default function Results() {
   const v4 = r.probe.find((p) => p.cond === "D" && p.budget === 4), rr4 = r.probe.find((p) => p.cond === "D_rr" && p.budget === 4);
   const fewer = v4 && rr4 && v4.probes > 0 ? rr4.probes / v4.probes : NaN;
   return (
-    <div className="h-screen flex flex-col">
-      <AppBar context={<>Monte Carlo: {r.manifest.n_main} paired runs per condition, {r.manifest.n_side} per side study &middot; config {r.manifest.config_hash} &middot; {Math.round(r.manifest.seconds / 60)} min compute</>} />
-      <div className="flex-1 overflow-y-auto scroll">
-        <div className="max-w-[1240px] mx-auto p-5 grid grid-cols-2 gap-4">
-          <div className="col-span-2 panel rounded-lg p-4 text-[13px] leading-relaxed text-muted">
-            <span className="text-ink font-semibold">Headline.</span> On REON&apos;s 2-hour CES doing coincident-peak duty, cell-level intelligence adds little
+    <div className="site-shell">
+      <AppBar />
+      <div className="page-wrap max-w-[1280px]">
+        <div className="eyebrow mb-3">Research findings</div>
+        <h1 className="page-title mb-3">Where cell intelligence matters.</h1>
+        <p className="text-muted text-[14px] max-w-[760px] leading-relaxed mb-6">A 15-year paired simulation of conventional strings, REON bypass, and PeakSure decision logic. Figures are model results, not hardware validation.</p>
+        <div className="surface p-5 sm:p-7 text-[14px] leading-relaxed text-muted mb-5">
+            <span className="eyebrow block mb-2">Main finding</span> On REON&apos;s 2-hour CES doing coincident-peak duty, cell-level intelligence adds little
             (V1 + V2 = {usd(r.dec[1].mean + r.dec[2].mean)}/yr): energy rarely limits the decision, and peak-hour timing dominates. It pays where energy or
-            cells bind: 1-h and 4-h systems, weak cooling, and cell faults. The figures below are a specification for REON, not a sales claim.
-            Simulated ground truth; not hardware validation.
-          </div>
+            cells bind: 1-h and 4-h systems, weak cooling, and cell faults.
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3 mb-5">
+          <div className="surface p-5"><div className="micro mb-2">Base case</div><p className="text-[13px] text-muted leading-relaxed">Peak timing dominates the 2-hour system.</p></div>
+          <div className="surface p-5"><div className="micro mb-2">Stronger cases</div><p className="text-[13px] text-muted leading-relaxed">Cell faults, weak cooling, and 1-hour or 4-hour systems.</p></div>
+          <div className="surface p-5"><div className="micro mb-2">Key uncertainty</div><p className="text-[13px] text-muted leading-relaxed">Switch loss and the CES DC operating window.</p></div>
+        </div>
+        <details className="surface disclosure"><summary>Explore the evidence</summary>
+        <div className="results-grid p-4">
 
           <Card title="Where cell-level intelligence pays" sub="break-even premium, $/kWh nameplate (NPV C minus A_opt, 95% CI)">
             <Bars rows={sens.map((s) => ({ label: LAB[s.tag] ?? s.tag, v: s.prem_c, lo: s.prem_c_lo, hi: s.prem_c_hi }))} />
@@ -186,7 +195,7 @@ export default function Results() {
           <Card title="Lifetime: deliverable energy at 25 C" sub="median over runs, kWh">
             <Lifetime bands={r.bands} />
           </Card>
-        </div>
+        </div></details>
       </div>
     </div>
   );

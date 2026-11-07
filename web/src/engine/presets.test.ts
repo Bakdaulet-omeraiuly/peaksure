@@ -26,6 +26,11 @@ describe("presets", () => {
     console.log(_n, { A: [Math.round(A.truthKwh), Math.round(A.decision.powerKw), A.decision.windowH, A.decision.startHe, Math.round(A.shavedKw), Math.round(A.valueUsd)],
       C: [Math.round(Cc.truthKwh), Math.round(Cc.decision.powerKw), Cc.decision.windowH, Cc.decision.startHe, Math.round(Cc.shavedKw), Math.round(Cc.valueUsd)],
       probes: Cc.probes.length, ev: A.run.events.length + "/" + Cc.run.events.length, tmax: A.run.temp.reduce((m, v) => Math.max(m, v), -1e9).toFixed(1) });
-    expect(Cc.truthKwh).toBeGreaterThanOrEqual(A.truthKwh * 0.99);
+    if (_n === "hot + weak cooling") {
+      // hot cells rest (less energy) but full power is kept, so the peak is worth more
+      expect(Cc.valueUsd).toBeGreaterThan(A.valueUsd);
+    } else {
+      expect(Cc.truthKwh).toBeGreaterThanOrEqual(A.truthKwh * 0.99);
+    }
   });
 });

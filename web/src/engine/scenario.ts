@@ -8,7 +8,7 @@ import { Decision, fixedRule, optimize } from "./decision";
 import { DischargeResult, discharge } from "./discharge";
 import { Probe, runVoi } from "./voi";
 
-export interface Knobs { kHvac: number; sigmaT: number; probeBudget: number; reportBias: number }
+export interface Knobs { kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss?: number }
 
 export interface OperatorResult {
   key: "A" | "C";
@@ -40,7 +40,7 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
   const S = c.n_strings, N = c.n_series;
   const qNom = (eNom * 1000) / (S * N * c.v_nom);
   const sys: SystemSpec = { nStrings: S, nSeries: N, nMin: Math.round(N * (1 - c.headroom)), eta: c.eta,
-                            switchLoss: c.switch_loss, pStringMax: c.p_max_kw / S, qNomAh: qNom };
+                            switchLoss: knobs.switchLoss ?? c.switch_loss, pStringMax: c.p_max_kw / S, qNomAh: qNom };
   const chem: Chem = { vNom: c.v_nom, coldSlope: c.cold_slope, tChargeMin: c.t_charge_min, tDerate: c.t_derate, tMax: c.t_max };
   const tOff0 = decodeI16(life.t_off, 100);
   const tOff = tOff0.map((v) => v * (knobs.sigmaT / c.sigma_t_cell));

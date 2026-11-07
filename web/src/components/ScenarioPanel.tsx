@@ -33,13 +33,13 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
   };
   const years = Array.from(new Set(events.map((e) => e.year)));
   return (
-    <aside className="panel w-[272px] shrink-0 flex flex-col overflow-y-auto scroll" style={{ borderTop: "none", borderBottom: "none" }}>
-      <div className="panel-h"><span className="micro">Scenarios</span><span className="badge">live model</span></div>
-      <div className="p-2 grid gap-1.5 border-b border-line">
+    <aside className="surface min-w-0 overflow-hidden">
+      <div className="panel-h"><span className="micro">Set the scenario</span><span className="badge">Live model</span></div>
+      <div className="p-3 grid gap-2 border-b border-line">
+        <div className="text-[11px] text-muted">Start with a representative peak.</div>
         {PRESETS.map((p) => (
-          <button key={p.name} onClick={() => apply(p)} className="text-left rounded-md border border-line bg-panel-2 hover:bg-panel-3 px-2.5 py-1.5">
-            <div className="text-[12.5px] text-ink">{p.name}</div>
-            <div className="text-[11px] text-faint">{p.note}</div>
+          <button key={p.name} onClick={() => apply(p)} className="text-left rounded-md border border-line bg-panel-2 hover:bg-panel-3 px-3 py-2">
+            <div className="text-[12px] font-medium text-ink">{p.name}</div>
           </button>
         ))}
       </div>
@@ -53,7 +53,6 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
             </optgroup>
           ))}
         </select>
-        <div className="text-[11.5px] text-muted mt-1.5 leading-snug">System monthly peak, hour ending {ev?.he}; temperature from the WCMA zone (Sterling/Holden).{ev?.is_annual ? " This hour set the year's capacity tag." : ""}</div>
       </Row>
       <Row label="Battery age" hint={`year ${s.age} · ${c.start_year + s.age - 1}`}>
         <input type="range" min={1} max={15} value={s.age} onChange={(e) => s.set({ age: +e.target.value })} />
@@ -65,6 +64,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
           ))}
         </div>
       </Row>
+      <details className="disclosure"><summary>Advanced assumptions</summary>
       <Row label="Monte Carlo seed" hint="cell population">
         <div className="seg">{c.seeds.map((k) => <button key={k} data-on={s.seed === k} onClick={() => s.set({ seed: k })}>{k}</button>)}</div>
       </Row>
@@ -77,6 +77,10 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
       </Row>
       <Row label="Cell temperature spread" hint={`sigma ${s.sigmaT.toFixed(1)} C`}>
         <input type="range" min={0.5} max={8} step={0.5} value={s.sigmaT} onChange={(e) => s.set({ sigmaT: +e.target.value })} />
+      </Row>
+      <Row label="Bypass switch loss" hint={`${(s.switchLoss * 100).toFixed(1)}% · R_on ${((s.switchLoss * c.v_nom) / ((c.p_max_kw * 1000) / (c.n_strings * c.n_series * c.v_nom)) * 1e6).toFixed(0)} µΩ`}>
+        <input type="range" min={0.005} max={0.05} step={0.001} value={s.switchLoss} onChange={(e) => s.set({ switchLoss: +e.target.value })} />
+        <div className="text-[11px] text-faint mt-0.5 leading-snug">Each cell&apos;s switch carries the full string current (~{Math.round((c.p_max_kw * 1000) / (c.n_strings * c.n_series * c.v_nom))} A): loss = I·R_on / V_cell. Not public; ask REON.</div>
       </Row>
       <Row label="Colour cells by">
         <div className="seg">
@@ -92,6 +96,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
         Rates: ISO-NE RNS and FCA. CES 2.5 MW / up to 5 MWh per REON; string design assumed.
         <div className="mt-2">Independent analysis. Not endorsed by REON.</div>
       </div>
+      </details>
     </aside>
   );
 }

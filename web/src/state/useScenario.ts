@@ -16,7 +16,7 @@ export function useBaseData() {
 
 export function useScenario(): { scenario: Scenario | null; c: Constants | null; events: PeakEvent[] | null; ms: number } {
   const { c, events } = useBaseData();
-  const { eventIdx, age, duration, seed, kHvac, sigmaT, probeBudget, reportBias, set } = useStudio();
+  const { eventIdx, age, duration, seed, kHvac, sigmaT, probeBudget, reportBias, switchLoss, set } = useStudio();
   const [life, setLife] = useState<Life | null>(null);
   useEffect(() => {
     setLife(null);
@@ -31,7 +31,7 @@ export function useScenario(): { scenario: Scenario | null; c: Constants | null;
   return useMemo(() => {
     if (!c || !events || !life || eventIdx < 0) return { scenario: null, c, events, ms: 0 };
     const t0 = performance.now();
-    const scenario = buildScenario(c, life, events[eventIdx], age, { kHvac, sigmaT, probeBudget, reportBias });
+    const scenario = buildScenario(c, life, events[eventIdx], age, { kHvac, sigmaT, probeBudget, reportBias, switchLoss });
     return { scenario, c, events, ms: performance.now() - t0 };
-  }, [c, events, life, eventIdx, age, kHvac, sigmaT, probeBudget, reportBias]);
+  }, [c, events, life, eventIdx, age, kHvac, sigmaT, probeBudget, reportBias, switchLoss]);
 }

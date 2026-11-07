@@ -7,7 +7,7 @@ export interface HoverCell { op: "A" | "C"; string: number; cell: number }
 
 interface StudioState {
   eventIdx: number; age: number; duration: "1h" | "2h" | "4h"; seed: number;
-  kHvac: number; sigmaT: number; probeBudget: number; reportBias: number;
+  kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss: number;
   colorMode: ColorMode; town: string;
   minute: number; playing: boolean; speed: number;
   hover: HoverCell | null;
@@ -16,7 +16,7 @@ interface StudioState {
 
 export const useStudio = create<StudioState>((set) => ({
   eventIdx: -1, age: 9, duration: "2h", seed: 0,
-  kHvac: 0.25, sigmaT: 2.5, probeBudget: 0, reportBias: 0,
+  kHvac: 0.25, sigmaT: 2.5, probeBudget: 0, reportBias: 0, switchLoss: 0.01,
   colorMode: "soc", town: "Sterling",
   minute: 16 * 60, playing: false, speed: 4,
   hover: null,
