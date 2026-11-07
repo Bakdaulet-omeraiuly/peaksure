@@ -6,12 +6,15 @@ import Inspector from "@/components/Inspector";
 import Timeline from "@/components/Timeline";
 import { useScenario } from "@/state/useScenario";
 import { useStudio } from "@/state/store";
+import YearlyCompare from "@/components/YearlyCompare";
+import { useRef } from "react";
 
 const Battery3D = dynamic(() => import("@/components/Battery3D"), { ssr: false });
 
 export default function Explore() {
   const { scenario, c, events, ms } = useScenario();
   const baseline = useStudio((s) => s.baseline);
+  const playback = useRef<HTMLDetailsElement>(null);
   const baselineLabel = baseline === "B" ? "REON bypass (modeled baseline)" : "Conventional";
   return (
     <div className="site-shell">
@@ -32,12 +35,18 @@ export default function Explore() {
                   <div className="text-center">{baselineLabel}</div><div className="text-center">REON + PeakSure</div>
                 </div>
                 <div className="studio-stage-note">Drag to rotate · Hover to inspect a cell</div>
+                <button className="btn btn-accent absolute bottom-4 right-4 z-10" onClick={() => {
+                  if (playback.current) playback.current.open = true;
+                  const start = Math.min(scenario.ops[baseline].run.startMin, scenario.ops.C.run.startMin);
+                  useStudio.getState().set({ minute: Math.max(0, start - 10), playing: true });
+                }}>Play both batteries</button>
               </>}
             </div>
-            {scenario && c && <details className="disclosure"><summary>View peak-day playback</summary><Timeline scenario={scenario} c={c} baseline={baseline} /></details>}
+            {scenario && c && <details ref={playback} className="disclosure"><summary>View peak-day playback</summary><Timeline scenario={scenario} c={c} baseline={baseline} /></details>}
           </main>
           {scenario && c && <Inspector sc={scenario} c={c} baseline={baseline} />}
         </div>
+        <YearlyCompare />
         {c && events && <details className="surface disclosure mt-4"><summary>Change scenario and assumptions</summary><ScenarioPanel c={c} events={events} ms={ms} /></details>}
         <p className="mt-5 text-[11px] text-faint leading-relaxed">Independent simulation using public inputs and stated assumptions. The REON baseline control policy is assumed, not verified as REON&apos;s current software. Results may favor either operator and are not REON hardware validation.</p>
       </div>
