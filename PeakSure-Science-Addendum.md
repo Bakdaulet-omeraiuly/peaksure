@@ -1082,12 +1082,15 @@ Public benchmarks used (scope differs; never compare without it):
 
 **Results** (cost does not change the simulation, so no rerun is needed): `costs.breakeven_capex` gives, per run, the installed $/kWh at which 15-year NPV (savings − augmentation − O&M − capex) is zero, and `costs.npv_at_price` gives NPV at any price and EBS premium. Both are computed live from `results/` in the Streamlit *Chemistry & cost* tab; numbers are not copied here (AGENTS.md rule 1). At 2 h, the break-even price for conventional and EBS + PeakSure is close, so the installed price per kWh, not the chemistry or cell-level control, decides the business case.
 
-## AI4. Two products: full system and BMS-only retrofit
-REON offers two products, and the app evaluates both (`peaksure/costs.py`, Streamlit *Chemistry & cost* tab):
-1. **Full system:** a new battery with REON's cell-level control BMS. It competes with a new conventional battery; the customer pays the battery price plus any premium. Output: NPV vs installed price and the break-even price.
-2. **BMS-only retrofit:** REON's cell-level control added to a battery the customer already owns. There is no battery cost. The customer pays the retrofit price and gains the difference in value between the retrofitted and unchanged battery over its remaining life. Output: `costs.retrofit_breakeven`, the most the retrofit can cost per kWh of battery, by battery age at retrofit and by scenario.
+## AI4. Strategy: two phases (retrofit first, then new batteries)
+Both phases shave the town's ISO-NE coincident peak, so the same simulation applies (`peaksure/costs.py`, Streamlit *Chemistry & cost* tab):
+1. **Phase 1, BMS-only retrofit:** REON's cell-level control added to batteries towns already own. No battery cost, so it is the cheapest way to show the technology works on real peaks. The customer pays the retrofit price and gains the difference in value between the retrofitted and unchanged battery over its remaining life. Output: `costs.retrofit_breakeven`, the most the retrofit can cost per kWh of battery, by battery age at retrofit and scenario.
+   - Candidates (`costs.TOWN_BATTERIES`, `costs.town_retrofit_table`): Sterling 2 MW / 3.9 MWh (2016), Reading 5 MW / 10 MWh (2019), Holden 5 MW / 22 MWh (2024). Each uses the closest simulated case at its current age, scaled per kWh; none is simulated individually.
    - Approximation: the retrofitted battery follows the bypass path from year 0, so its cells age under bypass and its twin has the full history before the retrofit. Older retrofits are therefore slightly optimistic.
    - Same decision rule on both sides (B vs A for hardware only; C vs A_opt for hardware + twin).
+   - Open: REON has not confirmed that its cell control can be retrofitted to other vendors' batteries (compatibility, warranty, safety, certification).
+2. **Phase 2, new batteries:** once Phase 1 gives field evidence, sell new batteries built with REON's cell control (EBS blocks; about 84 for a 2.5 MW / 5 MWh plant). Compared with a new conventional battery; the customer pays the battery price plus any premium. Output: NPV vs installed price and the break-even price.
+   - Open: REON has not confirmed MW-scale EBS fleets, block interconnection, or per-block DC/DC.
 
 ## AI5. Team financial model vs simulation
 The team's one-sheet model (`PeakSure_REON_One_Sheet_Financial_Model_With_Sources.xlsx`) is reproduced exactly by `costs.team_sheet()` (tested). It **assumes** REON's extra savings: +10% for the full system and +$55k/yr for the retrofit. The simulator **computes** them from cell physics on ISO-NE peaks. The app shows both with identical prices, O&M, life and discount rate, so only the savings differ. Notes on the sheet:
@@ -1137,6 +1140,7 @@ The team's one-sheet model (`PeakSure_REON_One_Sheet_Financial_Model_With_Source
 | 33 | Installed-cost ranges per chemistry, EBS premium range, O&M, capex-aware NPV and break-even price (`peaksure/costs.py`, §AI3); Na-ion range provisional | Addition (ASSUMED) | No REON price signal |
 | 34 | Prices, premiums, O&M, discount rate and retrofit inputs taken from the team financial model; Na-ion = LFP × 1.145 (§AI3) | Update (ASSUMED) | Team sheet |
 | 35 | Two products: full system and BMS-only retrofit, with break-even retrofit price by battery age; team sheet reproduced and compared with simulated savings (§AI4–AI5) | Addition | Product scope |
+| 36 | Two-phase strategy: Phase 1 retrofit (prove the technology), Phase 2 new batteries (scale); Massachusetts retrofit candidates Sterling, Reading, Holden (§AI4) | Framing / addition | Team decision |
 
 ---
 

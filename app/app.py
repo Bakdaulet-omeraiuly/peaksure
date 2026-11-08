@@ -722,48 +722,12 @@ with tabs[10]:
     with st.expander("All benchmarks with scope and source"):
         st.dataframe(bm, hide_index=True, width="stretch")
 
-    st.markdown("#### Two products")
-    ui.callout("<b>1. Full system:</b> a new battery with REON's cell-level control BMS (EBS). It competes with a new "
-               "conventional battery, so the customer pays the battery price plus any premium. "
-               "<b>2. BMS-only retrofit:</b> REON's cell-level control added to a battery the customer already owns. "
-               "There is no battery cost; the customer pays only for the technology and installation, and gains the extra "
-               "value over the battery's remaining life.")
-    st.markdown("#### Product 1, full EBS system: does it pay back, and how much extra can it cost?")
-    p1, p2 = st.columns(2)
-    prem = p1.slider("EBS price premium over a conventional battery", -0.05, 0.20, float(costs.REON_PREMIUM["central"]), 0.01,
-                     format="%.2f", key="cc_prem")
-    p2.markdown("<div class='ps-note'>" + ui.esc(f"No price signal from REON. Range {costs.REON_PREMIUM['low']:+.0%} to "
-                f"{costs.REON_PREMIUM['high']:+.0%}: Relectrify claims cell-level electronics can cost less than a standard BMS; "
-                f"Chalmers reports higher upfront cost; the ROI sheet uses +10%. O&amp;M: ${costs.OM_USD_YR_PER_5MWH['conventional']:,.0f}/yr "
-                f"conventional, ${costs.OM_USD_YR_PER_5MWH['reon']:,.0f}/yr EBS (ROI sheet, hypothetical).") + "</div>", unsafe_allow_html=True)
-    sets = [(ch, rl_, cfg_) for ch, _, _, rl_, cfg_ in product_sets()]
-    prices = np.linspace(100, 950, 35)
-    fig = go.Figure()
-    rows = []
-    for ch, rl_, cfg_ in sets:
-        r = costs.PRICE_RANGES[ch]
-        for cnd, dash in (("A", "dot"), ("C", "solid")):
-            ys = [costs.npv_at_price(rl_[rl_.cond == cnd], cfg_, p, prem).npv_full.mean() / 1e6 for p in prices]
-            fig.add_scatter(x=prices, y=ys, name=f"{ch}: {'conventional BMS (A)' if cnd == 'A' else 'EBS + PeakSure (C)'}",
-                            line=dict(color=chem_col[ch], dash=dash, width=2.5))
-            be = costs.breakeven_capex(rl_[rl_.cond == cnd], cfg_)
-            be_c = econ.ci((be.breakeven_kwh / (1 + (prem if costs.is_reon(cnd) else 0.0))).values)
-            row = {"Chemistry": ch, "System": "Conventional BMS (A)" if cnd == "A" else "EBS + PeakSure (C)",
-                   "Runs": int(be.run.nunique()), "Break-even conventional price $/kWh": f"{be_c[0]:,.0f} [{be_c[1]:,.0f}, {be_c[2]:,.0f}]"}
-            for lab in ("low", "central", "high"):
-                n = costs.npv_at_price(rl_[rl_.cond == cnd], cfg_, getattr(r, lab), prem)
-                row[f"NPV at {lab} (${getattr(r, lab):.0f})"] = ui.usd(n.npv_full.mean())
-            rows.append(row)
-    fig.add_hline(y=0, line=dict(color=ui.MUTED, width=1))
-    fig.update_layout(title=f"15-year NPV vs installed price of a conventional battery (EBS pays {prem:+.0%})",
-                      xaxis_title="Conventional installed price ($/kWh)", yaxis_title="NPV ($ million)", height=440)
-    st.plotly_chart(fig, width="stretch")
-    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
-    ui.note(f"NPV = present value of peak savings - augmentation - O&amp;M - upfront cost, {CFG.years} years at "
-            f"{CFG_FIN.discount_rate:.1%} (team financial model). Break-even price: the conventional $/kWh at which NPV is zero (for C, after paying the "
-            "premium). Na-ion uses the main study (64 runs); LFP uses the chemistry sensitivity run (24 runs). Prices: team financial model (Na-ion = LFP x 1.145).")
-
-    st.markdown("#### Product 2, BMS-only retrofit: what is it worth on an existing battery?")
+    st.markdown("#### Strategy: two phases")
+    ui.callout("<b>Phase 1, retrofit:</b> add REON's cell-level control to batteries towns already own. No battery cost, so it "
+               "is the cheapest way to show the technology works on real peaks. "
+               "<b>Phase 2, scale:</b> once Phase 1 gives field evidence, sell new batteries built with REON's cell control "
+               "(EBS blocks, about 84 for a 2.5 MW / 5 MWh plant). Both shave the town's ISO-NE peak, so the same results apply.")
+    st.markdown("#### Phase 1, BMS-only retrofit: what is it worth on a battery a town already owns?")
     r1, r2 = st.columns(2)
     pair_name = r1.selectbox("Value counted", list(costs.RETROFIT_PAIRS), index=1, key="rf_pair")
     om_rf = r2.slider("Extra O&M after retrofit ($/yr per 5 MWh)", 0, 10000, int(costs.RETROFIT_OM_DELTA_PER_5MWH), 500,
@@ -804,6 +768,55 @@ with tabs[10]:
                 f"(${costs.RETROFIT_COST['low']:.0f}-{costs.RETROFIT_COST['high']:.0f}/kWh; no public price exists). "
                 "Approximation: the retrofitted battery follows the bypass path from year 0, so older retrofits are slightly "
                 "optimistic. Same decision rule on both sides, so the rule effect is not credited to REON.")
+        st.markdown("##### Phase 1 candidates: Massachusetts batteries towns already own")
+        tt = costs.town_retrofit_table(rf, CFG.years, costs.RETROFIT_COST["central"])
+        if len(tt):
+            show = pd.DataFrame({
+                "Town": tt.town, "Battery": tt.battery, "Hours": tt.hours.map(lambda h: f"{h:.1f}"),
+                "Age in 2026": tt.age, "Closest simulated case": tt.scenario,
+                "Break-even retrofit $/kWh": tt.apply(lambda r: f"{r.breakeven_kwh:,.1f} [{r.lo:,.1f}, {r.hi:,.1f}]", axis=1),
+                "Most the retrofit can cost": tt.max_cost.map(ui.usd),
+                f"NPV at ${costs.RETROFIT_COST['central']:.0f}/kWh": tt.npv.map(ui.usd), "Source": tt.src})
+            st.dataframe(show, hide_index=True, width="stretch")
+            ui.note("Each town's value is the per-kWh result of the closest simulated case at the battery's current age, scaled "
+                    "to its size; these batteries were not simulated individually. A retrofit on a third-party battery needs REON to "
+                    "confirm compatibility, warranty and safety. Batteries with cooling problems or failing cells (see chart) are the "
+                    "strongest Phase 1 candidates.")
+
+    st.markdown("#### Phase 2, new batteries with REON's cell control: do they pay back, and how much extra can they cost?")
+    p1, p2 = st.columns(2)
+    prem = p1.slider("EBS price premium over a conventional battery", -0.05, 0.20, float(costs.REON_PREMIUM["central"]), 0.01,
+                     format="%.2f", key="cc_prem")
+    p2.markdown("<div class='ps-note'>" + ui.esc(f"No price signal from REON. Range {costs.REON_PREMIUM['low']:+.0%} to "
+                f"{costs.REON_PREMIUM['high']:+.0%}: Relectrify claims cell-level electronics can cost less than a standard BMS; "
+                f"Chalmers reports higher upfront cost; the ROI sheet uses +10%. O&amp;M: ${costs.OM_USD_YR_PER_5MWH['conventional']:,.0f}/yr "
+                f"conventional, ${costs.OM_USD_YR_PER_5MWH['reon']:,.0f}/yr EBS (ROI sheet, hypothetical).") + "</div>", unsafe_allow_html=True)
+    sets = [(ch, rl_, cfg_) for ch, _, _, rl_, cfg_ in product_sets()]
+    prices = np.linspace(100, 950, 35)
+    fig = go.Figure()
+    rows = []
+    for ch, rl_, cfg_ in sets:
+        r = costs.PRICE_RANGES[ch]
+        for cnd, dash in (("A", "dot"), ("C", "solid")):
+            ys = [costs.npv_at_price(rl_[rl_.cond == cnd], cfg_, p, prem).npv_full.mean() / 1e6 for p in prices]
+            fig.add_scatter(x=prices, y=ys, name=f"{ch}: {'conventional BMS (A)' if cnd == 'A' else 'EBS + PeakSure (C)'}",
+                            line=dict(color=chem_col[ch], dash=dash, width=2.5))
+            be = costs.breakeven_capex(rl_[rl_.cond == cnd], cfg_)
+            be_c = econ.ci((be.breakeven_kwh / (1 + (prem if costs.is_reon(cnd) else 0.0))).values)
+            row = {"Chemistry": ch, "System": "Conventional BMS (A)" if cnd == "A" else "EBS + PeakSure (C)",
+                   "Runs": int(be.run.nunique()), "Break-even conventional price $/kWh": f"{be_c[0]:,.0f} [{be_c[1]:,.0f}, {be_c[2]:,.0f}]"}
+            for lab in ("low", "central", "high"):
+                n = costs.npv_at_price(rl_[rl_.cond == cnd], cfg_, getattr(r, lab), prem)
+                row[f"NPV at {lab} (${getattr(r, lab):.0f})"] = ui.usd(n.npv_full.mean())
+            rows.append(row)
+    fig.add_hline(y=0, line=dict(color=ui.MUTED, width=1))
+    fig.update_layout(title=f"15-year NPV vs installed price of a conventional battery (EBS pays {prem:+.0%})",
+                      xaxis_title="Conventional installed price ($/kWh)", yaxis_title="NPV ($ million)", height=440)
+    st.plotly_chart(fig, width="stretch")
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    ui.note(f"NPV = present value of peak savings - augmentation - O&amp;M - upfront cost, {CFG.years} years at "
+            f"{CFG_FIN.discount_rate:.1%} (team financial model). Break-even price: the conventional $/kWh at which NPV is zero (for C, after paying the "
+            "premium). Na-ion uses the main study (64 runs); LFP uses the chemistry sensitivity run (24 runs). Prices: team financial model (Na-ion = LFP x 1.145).")
 
     st.markdown("#### Team financial model vs PeakSure simulation")
     ui.callout("The team sheet <i>assumes</i> REON's extra savings (+10% for the full system, +$55k/yr for the retrofit). "
@@ -812,7 +825,7 @@ with tabs[10]:
     ts = costs.team_sheet()
     s1, s2 = ts["s1"], ts["s2"]
     rows = {"Installed capex": [], "Gross savings / yr": [], "O&M / yr": [], "15-yr NPV": [], "Simple payback (yr)": []}
-    cols = ["Sheet: conventional", "Sheet: REON full system"]
+    cols = ["Sheet: conventional", "Sheet: REON new battery"]
     for k, v in (("Installed capex", (s1["conv_capex"], s1["reon_capex"])), ("Gross savings / yr", (s1["conv_gross"], s1["reon_gross"])),
                  ("O&M / yr", (costs.team("om_conv_yr"), costs.team("om_reon_yr"))), ("15-yr NPV", (s1["conv_npv"], s1["reon_npv"]))):
         rows[k] += [ui.usd(v[0]), ui.usd(v[1])]
@@ -824,7 +837,7 @@ with tabs[10]:
         price = costs.PRICE_RANGES[ch].central
         a_ = costs.npv_at_price(rl_[rl_.cond == "A"], cfg_, price, 0.0)
         c_ = costs.npv_at_price(rl_[rl_.cond == "C"], cfg_, price, costs.REON_PREMIUM["central"])
-        cols += [f"Model {ch}: conventional (A)", f"Model {ch}: REON full system (C)"]
+        cols += [f"Model {ch}: conventional (A)", f"Model {ch}: REON new battery (C)"]
         rows["Installed capex"] += [ui.usd(a_.capex.mean()), ui.usd(c_.capex.mean())]
         rows["Gross savings / yr"] += [ui.usd(a_.savings_yr.mean()), ui.usd(c_.savings_yr.mean())]
         rows["O&M / yr"] += [ui.usd(costs.om_usd_yr(cfg_, False)), ui.usd(costs.om_usd_yr(cfg_, True))]
@@ -837,7 +850,7 @@ with tabs[10]:
         need = (c_.capex.mean() - a_.capex.mean()) / costs.annuity(cfg_.discount_rate, cfg_.years) + \
             costs.om_usd_yr(cfg_, True) - costs.om_usd_yr(cfg_, False)
         incr["Extra gross savings needed to justify premium / yr"] += ["", ui.usd(need)]
-    st.markdown("##### Scenario 1: new 2.5 MW / 5 MWh battery")
+    st.markdown("##### Phase 2: new 2.5 MW / 5 MWh battery")
     t1df = pd.DataFrame({**rows, **incr}, index=cols).T.reset_index().rename(columns={"index": "Metric"})
     st.dataframe(t1df, hide_index=True, width="stretch")
     ui.note(f"Sheet prices: Modo 2026 global 2-h median ${costs.team('global_2h_capex_kwh'):.0f}/kWh x {1+costs.team('us_premium'):.2f} "
@@ -845,7 +858,7 @@ with tabs[10]:
             f"price for LFP and adds the sheet's {costs.team('sodium_premium'):.1%} sodium premium for Na-ion (the sheet lists that "
             "premium but does not use it in its own scenarios). Model REON (C) includes the optimized decision rule; its effect is shown in brackets.")
 
-    st.markdown("##### Scenario 2: BMS-only retrofit of an existing battery")
+    st.markdown("##### Phase 1: BMS-only retrofit of an existing battery")
     age = costs.RETROFIT_DEFAULT_AGE
     om7 = costs.team("retrofit_om_yr")
     rows2 = {"Upfront cost": [ui.usd(s2["replacement_capex"]), ui.usd(s2["retrofit_capex"])],

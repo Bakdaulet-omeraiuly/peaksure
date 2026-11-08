@@ -271,3 +271,42 @@ def retrofit_gross_by_age(ev: pd.DataFrame, mo: pd.DataFrame, cfg: Config, base:
     piv = yr.pivot_table(index=["run", "sim_year"], columns="cond", values="net").dropna()
     d = (piv[new] - piv[base]).rename("d").reset_index()
     return ci(d[d.sim_year >= age].groupby("run").d.mean().values)
+
+
+# ---------------------------------------------------------------- strategy and Phase 1 candidates
+# Phase 1: BMS-only retrofit on batteries towns already own. Proves the technology at low cost.
+# Phase 2: once field evidence exists, sell new batteries built with REON's cell control (EBS blocks).
+ASSESS_YEAR = 2026
+
+# Massachusetts municipal batteries that are retrofit candidates. `scenario` names the closest simulated
+# case in the app's retrofit chart (duration and chemistry are approximate matches, not simulations of
+# these batteries). Value is scaled per kWh of battery.
+TOWN_BATTERIES = {
+    "Sterling": dict(mw=2.0, mwh=3.9, year=2016, scenario="2-h, LFP",
+                     src="Clean Energy Group; Sandia/ESTAP 2018 (Li-ion, NEC Energy Solutions)"),
+    "Reading": dict(mw=5.0, mwh=10.0, year=2019, scenario="2-h, LFP",
+                    src="Reading MLD; MMWEC (Li-ion, NextEra)"),
+    "Holden": dict(mw=5.0, mwh=22.0, year=2024, scenario="4-h system",
+                   src="Lightshift / MMWEC 2024 (owned by Delorean)"),
+}
+
+
+def town_retrofit_table(rf: pd.DataFrame, life_years: int, price_kwh: float) -> pd.DataFrame:
+    """Phase 1 candidates: break-even retrofit price at each battery's current age, scaled to its size.
+
+    `rf` is the stacked output of retrofit_breakeven with a `scenario` column (as built in the app).
+    """
+    rows = []
+    for town, b in TOWN_BATTERIES.items():
+        age = min(ASSESS_YEAR - b["year"], life_years - 1)
+        g = rf[(rf.scenario == b["scenario"]) & (rf.age == age)]
+        if g.empty:
+            continue
+        r = g.iloc[0]
+        kwh = b["mwh"] * 1000.0
+        rows.append(dict(town=town, battery=f"{b['mw']:g} MW / {b['mwh']:g} MWh", hours=b["mwh"] / b["mw"],
+                         age=age, years_left=life_years - age, scenario=b["scenario"],
+                         breakeven_kwh=r.breakeven_kwh, lo=r.lo, hi=r.hi,
+                         max_cost=r.breakeven_kwh * kwh, retrofit_cost=price_kwh * kwh,
+                         npv=(r.breakeven_kwh - price_kwh) * kwh, src=b["src"]))
+    return pd.DataFrame(rows)

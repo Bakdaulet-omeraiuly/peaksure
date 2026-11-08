@@ -215,3 +215,15 @@ def test_retrofit_breakeven_identical_paths_cost_only_om():
     for _, row in r.iterrows():
         expect = -5000.0 * costs.annuity(cfg.discount_rate, cfg.years - row.age) / cfg.e_nom_kwh
         assert row.breakeven_kwh == pytest.approx(expect)
+
+
+def test_town_retrofit_table_scales_by_size():
+    import pandas as pd
+    from peaksure import costs
+    rf = pd.DataFrame([dict(scenario=s, age=a, breakeven_kwh=10.0, lo=8.0, hi=12.0)
+                       for s in ("2-h, LFP", "4-h system") for a in range(15)])
+    t = costs.town_retrofit_table(rf, 15, 4.0).set_index("town")
+    for town, b in costs.TOWN_BATTERIES.items():
+        assert t.loc[town, "max_cost"] == pytest.approx(10.0 * b["mwh"] * 1000)
+        assert t.loc[town, "npv"] == pytest.approx(6.0 * b["mwh"] * 1000)
+        assert t.loc[town, "age"] == min(costs.ASSESS_YEAR - b["year"], 14)

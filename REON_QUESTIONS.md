@@ -24,3 +24,8 @@ Optional third question: is bypass make-before-break, and what are the commutati
 - Does each block have its own DC/DC or inverter stage, and how are blocks paralleled at MW scale?
 - What is the energy per block for the EBS Li+ version?
 - Any price, or price premium over a conventional battery of the same size?
+
+**Phase 1 (retrofit) and Phase 2 (new batteries) questions:**
+- Can REON's cell-level control be retrofitted to other vendors' batteries already in the field (for example Sterling, Reading, Holden)? What are the compatibility, warranty, safety and certification limits?
+- What would a retrofit cost, per kWh or per cell, including installation?
+- Can EBS blocks be combined into a MW-scale plant, and how do they connect to a shared inverter?
