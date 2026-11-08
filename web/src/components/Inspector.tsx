@@ -120,7 +120,7 @@ export default function Inspector({ sc, c, baseline }: { sc: Scenario; c: Consta
     <aside className="studio-inspector surface min-w-0 overflow-hidden">
       <div className="panel-h"><span className="micro">Peak commitment</span></div>
       <div className="px-3 pt-3 text-[11px] text-muted leading-relaxed">
-        <b>System rating:</b> {(c.p_max_kw / 1000).toFixed(1)} MW / {(sc.eNom / 1000).toFixed(1)} MWh nominal model input ({sc.durationKey} nameplate ratio{sc.durationKey === "2h" ? ", CES-sized" : ", hypothetical"}).
+        <b>System rating:</b> {(c.p_max_kw / 1000).toFixed(1)} MW / {(sc.eNom / 1000).toFixed(1)} MWh nominal model input ({sc.durationKey} nameplate ratio{sc.durationKey === "2h" ? ", base case" : ", hypothetical"}).
         <br /><b>Age:</b> year {sc.age} of battery simulation · calendar year {sc.calYear}. <b>Peak:</b> HE{sc.event.he} on {sc.event.date}; HE means hour ending.
       </div>
       <div className="p-3 flex flex-col gap-2">

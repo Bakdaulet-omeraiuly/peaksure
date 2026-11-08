@@ -22,7 +22,7 @@ const k = (x, d = 0) => `$${(x / 1000).toFixed(d)}K`;
 const pct = (x) => `${Math.round(x * 100)}%`;
 const fmt = (x) => Math.round(x).toLocaleString("en-US");
 // drain test result read from the live Compare page during the video build (tools/make_pitch_video.py)
-const DRAIN = { a_del: 3855, a_str: 638, b_del: 4212, b_str: 204 };
+const DRAIN = { a_del: 3855, a_str: 638, b_del: 4221, b_str: 201 };   // live site, 2026-11-08 model run
 const TOWNS = [["Sterling", "2 MW / 3.9 MWh", "2016"], ["Reading", "5 MW / 10 MWh", "2019"], ["Holden", "5 MW / 22 MWh", "2024"]];
 
 const THEME = {
@@ -200,7 +200,7 @@ const tracker = (s, active) => {
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
   head(s, "Results", "It pays where cells limit delivery");
-  stat(s, 0.6, 1.9, 3.8, "≈ $0", `2-hour plant, normal duty: bypass + twin ${base < 0 ? "−" : "+"}$${fmt(Math.abs(base))}/yr. Peak timing matters more.`, MUTED);
+  stat(s, 0.6, 1.9, 3.8, `${base < 0 ? "−" : "+"}${k(Math.abs(base), 1)}/yr`, `2-hour plant, healthy cells: small, ${(Math.abs(base) / first(t1.A.savings) * 100).toFixed(1)}% of its ${k(first(t1.A.savings))}/yr peak savings`, MUTED);
   stat(s, 0.6, 3.35, 3.8, `+${k(val("duration_4h"), 1)}/yr`, "4-hour system (hypothetical): bypass + twin", GREEN);
   stat(s, 0.6, 4.8, 3.8, `${pct(t1.C.capture)} vs ${pct(t1.A.capture)}`, "monthly peaks covered: PeakSure's 95% commitment vs conventional", GREEN);
   const cases = [["Cell faults (0.2%/yr)", "fault_scenario"], ["Failing cooling", "hvac_failing"], ["1-hour system", "duration_1h"], ["Weak cooling", "hvac_weak"], ["4-hour system", "duration_4h"], ["LFP cells", "chem_LFP"]];
@@ -211,8 +211,9 @@ const tracker = (s, active) => {
     catAxisLabelColor: MUTED, valAxisLabelColor: MUTED, catAxisLabelFontSize: 11, valAxisLabelFontSize: 10, catAxisLabelFontFace: "+mn-lt", valAxisLabelFontFace: "+mn-lt",
     valGridLine: { color: "1F4A3B", size: 0.5 }, catGridLine: { style: "none" }, showLegend: false, catAxisOrientation: "maxMin", plotArea: { fill: { color: BG } }, objectName: "premium chart",
   });
-  txt(s, [{ text: "Where it does not pay: ", options: { bold: true, color: AMBER } }, { text: notPay.map(([l, t]) => `${l} ${sens[t].prem_c.toFixed(1)}`).join("  ·  ") + " $/kWh", options: { color: MUTED } }], { x: 4.8, y: 6.3, w: 8.0, h: 0.4, fontSize: 12 });
-  s.addNotes(`On a healthy two-hour battery the gain is near zero. Where cells limit delivery it is large. And PeakSure's commitment covers ${pct(t1.C.capture)} of monthly peaks instead of ${pct(t1.A.capture)}.`);
+  const negs = notPay.filter(([, t]) => sens[t].prem_c < 0);
+  txt(s, [{ text: negs.length ? "Where it does not pay: " : "Smaller gains: ", options: { bold: true, color: negs.length ? AMBER : MUTED } }, { text: (negs.length ? negs : notPay).map(([l, t]) => `${l} ${sens[t].prem_c.toFixed(1)}`).join("  ·  ") + " $/kWh", options: { color: MUTED } }], { x: 4.8, y: 6.3, w: 8.0, h: 0.4, fontSize: 12 });
+  s.addNotes(`On a healthy two-hour battery the gain is small. Where cells limit delivery it is large. And PeakSure's commitment covers ${pct(t1.C.capture)} of monthly peaks instead of ${pct(t1.A.capture)}.`);
 }
 
 // 9 · Battery options

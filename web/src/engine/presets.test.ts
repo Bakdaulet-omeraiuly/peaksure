@@ -12,7 +12,7 @@ const annual25 = events.find((e) => e.is_annual && e.year === 2025)!;
 const jan19 = events.find((e) => e.year === 2019 && e.month === 1)!;
 
 const cases: [string, string, PeakEvent, number, number, number][] = [
-  ["CES base", "2h", annual25, 9, 0.25, 2.5],
+  ["base case", "2h", annual25, 9, 0.25, 2.5],
   ["hot + weak cooling", "2h", annual25, 12, 0.9, 6],
   ["old 1-h", "1h", annual25, 12, 0.25, 2.5],
   ["4-h", "4h", annual25, 9, 0.25, 2.5],

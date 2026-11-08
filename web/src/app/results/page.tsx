@@ -23,7 +23,7 @@ interface R {
 }
 
 const usd = (x: number) => (Math.abs(x) >= 1e6 ? `$${(x / 1e6).toFixed(2)}M` : Math.abs(x) >= 1e3 ? `$${(x / 1e3).toFixed(1)}K` : `$${x.toFixed(0)}`);
-const NAMES: Record<string, string> = { ...BATTERY_NAMES, D: "D · CES-sized bypass + PeakSure + VoI", C_T3: "C · CES-sized bypass + PeakSure, resting SOC" };
+const NAMES: Record<string, string> = { ...BATTERY_NAMES, D: "D · REON EBS + PeakSure + VoI", C_T3: "C · REON EBS + PeakSure, resting SOC" };
 const CHART_NAMES: Record<string, string> = { A: "A Conventional", B: "B Bypass model", C: "C + PeakSure", C_T3: "C + resting" };
 const COL: Record<string, string> = { A: "#9aa6b8", B: "#79b0ff", C: "#7bd88f", D: "#3fb6a8", C_T3: "#c49cf2" };
 const LAB: Record<string, string> = {
@@ -120,9 +120,9 @@ export default function Results() {
       <div className="page-wrap max-w-[1280px]">
         <div className="eyebrow mb-3">Research findings</div>
         <h1 className="page-title mb-3">Where cell intelligence matters.</h1>
-        <p className="text-muted text-[14px] max-w-[760px] leading-relaxed mb-6">A 15-year paired simulation of A · conventional fixed strings, B · hypothetical cell bypass at the CES/CESS nameplate size, and C · the same bypass model with PeakSure. CES chemistry and internal wiring are unknown. These are model results, not hardware validation.</p>
+        <p className="text-muted text-[14px] max-w-[760px] leading-relaxed mb-6">A 15-year paired simulation of A · conventional fixed strings, B · REON EBS cell bypass on the same 2.5 MW / 5 MWh plant, and C · REON EBS with PeakSure. The EBS cell layout is a model assumption. These are model results, not hardware validation.</p>
         <div className="surface p-5 sm:p-7 text-[14px] leading-relaxed text-muted mb-5">
-            <span className="eyebrow block mb-2">Main finding</span> On the modeled 2-hour CES-sized plant doing coincident-peak duty, cell-level intelligence adds little
+            <span className="eyebrow block mb-2">Main finding</span> On the modeled 2-hour plant doing coincident-peak duty, cell-level intelligence adds little
             (V1 + V2 = {usd(r.dec[1].mean + r.dec[2].mean)}/yr): energy rarely limits the decision, and peak-hour timing dominates. It pays where energy or
             cells bind: 1-h and 4-h systems, weak cooling, and cell faults.
         </div>
@@ -146,7 +146,7 @@ export default function Results() {
 
           <Card title="Where cell-level intelligence pays" sub="break-even premium, $/kWh nameplate (NPV C minus A_opt, 95% CI)">
             <Bars rows={sens.map((s) => ({ label: LAB[s.tag] ?? s.tag, v: s.prem_c, lo: s.prem_c_lo, hi: s.prem_c_hi }))} />
-            <div className="text-[11.5px] text-faint mt-2">One change at a time from base (2-h CES-sized model, assumed Na-ion, k_HVAC 0.25). Same optimized rule on both sides, so the rule effect is excluded.</div>
+            <div className="text-[11.5px] text-faint mt-2">One change at a time from base (2-h model, Na-ion, k_HVAC 0.25). Same optimized rule on both sides, so the rule effect is excluded.</div>
           </Card>
 
           <Card title="Main benchmark: 2-h modeled plant, 15 years" sub="mean of paired runs">

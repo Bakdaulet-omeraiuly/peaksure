@@ -1,7 +1,7 @@
 // Assemble one live scenario: a real ISO-NE peak, a battery age, and three modeled operators.
 //   A Conventional battery: fixed strings + annual pack test + full-power rule.
 //   B REON-style bypass model (schematic; EBS topology unknown): bypass + annual pack test + full-power rule (assumed policy).
-//   C CES-sized bypass + PeakSure: per-cell estimator constrained by an independent annual pack-test
+//   C REON EBS bypass + PeakSure: per-cell estimator constrained by an independent annual pack-test
 //     safety envelope + 95%-confidence commitment (+ optional VoI probes).
 import { Constants, Life, PeakEvent, decodeI16, decodeU16, rnsRate } from "./data";
 import { Chem, SystemSpec, Tier, containerTemp, deliverable } from "./physics";
