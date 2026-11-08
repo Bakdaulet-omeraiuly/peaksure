@@ -612,12 +612,44 @@ with tabs[9]:
 
 # =============================================================== 10b. chemistry & cost
 @st.cache_data(show_spinner=False)
-def load_lfp_rl():
+def load_lfp():
     ev_, mo_ = an.load("events_sens"), an.load("monthly_sens")
     if ev_.empty:
-        return pd.DataFrame()
-    e, m = ev_[ev_.tag == "sens_chem_LFP"], mo_[mo_.tag == "sens_chem_LFP"]
-    return econ.run_level(e, m, CFG.with_(chemistry="LFP")) if len(e) else pd.DataFrame()
+        return pd.DataFrame(), pd.DataFrame()
+    return ev_[ev_.tag == "sens_chem_LFP"], mo_[mo_.tag == "sens_chem_LFP"]
+
+
+# Product economics use the team financial model's discount rate (sheet A7); science tables keep CFG.
+CFG_FIN = CFG.with_(discount_rate=costs.team("discount_rate"))
+
+
+@st.cache_data(show_spinner=False)
+def product_sets():
+    """(chemistry, events, monthly, run-level at the finance discount rate, cfg) for Na-ion and LFP."""
+    out = [("Na-ion", ev, mo, econ.run_level(ev, mo, CFG_FIN), CFG_FIN)]
+    e, m = load_lfp()
+    if len(e):
+        c = CFG_FIN.with_(chemistry="LFP")
+        out.append(("LFP", e, m, econ.run_level(e, m, c), c))
+    return out
+
+
+@st.cache_data(show_spinner=False)
+def retrofit_curves(base_c, new_c, om_rf, lines):
+    out = []
+    ev_s, mo_s = an.load("events_sens"), an.load("monthly_sens")
+    for name, tag in lines:
+        if tag is None:
+            e, m, cfg_ = ev, mo, CFG_FIN
+        else:
+            if ev_s.empty or tag not in set(ev_s.tag):
+                continue
+            e, m, cfg_ = ev_s[ev_s.tag == tag], mo_s[mo_s.tag == tag], an.tag_cfg(tag).with_(discount_rate=CFG_FIN.discount_rate)
+        if not {base_c, new_c} <= set(e.cond.unique()):
+            continue
+        r = costs.retrofit_breakeven(e, m, cfg_, base_c, new_c, om_delta_per_5mwh=om_rf)
+        out.append(r.assign(scenario=name))
+    return pd.concat(out, ignore_index=True) if out else pd.DataFrame()
 
 
 with tabs[10]:
@@ -690,7 +722,13 @@ with tabs[10]:
     with st.expander("All benchmarks with scope and source"):
         st.dataframe(bm, hide_index=True, width="stretch")
 
-    st.markdown("#### Does the project pay back, and how much extra can EBS cost?")
+    st.markdown("#### Two products")
+    ui.callout("<b>1. Full system:</b> a new battery with REON's cell-level control BMS (EBS). It competes with a new "
+               "conventional battery, so the customer pays the battery price plus any premium. "
+               "<b>2. BMS-only retrofit:</b> REON's cell-level control added to a battery the customer already owns. "
+               "There is no battery cost; the customer pays only for the technology and installation, and gains the extra "
+               "value over the battery's remaining life.")
+    st.markdown("#### Product 1, full EBS system: does it pay back, and how much extra can it cost?")
     p1, p2 = st.columns(2)
     prem = p1.slider("EBS price premium over a conventional battery", -0.05, 0.20, float(costs.REON_PREMIUM["central"]), 0.01,
                      format="%.2f", key="cc_prem")
@@ -698,10 +736,7 @@ with tabs[10]:
                 f"{costs.REON_PREMIUM['high']:+.0%}: Relectrify claims cell-level electronics can cost less than a standard BMS; "
                 f"Chalmers reports higher upfront cost; the ROI sheet uses +10%. O&amp;M: ${costs.OM_USD_YR_PER_5MWH['conventional']:,.0f}/yr "
                 f"conventional, ${costs.OM_USD_YR_PER_5MWH['reon']:,.0f}/yr EBS (ROI sheet, hypothetical).") + "</div>", unsafe_allow_html=True)
-    sets = [("Na-ion", RL, CFG)]
-    rl_lfp = load_lfp_rl()
-    if len(rl_lfp):
-        sets.append(("LFP", rl_lfp, CFG.with_(chemistry="LFP")))
+    sets = [(ch, rl_, cfg_) for ch, _, _, rl_, cfg_ in product_sets()]
     prices = np.linspace(100, 950, 35)
     fig = go.Figure()
     rows = []
@@ -725,9 +760,116 @@ with tabs[10]:
     st.plotly_chart(fig, width="stretch")
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
     ui.note(f"NPV = present value of peak savings - augmentation - O&amp;M - upfront cost, {CFG.years} years at "
-            f"{CFG.discount_rate:.1%}. Break-even price: the conventional $/kWh at which NPV is zero (for C, after paying the "
-            "premium). Na-ion uses the main study (64 runs); LFP uses the chemistry sensitivity run (24 runs). The Na-ion price "
-            "range is provisional until the team's own prices are added.")
+            f"{CFG_FIN.discount_rate:.1%} (team financial model). Break-even price: the conventional $/kWh at which NPV is zero (for C, after paying the "
+            "premium). Na-ion uses the main study (64 runs); LFP uses the chemistry sensitivity run (24 runs). Prices: team financial model (Na-ion = LFP x 1.145).")
+
+    st.markdown("#### Product 2, BMS-only retrofit: what is it worth on an existing battery?")
+    r1, r2 = st.columns(2)
+    pair_name = r1.selectbox("Value counted", list(costs.RETROFIT_PAIRS), index=1, key="rf_pair")
+    om_rf = r2.slider("Extra O&M after retrofit ($/yr per 5 MWh)", 0, 10000, int(costs.RETROFIT_OM_DELTA_PER_5MWH), 500,
+                      key="rf_om")
+    base_c, new_c = costs.RETROFIT_PAIRS[pair_name]
+    rf_lines = {"2-h, Na-ion (main study)": None, "2-h, LFP": "sens_chem_LFP", "1-h system": "sens_duration_1h",
+                "4-h system": "sens_duration_4h", "Weak HVAC": "sens_hvac_weak", "Failing HVAC": "sens_hvac_failing",
+                "Cell faults": "sens_fault_scenario"}
+    rf = retrofit_curves(base_c, new_c, float(om_rf), tuple(rf_lines.items()))
+    if rf.empty:
+        st.info("No results found for the retrofit comparison.")
+    else:
+        fig = go.Figure()
+        lo_c, hi_c = costs.RETROFIT_COST["low"], costs.RETROFIT_COST["high"]
+        fig.add_hrect(y0=lo_c, y1=hi_c, fillcolor=ui.ACCENT["warn"], opacity=0.10, line_width=0)
+        fig.add_hline(y=costs.RETROFIT_COST["central"], line=dict(color=ui.ACCENT["warn"], dash="dash"),
+                      annotation_text=f"assumed retrofit price ${lo_c:.0f}-{hi_c:.0f}/kWh")
+        fig.add_hline(y=0, line=dict(color=ui.MUTED, width=1))
+        fig.add_vline(x=costs.RETROFIT_DEFAULT_AGE, line=dict(color=ui.MUTED, dash="dot"),
+                      annotation_text=f"team sheet: {costs.team('retrofit_years')} years left")
+        palette = [ui.COLORS["C"], ui.COLORS["B"], ui.COLORS["D"], ui.COLORS["C_T3"], ui.ACCENT["warn"], ui.ACCENT["bad"], ui.INK]
+        for (name, g), col in zip(rf.groupby("scenario", sort=False), palette):
+            fig.add_scatter(x=g.age, y=g.breakeven_kwh, name=name, mode="lines+markers", line=dict(color=col, width=2.5),
+                            error_y=dict(type="data", symmetric=False, array=g.hi - g.breakeven_kwh,
+                                         arrayminus=g.breakeven_kwh - g.lo, color=col, thickness=1))
+        fig.update_layout(title=f"Break-even retrofit price vs battery age at retrofit ({pair_name.lower()})",
+                          xaxis=dict(title="Battery age when retrofitted (years)", dtick=1),
+                          yaxis_title="Most the retrofit can cost ($/kWh of battery)", height=460)
+        st.plotly_chart(fig, width="stretch")
+        tb = rf[rf.age.isin([0, 5, 10])].copy()
+        tb["v"] = tb.apply(lambda r: f"{r.breakeven_kwh:,.1f} [{r.lo:,.1f}, {r.hi:,.1f}]", axis=1)
+        tb = tb.pivot(index="scenario", columns="age", values="v").reindex(list(rf_lines))
+        tb.columns = [f"Retrofit at year {c} ($/kWh)" for c in tb.columns]
+        st.dataframe(tb.reset_index().rename(columns={"scenario": "Scenario"}), hide_index=True, width="stretch")
+        ui.note(f"Break-even retrofit price = present value, at the retrofit date, of the extra peak savings and avoided "
+                f"augmentation over the remaining years, minus the extra O&amp;M, per kWh of battery ({CFG_FIN.discount_rate:.1%}, "
+                f"{CFG.years}-year battery life). The shaded band is our assumed retrofit price "
+                f"(${costs.RETROFIT_COST['low']:.0f}-{costs.RETROFIT_COST['high']:.0f}/kWh; no public price exists). "
+                "Approximation: the retrofitted battery follows the bypass path from year 0, so older retrofits are slightly "
+                "optimistic. Same decision rule on both sides, so the rule effect is not credited to REON.")
+
+    st.markdown("#### Team financial model vs PeakSure simulation")
+    ui.callout("The team sheet <i>assumes</i> REON's extra savings (+10% for the full system, +$55k/yr for the retrofit). "
+               "The simulator <i>computes</i> them from cell physics on real ISO-NE peaks. Same prices, O&amp;M, life and "
+               "discount rate on both sides; only the savings differ.", "warn")
+    ts = costs.team_sheet()
+    s1, s2 = ts["s1"], ts["s2"]
+    rows = {"Installed capex": [], "Gross savings / yr": [], "O&M / yr": [], "15-yr NPV": [], "Simple payback (yr)": []}
+    cols = ["Sheet: conventional", "Sheet: REON full system"]
+    for k, v in (("Installed capex", (s1["conv_capex"], s1["reon_capex"])), ("Gross savings / yr", (s1["conv_gross"], s1["reon_gross"])),
+                 ("O&M / yr", (costs.team("om_conv_yr"), costs.team("om_reon_yr"))), ("15-yr NPV", (s1["conv_npv"], s1["reon_npv"]))):
+        rows[k] += [ui.usd(v[0]), ui.usd(v[1])]
+    rows["Simple payback (yr)"] += [f"{s1['conv_payback']:.1f}", f"{s1['reon_payback']:.1f}"]
+    incr = {"REON extra gross savings / yr": ["", ui.usd(s1["reon_gross"] - s1["conv_gross"])],
+            "REON incremental NPV": ["", ui.usd(s1["incr_npv"])],
+            "Extra gross savings needed to justify premium / yr": ["", ui.usd(s1["needed_extra_gross"])]}
+    for ch, e_, m_, rl_, cfg_ in product_sets():
+        price = costs.PRICE_RANGES[ch].central
+        a_ = costs.npv_at_price(rl_[rl_.cond == "A"], cfg_, price, 0.0)
+        c_ = costs.npv_at_price(rl_[rl_.cond == "C"], cfg_, price, costs.REON_PREMIUM["central"])
+        cols += [f"Model {ch}: conventional (A)", f"Model {ch}: REON full system (C)"]
+        rows["Installed capex"] += [ui.usd(a_.capex.mean()), ui.usd(c_.capex.mean())]
+        rows["Gross savings / yr"] += [ui.usd(a_.savings_yr.mean()), ui.usd(c_.savings_yr.mean())]
+        rows["O&M / yr"] += [ui.usd(costs.om_usd_yr(cfg_, False)), ui.usd(costs.om_usd_yr(cfg_, True))]
+        rows["15-yr NPV"] += [ui.usd(a_.npv_full.mean()), ui.usd(c_.npv_full.mean())]
+        rows["Simple payback (yr)"] += [f"{a_.payback_yr.mean():.1f}", f"{c_.payback_yr.mean():.1f}"]
+        rule = (rl_[rl_.cond == "A_opt"].savings_yr.mean() - rl_[rl_.cond == "A"].savings_yr.mean())
+        incr["REON extra gross savings / yr"] += ["", ui.usd(c_.savings_yr.mean() - a_.savings_yr.mean()) +
+                                                  f" (decision rule {ui.usd(rule)})"]
+        incr["REON incremental NPV"] += ["", ui.usd(c_.npv_full.mean() - a_.npv_full.mean())]
+        need = (c_.capex.mean() - a_.capex.mean()) / costs.annuity(cfg_.discount_rate, cfg_.years) + \
+            costs.om_usd_yr(cfg_, True) - costs.om_usd_yr(cfg_, False)
+        incr["Extra gross savings needed to justify premium / yr"] += ["", ui.usd(need)]
+    st.markdown("##### Scenario 1: new 2.5 MW / 5 MWh battery")
+    t1df = pd.DataFrame({**rows, **incr}, index=cols).T.reset_index().rename(columns={"index": "Metric"})
+    st.dataframe(t1df, hide_index=True, width="stretch")
+    ui.note(f"Sheet prices: Modo 2026 global 2-h median ${costs.team('global_2h_capex_kwh'):.0f}/kWh x {1+costs.team('us_premium'):.2f} "
+            f"US premium = ${costs.TEAM_CONV_CAPEX_KWH:.2f}/kWh; REON +{costs.REON_PREMIUM['central']:.0%}. The model uses the same "
+            f"price for LFP and adds the sheet's {costs.team('sodium_premium'):.1%} sodium premium for Na-ion (the sheet lists that "
+            "premium but does not use it in its own scenarios). Model REON (C) includes the optimized decision rule; its effect is shown in brackets.")
+
+    st.markdown("##### Scenario 2: BMS-only retrofit of an existing battery")
+    age = costs.RETROFIT_DEFAULT_AGE
+    om7 = costs.team("retrofit_om_yr")
+    rows2 = {"Upfront cost": [ui.usd(s2["replacement_capex"]), ui.usd(s2["retrofit_capex"])],
+             "Extra gross savings / yr vs do-nothing": [ui.usd(s2["replacement_gross"]), ui.usd(s2["retrofit_gross"])],
+             "Extra O&M / yr": [ui.usd(costs.team("replacement_om_yr")), ui.usd(om7)],
+             f"NPV over {costs.team('retrofit_years')} yr": [ui.usd(s2["replacement_npv"]), ui.usd(s2["retrofit_npv"])],
+             "Max justified retrofit cost": ["", ui.usd(s2["retrofit_max_capex"])]}
+    cols2 = ["Sheet: module replacement", "Sheet: REON retrofit"]
+    for ch, e_, m_, rl_, cfg_ in product_sets():
+        g = costs.retrofit_gross_by_age(e_, m_, cfg_, "A_opt", "C", age)
+        be = costs.retrofit_breakeven(e_, m_, cfg_, "A_opt", "C", ages=[age], om_delta_per_5mwh=om7).iloc[0]
+        cap = costs.RETROFIT_COST["central"] * cfg_.e_nom_kwh
+        cols2.append(f"Model {ch}: REON retrofit")
+        rows2["Upfront cost"].append(ui.usd(cap))
+        rows2["Extra gross savings / yr vs do-nothing"].append(f"{ui.usd(g[0])} [{ui.usd(g[1])}, {ui.usd(g[2])}]")
+        rows2["Extra O&M / yr"].append(ui.usd(om7))
+        rows2[f"NPV over {costs.team('retrofit_years')} yr"].append(ui.usd(be.breakeven_kwh * cfg_.e_nom_kwh - cap))
+        rows2["Max justified retrofit cost"].append(ui.usd(be.breakeven_kwh * cfg_.e_nom_kwh))
+    st.dataframe(pd.DataFrame(rows2, index=cols2).T.reset_index().rename(columns={"index": "Metric"}),
+                 hide_index=True, width="stretch")
+    ui.note(f"Model retrofit at battery year {age} ({costs.team('retrofit_years')} years left), 2-h system, hardware + cell twin "
+            "with the same decision rule on both sides (C vs A_opt). Extra savings include avoided augmentation. The module-replacement "
+            "comparator exists only in the sheet; the simulator does not model partial module replacement. See the chart above for "
+            "1-h, 4-h, cooling and fault scenarios, where the simulated retrofit value is much larger.")
 
 
 # =============================================================== 11. assumptions

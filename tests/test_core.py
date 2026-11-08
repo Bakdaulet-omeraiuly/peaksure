@@ -189,3 +189,29 @@ def test_voltage_curves():
     # discharge sits below charge
     assert np.all(curves.terminal_v("Na-ion", np.linspace(0.1, 0.9, 9), 0.5, False)
                   < curves.terminal_v("Na-ion", np.linspace(0.1, 0.9, 9), 0.5, True))
+
+
+def test_team_sheet_reproduces_spreadsheet():
+    from peaksure import costs
+    t = costs.team_sheet()
+    assert costs.TEAM_CONV_CAPEX_KWH == pytest.approx(373.75)
+    assert t["s1"]["conv_npv"] == pytest.approx(1_041_472.75, abs=1)
+    assert t["s1"]["reon_npv"] == pytest.approx(1_154_179.51, abs=1)
+    assert t["s1"]["needed_extra_gross"] == pytest.approx(26_832.52, abs=1)
+    assert t["s2"]["retrofit_npv"] == pytest.approx(72_083.91, abs=1)
+    assert t["s2"]["replacement_npv"] == pytest.approx(-163_844.71, abs=1)
+    assert t["s2"]["retrofit_max_capex"] == pytest.approx(322_083.91, abs=1)
+
+
+def test_retrofit_breakeven_identical_paths_cost_only_om():
+    import pandas as pd
+    from peaksure import costs
+    cfg = Config()
+    rows = [dict(cond=c, run=0, m=y * 12, sim_year=y, month=1, is_annual=False, shaved_kw=1000.0, power_kw=1000.0)
+            for c in ("A", "B") for y in range(cfg.years)]
+    ev = pd.DataFrame(rows)
+    mo = pd.DataFrame([dict(cond=c, run=0, sim_year=y, aug_kwh=0.0) for c in ("A", "B") for y in range(cfg.years)])
+    r = costs.retrofit_breakeven(ev, mo, cfg, "A", "B", ages=[0, 5], om_delta_per_5mwh=5000.0)
+    for _, row in r.iterrows():
+        expect = -5000.0 * costs.annuity(cfg.discount_rate, cfg.years - row.age) / cfg.e_nom_kwh
+        assert row.breakeven_kwh == pytest.approx(expect)
