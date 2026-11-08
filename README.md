@@ -43,11 +43,13 @@ cd web && npm install && npm test && npm run dev     # http://localhost:3000
 
 ## Run (Python model)
 ```bash
-pip install numpy pandas scipy plotly streamlit pyarrow openpyxl pytest
+pip install -r requirements.txt pytest
 pytest -q
 python -m peaksure.experiments --quick      # precompute results into results/
 streamlit run app/app.py
 ```
+
+Streamlit Community Cloud: deploy `app/app.py` from `main` with Python 3.11; it installs `requirements.txt`.
 
 ## Data
 - ISO-NE SMD hourly files (2019–2026). Download them from ISO-NE's zone-info page into `data/isone/`, then run `tools/build_peak_events.py`. The derived event table is included.
