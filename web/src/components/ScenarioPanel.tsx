@@ -88,7 +88,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
       </Row>
       <Row label="Bypass switch loss" hint={`${(s.switchLoss * 100).toFixed(1)}% · R_on ${((s.switchLoss * c.v_nom) / ((c.p_max_kw * 1000) / (c.n_strings * c.n_series * c.v_nom)) * 1e6).toFixed(0)} µΩ`}>
         <input type="range" min={0.005} max={0.05} step={0.001} value={s.switchLoss} onChange={(e) => s.set({ switchLoss: +e.target.value })} />
-        <div className="text-[11px] text-faint mt-0.5 leading-snug">Each cell&apos;s switch carries the full string current (~{Math.round((c.p_max_kw * 1000) / (c.n_strings * c.n_series * c.v_nom))} A): loss = I·R_on / V_cell. Not public; ask REON.</div>
+        <div className="text-[11px] text-faint mt-0.5 leading-snug">Each cell&apos;s switch carries the full string current (~{Math.round((c.p_max_kw * 1000) / (c.n_strings * c.n_series * c.v_nom))} A): loss = I·R_on / V_cell. Modelled range.</div>
       </Row>
       <Row label="Colour cells by">
         <div className="seg">

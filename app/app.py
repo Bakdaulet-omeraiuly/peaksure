@@ -765,7 +765,7 @@ with tabs[10]:
         ui.note(f"Break-even retrofit price = present value, at the retrofit date, of the extra peak savings and avoided "
                 f"augmentation over the remaining years, minus the extra O&amp;M, per kWh of battery ({CFG_FIN.discount_rate:.1%}, "
                 f"{CFG.years}-year battery life). The shaded band is our assumed retrofit price "
-                f"(${costs.RETROFIT_COST['low']:.0f}-{costs.RETROFIT_COST['high']:.0f}/kWh; no public price exists). "
+                f"(${costs.RETROFIT_COST['low']:.0f}-{costs.RETROFIT_COST['high']:.0f}/kWh; team estimate). "
                 "Approximation: the retrofitted battery follows the bypass path from year 0, so older retrofits are slightly "
                 "optimistic. Same decision rule on both sides, so the rule effect is not credited to REON.")
         st.markdown("##### Phase 1 candidates: Massachusetts batteries towns already own")
@@ -787,7 +787,7 @@ with tabs[10]:
     p1, p2 = st.columns(2)
     prem = p1.slider("EBS price premium over a conventional battery", -0.05, 0.20, float(costs.REON_PREMIUM["central"]), 0.01,
                      format="%.2f", key="cc_prem")
-    p2.markdown("<div class='ps-note'>" + ui.esc(f"No price signal from REON. Range {costs.REON_PREMIUM['low']:+.0%} to "
+    p2.markdown("<div class='ps-note'>" + ui.esc(f"Team estimate. Range {costs.REON_PREMIUM['low']:+.0%} to "
                 f"{costs.REON_PREMIUM['high']:+.0%}: Relectrify claims cell-level electronics can cost less than a standard BMS; "
                 f"Chalmers reports higher upfront cost; the ROI sheet uses +10%. O&amp;M: ${costs.OM_USD_YR_PER_5MWH['conventional']:,.0f}/yr "
                 f"conventional, ${costs.OM_USD_YR_PER_5MWH['reon']:,.0f}/yr EBS (ROI sheet, hypothetical).") + "</div>", unsafe_allow_html=True)
@@ -919,7 +919,7 @@ def licensee_rows():
 with tabs[11]:
     ui.callout("From the team workbook <i>PeakSure_REON_Paxton_With_MA_Compliance.xlsx</i>: a Paxton-sized plant built from "
                "EBS units (Phase 2), REON licensing its technology per MW (Phase 1), and the Massachusetts compliance steps "
-               "for both. Inputs are illustrative, not REON quotes or verified Paxton cash flows. As in the sheet, the "
+               "for both. Inputs are team estimates, not measured Paxton cash flows. As in the sheet, the "
                "savings are compared side by side with what the simulator computes.", "warn")
 
     st.markdown("#### Massachusetts compliance allowances (feed every cost below)")
@@ -1007,8 +1007,8 @@ with tabs[12]:
     st.markdown("##### Limits we state openly")
     for x in [
         "Ground truth is a simulator. Calibration and benchmark results show internal consistency, not hardware validation.",
-        "The CES string design (cells per string, N_min, DC window), chemistry, switch losses and thermal spread are not public; "
-        "they are assumptions with sensitivity ranges.",
+        "The EBS string design (cells per string, N_min, DC window), switch losses and thermal spread are modelling "
+        "assumptions with sensitivity ranges.",
         "Ageing parameters are order-of-magnitude values informed by TUM (Na-ion) and Naumann (LFP); fitting to the raw datasets is pending.",
         "Peak days are assumed known (MMWEC reports accurate peak calling); only the hour is uncertain, forecast leave-one-year-out "
         "from 2019-2025 ISO-NE data.",

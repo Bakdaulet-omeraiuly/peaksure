@@ -52,13 +52,13 @@ export default function Proposal() {
         <Stage n="1" tag="Retrofit · prove it" title="Add REON's cell-level BMS to batteries already installed">
           <p><b className="text-ink">What we sell:</b> the cell-control technology and PeakSure, without a new battery.</p>
           <p><b className="text-ink">Where:</b> existing batteries with weak cells, poor cooling, or short (1-h) or long (4-h) duration, where cells limit what the battery can deliver.</p>
-          <p><b className="text-ink">Cost assumption:</b> {a ? `$${a.retrofit_cost.low}–${a.retrofit_cost.high}/kWh` : "…"} for the retrofit (assumed; no public price).</p>
+          <p><b className="text-ink">Cost assumption:</b> {a ? `$${a.retrofit_cost.low}–${a.retrofit_cost.high}/kWh` : "…"} for the retrofit (team estimate).</p>
           <p><b className="text-ink">Exit test:</b> measured extra delivered energy and fewer missed peaks on a real site.</p>
         </Stage>
         <Stage n="2" tag="Scale · sell it" title="Sell new REON EBS batteries with cell control built in">
           <p><b className="text-ink">What we sell:</b> EBS battery systems with the cell-level BMS, and PeakSure as the decision layer.</p>
           <p><b className="text-ink">When:</b> after Stage 1 shows field evidence, and REON confirms EBS specifications and certification.</p>
-          <p><b className="text-ink">Price assumption:</b> {a ? `${Math.round(a.premium.low * 100)}% to +${Math.round(a.premium.high * 100)}%` : "…"} versus a conventional battery (assumed; no REON price).</p>
+          <p><b className="text-ink">Price assumption:</b> {a ? `${Math.round(a.premium.low * 100)}% to +${Math.round(a.premium.high * 100)}%` : "…"} versus a conventional battery (team estimate).</p>
           <p><b className="text-ink">Exit test:</b> EBS delivers more over its life than a conventional battery of the same size.</p>
         </Stage>
       </div>

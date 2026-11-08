@@ -1,7 +1,7 @@
 "use client";
 // Two EBS-size blocks side by side: conventional fixed string (A) and REON-style bypass (B).
 // Cell states come from the simulation frames (engine/ebsScenario.cellStates). Layout is schematic:
-// REON has not published EBS cell count, series/parallel arrangement or wiring.
+// Cell count, series/parallel arrangement and wiring are modelling assumptions.
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { useEffect, useMemo, useRef, useState } from "react";

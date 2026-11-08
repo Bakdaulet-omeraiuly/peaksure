@@ -74,7 +74,7 @@ export default function Method() {
             </tbody></table>
           </S>
           <S n="6" t="What it does not show">
-            <p>It is a simulation, not REON hardware validation. EBS cells per block, wiring, minimum active cells and switch losses are not public, so they are assumptions with sensitivity ranges (see Assumptions). The cell twin is over-confident in the base case. No grid CO₂ savings are claimed.</p>
+            <p>It is a simulation, not REON hardware validation. EBS cells per block, wiring, minimum active cells and switch losses are modelling assumptions with sensitivity ranges (see Assumptions). The cell twin is over-confident in the base case. No grid CO₂ savings are claimed.</p>
           </S>
         </div>
       </div>

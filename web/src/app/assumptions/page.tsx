@@ -59,7 +59,7 @@ export default function Assumptions() {
       <div className="grid md:grid-cols-3 gap-3 mb-4">
         {[["Conventional battery", "Case A", "Same Na-ion cells as REON EBS, fixed series strings, conventional BMS, no bypass.", "ASSUMED"],
           ["REON EBS Na+", "Cases B, C", "Sodium-ion EBS with REON's cell-level BMS. Rating from REON; cells, wiring and switches are our assumptions.", "REON CLAIM"],
-          ["Lithium-ion (LFP)", "Cases A, B, C · chemistry option", "Same three cases rerun with LFP cells: cheaper, flat voltage curve. Stands in for REON EBS Li+, whose capacity and exact chemistry REON has not published.", "LITERATURE"]]
+          ["Lithium-ion (LFP)", "Cases A, B, C · chemistry option", "Same three cases rerun with LFP cells: cheaper, flat voltage curve. Represents the EBS Li+ option.", "LITERATURE"]]
           .map(([t, k, d, st]) => <div key={t} className="surface p-4"><div className="flex justify-between items-center mb-1"><span className="font-semibold">{t}</span><B s={st} /></div>
             <div className="micro mb-1">{k}</div><p className="text-[12.5px] text-muted leading-relaxed">{d}</p></div>)}
       </div>

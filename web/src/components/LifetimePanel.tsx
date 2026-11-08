@@ -87,7 +87,7 @@ export default function LifetimePanel() {
             ["Lowest charge before a 240-cell string hits a 750 V DC floor", (ch: typeof chemRows[number]) => `${k(ch.floor_min_soc * 100)}%`]] as [string, (ch: typeof chemRows[number]) => string][])
             .map(([label, f]) => <tr key={label} className="border-t border-line"><td className="py-2 pr-3 text-ink">{label}</td>{chemRows.map((ch) => <td key={ch.name} className="py-2 pr-3 num text-muted">{f(ch)}</td>)}</tr>)}
         </tbody></table></div>
-      <p className="text-[11.5px] text-faint mt-2">LFP is cheaper and its flat voltage curve keeps the string above the DC floor until nearly empty; sodium-ion&apos;s sloped curve hits it at about half charge. LFP is modelled with generic LFP cell data as a sensitivity: REON has not published EBS Li+ capacity, power or exact chemistry. Prices are team and market assumptions, not REON quotes.</p>
+      <p className="text-[11.5px] text-faint mt-2">LFP is cheaper and its flat voltage curve keeps the string above the DC floor until nearly empty; sodium-ion&apos;s sloped curve hits it at about half charge. LFP uses generic LFP cell data to represent the EBS Li+ option. Prices are team and market estimates.</p>
     </div>
   </section>;
 }

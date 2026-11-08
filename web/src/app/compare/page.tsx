@@ -75,7 +75,7 @@ export default function Compare() {
             </div>
             {scenario && <PlaybackBar scenario={scenario} view={view} />}
             {scenario && <LiveReadout scenario={scenario} view={view} slots={slots} />}
-            <p className="px-3 pt-3 pb-1 text-[11px] text-faint">{view === "peak" ? "Peak day: what each case commits and delivers at the real peak hour." : "Drain test: full rated power until every string stops. Shows charge each wiring strands, with no operator decision."} Schematic layout; REON EBS internals are not public. Simulation, not hardware validation.</p>
+            <p className="px-3 pt-3 pb-1 text-[11px] text-faint">{view === "peak" ? "Peak day: what each case commits and delivers at the real peak hour." : "Drain test: full rated power until every string stops. Shows charge each wiring strands, with no operator decision."} Schematic cell layout. Simulation results.</p>
           </main>
           {c && events && <ScenarioPanel c={c} events={events} ms={ms} />}
         </div>
