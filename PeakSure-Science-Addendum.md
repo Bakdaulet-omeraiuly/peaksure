@@ -1116,6 +1116,8 @@ The assumed block has 120 series cells, a DC/DC input floor swept from 280 to 35
 
 `web/public/data/ebs.json` contains the calculated fixed/bypass traces and sensitivity grid; the `/ebs` page reads that export. The team's required annual gross savings to cover an assumed EBS price premium is shown separately as an **economic hurdle**, not inferred from one discharge. EBS cell count, DC/DC design, switch R_on, weak-cell prevalence, price and MW-scale interconnection require REON confirmation before any hardware or investment claim.
 
+The same export includes the team's Paxton-sized EBS sizing and spreadsheet NPV from §AI6. This is a separate project-level calculation; the 84-block discharge trace is not presented as a simulation of Paxton's 167-unit plant. Unpriced compliance line items remain unknown costs.
+
 ---
 
 # Z. Change Log (Part II)

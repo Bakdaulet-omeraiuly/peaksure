@@ -50,6 +50,12 @@ def main() -> None:
             "assumed_retrofit_cost_per_kwh": costs.RETROFIT_COST["central"],
             "note": "Team-sheet price hurdle, not a simulated EBS annual revenue forecast. A single discharge cannot establish annual ISO-NE peak savings.",
         },
+        paxton={
+            "sheet": costs.paxton_sheet(),
+            "inputs": {key: value for key, (value, _) in costs.PAXTON_INPUTS.items()},
+            "compliance_items_unpriced": len(costs.COMPLIANCE_ITEMS),
+            "note": "Team workbook sizing and assumed cash flows, not a block-level simulation of a Paxton plant or a vendor quote. Compliance cost placeholders are unknown, not zero-cost requirements.",
+        },
         rows=rows,
     )
     path = ROOT / "web/public/data/ebs.json"
