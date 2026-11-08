@@ -37,7 +37,8 @@ def population(case: EBSCase) -> np.ndarray:
     return q
 
 
-def simulate(case: EBSCase, q_full: np.ndarray, bypass: bool, minutes: int = 240, dt_min: float = 0.25) -> dict:
+def simulate(case: EBSCase, q_full: np.ndarray, bypass: bool, minutes: float = 240, dt_min: float = 0.25,
+             detail: bool = False) -> dict:
     """Constant rated-power discharge of independent blocks on identical cells.
 
     Terminal voltage changes with SOC. A fixed string stops at the first empty cell;
@@ -57,19 +58,31 @@ def simulate(case: EBSCase, q_full: np.ndarray, bypass: bool, minutes: int = 240
     checkpoints = {}
     trace = []
     weak_cell = int(np.argmin(q_full[0]))
-    steps = int(minutes / dt_min)
+    steps = int(round(minutes / dt_min))
+    first_bypass_min, stop_min, stop_cell, stop_reason = None, None, None, None
     for step in range(steps + 1):
         minute = step * dt_min
         soc = np.divide(remaining, q_full, out=np.zeros_like(remaining), where=q_full > 0)
         v_cell = terminal_v("Na-ion", soc, 0.5, charging=False)
         v = (v_cell * active).sum(axis=1)
         n_active = active.sum(axis=1)
+        was_online = bool(online[0])
+        reasons = []
+        if detail and was_online:
+            if v[0] < case.dc_floor_v:
+                reasons.append("DC voltage floor")
+            if n_active[0] < (case.n_min if bypass else case.cells_per_block):
+                reasons.append("fewer than N_min active cells")
+            if not bypass and ((remaining[0] <= 0) & active[0]).any():
+                reasons.append("first empty cell in the fixed string")
         online &= (v >= case.dc_floor_v) & (n_active >= (case.n_min if bypass else case.cells_per_block))
         if not bypass:
             online &= ~((remaining <= 0) & active).any(axis=1)
         r = n_active * (case.r_on_ohm if bypass else 0.0)
         p_dc = case.block_kw * 1000 / case.eta
         disc = v * v - 4 * r * p_dc
+        if detail and was_online and disc[0] < 0:
+            reasons.append("switch-path loss: power not reachable")
         online &= disc >= 0
         current = np.zeros(case.blocks)
         direct = online & (r == 0)
@@ -85,6 +98,11 @@ def simulate(case: EBSCase, q_full: np.ndarray, bypass: bool, minutes: int = 240
             checkpoints[str(int(minute))] = dict(power_kw=float(online.sum() * case.block_kw),
                                                 blocks_online=int(online.sum()),
                                                 bypassed_cells=int(bypassed.sum()))
+        if detail and stop_min is None and not online[0]:
+            stop_min = minute
+            stop_reason = "; ".join(reasons) or "not online at start"
+            if not bypass and "first empty cell in the fixed string" in reasons:
+                stop_cell = int(np.argmin(remaining[0]))      # the cell that stopped the string (engine state)
         if step == steps:
             break
         if online.all():
@@ -94,8 +112,14 @@ def simulate(case: EBSCase, q_full: np.ndarray, bypass: bool, minutes: int = 240
         if bypass:
             newly_empty = (remaining <= 0) & active & online[:, None]
             bypassed += newly_empty.sum(axis=1)
+            if detail and first_bypass_min is None and newly_empty[0].any():
+                first_bypass_min = minute + dt_min
             active[newly_empty] = False
             remaining[newly_empty] = 0
-    return dict(energy_kwh=float(delivered.sum()), full_power_minutes=full_power_steps * dt_min,
+    out = dict(energy_kwh=float(delivered.sum()), full_power_minutes=full_power_steps * dt_min,
         checkpoints=checkpoints, power_trace=trace, weak_cell=weak_cell, bypassed_cells=int(bypassed.sum()),
         blocks_online_end=int(online.sum()), nameplate_kwh=case.blocks * 60)
+    if detail:
+        out.update(block_energy_kwh=delivered, first_bypass_min=first_bypass_min, stop_min=stop_min,
+                   stop_cell=stop_cell, stop_reason=stop_reason, final_soc=np.divide(remaining, q_full, out=np.zeros_like(remaining), where=q_full > 0))
+    return out

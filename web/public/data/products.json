@@ -1,5 +1,5 @@
 {
- "checked": "2026-11-07",
+ "checked": "2026-11-08",
  "statuses": [
   "CONFIRMED",
   "REON CLAIM",
@@ -27,6 +27,18 @@
    "energy arbitrage",
    "backup / resilience",
    "VPP / time-of-use optimisation"
+  ]
+ },
+ "ebs_use_case": {
+  "modelled": "One 30 kW / 60 kWh EBS-size block (Na+) reduces a commercial facility's monthly demand peak (demand charge)",
+  "status": "ASSUMED",
+  "note": "PeakSure simulation scenario (peaksure/ebs_scenario.py); not a verified EBS deployment or REON operating profile. REON's EMS lists 'Peak Shaving & Demand Management' (REON CLAIM, https://reoncorp.com/solutions); EBS is for C&I (CONFIRMED).",
+  "not_modelled": [
+   "time-of-use optimisation",
+   "demand response",
+   "VPP",
+   "backup",
+   "facility peak-timing uncertainty"
   ]
  },
  "products": [
@@ -122,21 +134,21 @@
    "specs": {
     "rated_power_kw": {
      "value": 30,
-     "status": "CONFIRMED",
+     "status": "DERIVED",
      "source": "https://reoncorp.com/hardware",
-     "note": "\"EBS | 30kW/60kWh\" (line-level rating on the page)"
+     "note": "page heading \"EBS | 30kW/60kWh\" covers the EBS line, above the Na+/Li+ tabs; assigned to Na+ because Li+ claims >2x energy in the same form factor. AC/DC side not stated"
     },
     "rated_energy_kwh": {
      "value": 60,
-     "status": "CONFIRMED",
+     "status": "DERIVED",
      "source": "https://reoncorp.com/hardware",
-     "note": "\"EBS | 30kW/60kWh\" (line-level rating on the page)"
+     "note": "same heading; Na+ assignment as above. Rated vs usable not stated"
     },
     "energy_basis": {
      "value": null,
      "status": "UNKNOWN",
      "source": "",
-     "note": "not stated"
+     "note": "rated vs usable, AC vs DC not stated"
     },
     "ac_interface": {
      "value": null,
@@ -198,17 +210,29 @@
      "source": "https://reoncorp.com/solutions",
      "note": "\"bypass underperforming cells without shutting down\"; S names no product, T assigns it to EBS"
     },
+    "nominal_ratio_h": {
+     "value": 2.0,
+     "status": "DERIVED",
+     "source": "",
+     "note": "60 kWh / 30 kW; nominal ratio, not a guaranteed AC discharge duration"
+    },
     "cycle_life": {
      "value": 20000,
      "status": "REON CLAIM",
      "source": "https://reoncorp.com/hardware",
-     "note": "\"20,000-Cycle Life\", no test conditions"
+     "note": "\"20,000-Cycle Life\" (Na+ tab); no DoD, C-rate, temperature or end-of-life definition"
     },
     "operating_temp": {
      "value": "-40 °F to +140 °F",
      "status": "REON CLAIM",
      "source": "https://reoncorp.com/hardware",
-     "note": ""
+     "note": "\"Reliable operation\" (Na+ tab); no charge vs discharge limits or power derating given"
+    },
+    "application": {
+     "value": "commercial and industrial",
+     "status": "CONFIRMED",
+     "source": "https://reoncorp.com/hardware",
+     "note": "\"designed for commercial and industrial applications\" (EBS line text)"
     }
    }
   },
@@ -221,13 +245,13 @@
      "value": null,
      "status": "UNKNOWN",
      "source": "",
-     "note": "page shows only the line-level 30 kW / 60 kWh; Li+ not separately rated"
+     "note": "Li+ not separately rated; the 30 kW line heading is not assigned to Li+"
     },
     "rated_energy_kwh": {
-     "value": ">120",
-     "status": "DERIVED",
-     "source": "",
-     "note": "\"more than twice the energy in the same form factor\" (H) × 60 kWh"
+     "value": "more than twice the energy in the same form factor",
+     "status": "REON CLAIM",
+     "source": "https://reoncorp.com/hardware",
+     "note": "no base product, conditions or kWh stated; not converted to a model input"
     },
     "energy_basis": {
      "value": null,
@@ -248,7 +272,7 @@
      "note": "not published"
     },
     "chemistry": {
-     "value": "lithium (exact chemistry not stated)",
+     "value": "lithium (LFP/NMC not stated)",
      "status": "CONFIRMED",
      "source": "https://reoncorp.com/hardware",
      "note": ""
@@ -294,6 +318,12 @@
      "status": "REON CLAIM",
      "source": "https://reoncorp.com/solutions",
      "note": "as for the EBS line"
+    },
+    "application": {
+     "value": "commercial and industrial",
+     "status": "CONFIRMED",
+     "source": "https://reoncorp.com/hardware",
+     "note": "EBS line text; Li+ tab: \"sites with high consumption peaks and limited space\" (REON CLAIM)"
     }
    }
   }

@@ -43,6 +43,9 @@ cd web && npm install && npm test && npm run dev     # http://localhost:3000
 
 The `/ebs` page is a separate exploratory Na+ EBS block discharge model. Regenerate its
 assumption and voltage-floor sensitivity data with `python tools/export_ebs.py`.
+The page opens with a single-block EBS C&I demand-charge scenario (`peaksure/ebs_scenario.py`,
+regenerate with `python tools/export_ebs_scenario.py`). It is a PeakSure simulation scenario, not
+a verified EBS deployment; see Addendum §AL for which EBS facts are confirmed, claimed or assumed.
 
 ## Run (Python model)
 ```bash

@@ -1156,6 +1156,35 @@ All cell states come from `cellState` on engine output (tests check bypassed cel
 
 CESS energy basis and AC/DC boundary; EBS cells per block, block DC window, DC/DC stage, columns and N_min; switch R_on per cell path; round-trip efficiency; how EBS blocks are paralleled at MW scale; certification status per product.
 
+# AL. EBS C&I Peak-Shaving Scenario (8 Nov 2026)
+
+## AL1. EBS evidence (reoncorp.com/hardware and /solutions, accessed 8 Nov 2026)
+
+| Item | Applies to | Status | Notes |
+|---|---|---|---|
+| "EBS \| 30kW/60kWh" | the EBS line heading, above the Na+ and Li+ tabs | CONFIRMED (heading); Na+ assignment DERIVED | The page does not say which variant it rates. Li+ claims ">2x the energy in the same form factor", so 60 kWh can only be Na+. Rated vs usable and AC vs DC are UNKNOWN |
+| 60 kWh / 30 kW = 2 h | EBS | DERIVED | Nominal ratio, not a guaranteed AC discharge duration |
+| "designed for commercial and industrial applications" | EBS line | CONFIRMED (product text) | Listed under "Commercial & Industrial (30–120 kW)" |
+| "20,000-Cycle Life" | Na+ tab only | REON CLAIM | No depth of discharge, C-rate, temperature, warranty or end-of-life definition |
+| "Reliable operation from -40°F to +140°F" | Na+ tab only | REON CLAIM | No charge vs discharge limits or power derating; not used as a model input |
+| "more than twice the energy in the same form factor" | Li+ tab only | REON CLAIM | No base product or conditions; not converted to a kWh model input; Li+ is not simulated |
+| "Peak Shaving & Demand Management ... to reduce demand charges" | REON EMS (solutions page), not tied to EBS | REON CLAIM | Basis for choosing the scenario only |
+| Cell count, N_min, DC floor, switch R_on, efficiency, topology | — | UNKNOWN (model values ASSUMED, from `EBSCase`) | — |
+
+## AL2. Scenario and comparison design
+
+`peaksure/ebs_scenario.py` (exported by `tools/export_ebs_scenario.py` to `web/public/data/ebs_scenario.json`) simulates **one** 30 kW / 60 kWh Na+ EBS-size block reducing a commercial facility's monthly demand peak. It is a PeakSure simulation scenario, not a verified deployment, and does not touch the CES/MLP study or its results.
+
+- **Same everything except hardware.** Both blocks use the same simulated cells (seeded TUM-spread population; weak-cell cases 0.9 / 0.8 are labelled stress cases, natural spread is the default), the same per-cell capacity estimates (2% error, ASSUMED), the same 95% chance-constrained rule and the same window and tariff. The difference is therefore physical bypass value net of the assumed switch loss; information and decision-rule value are held equal (they are separated in the main study's Shapley decomposition).
+- **Belief before truth.** The commitment is the largest power (0.25 kW grid, ≤ 30 kW) whose belief samples sustain it for the whole window with ≥ 95% probability, including N_min, the 300 V DC floor and switch-path loss. The cell selected for diagnosis is the lowest twin estimate. The simulated plant state is used only afterwards (delivered energy, whether the commitment held, stop reason).
+- **Quantities.** Commitment energy = power × window; status uses the same rule as the main study (`commitment_status`). Window time (HE15 start) and length (1–3 h) are ASSUMED; battery age is new cells; temperature is not modelled.
+- **Economics.** Demand-charge value = committed kW × $/kW-month if the commitment holds, using an ASSUMED $10–20/kW-month range (no specific tariff verified). It is an upper bound: the facility's billing peak is assumed to fall inside the window, and timing uncertainty is not modelled. No NPV, cycle-life or lifetime claim is made from this scenario.
+- **Stop reasons** come from the engine: first empty cell in the fixed string, DC voltage floor, fewer than N_min cells, or switch-path loss. With natural cell spread both blocks stop at the assumed DC floor, so bypass gains little or nothing; in the 80% stress case the fixed string stops at its weak cell and bypass continues. Numbers are generated in the export, not quoted here.
+
+## AL3. Visualization
+
+`/ebs` now opens with this scenario. `EBSPair3D` shows both blocks from the exported 5-minute frames: one colour per state (green normal, yellow approaching empty, red limiting, grey bypassed, slate idle), a blue ring for the cell selected for diagnosis, shape cues (limiting enlarged, bypassed and idle recessed), per-state counts as text, a Difference view, shared Play / Pause / Reset and stages (Before peak → Cell limit → Bypass decision → Result) read from engine events, disabled when the event does not occur. The layout is labelled "schematic topology; internal EBS construction not confirmed". The previous `EBSBlock3D` (fixed weak-cell index, yellow meaning both weak and stranded, unlabelled current path) was removed; the 84-block sensitivity section now defaults to natural spread.
+
 ---
 
 # Z. Change Log (Part II)
@@ -1204,6 +1233,7 @@ CESS energy basis and AC/DC boundary; EBS cells per block, block DC window, DC/D
 | 40 | Checked the interactive scenario presets across three seeds and all durations; tied EBS outcome text to the exported result and added a no-WebGL cell view for the main comparison | Verification / presentation | Keep scenario changes coherent and show the model in browsers without 3D graphics |
 | 41 | Product evidence audit: separate CESS / EBS Na+ / EBS Li+ / modelled-plant profiles with CONFIRMED / REON CLAIM / DERIVED / LITERATURE / ASSUMED / UNKNOWN / MODEL OUTPUT status; plant size flags changed CONFIRMED → ASSUMED (§AK1–AK2) | Correction (evidence) | CESS is white-label; its rating is a comparison size, not a bypass-plant spec |
 | 42 | Commitment energy and feasibility shown and tested; partial last discharge minute (stranded energy now matches the analytic value); truth hidden until after the peak; identical-cells option; Difference mode, shared playback and engine-driven steps (§AK3–AK4) | Correction / visualization | Accuracy and transparency audit |
+| 43 | EBS C&I peak-shaving scenario: EBS evidence re-checked (30 kW / 60 kWh is the EBS line heading; Na+ assignment DERIVED; Li+ capacity only claimed, not simulated), single-block belief / 95% commitment / simulated outcome with identical cells, stop reasons from the engine, new `/ebs` 3D comparison (§AL) | Addition / correction (evidence) | EBS-specific, honest comparison |
 
 ---
 

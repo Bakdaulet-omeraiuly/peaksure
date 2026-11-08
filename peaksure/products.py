@@ -26,7 +26,7 @@ UNKNOWN = "UNKNOWN"
 MODEL_OUTPUT = "MODEL OUTPUT"
 STATUSES = (CONFIRMED, REON_CLAIM, DERIVED, LITERATURE, ASSUMED, UNKNOWN, MODEL_OUTPUT)
 
-CHECKED = "2026-11-07"
+CHECKED = "2026-11-08"
 SOURCES = {
     "H": "https://reoncorp.com/hardware",
     "S": "https://reoncorp.com/solutions",
@@ -84,25 +84,30 @@ CES = Product("CES", "REON CESS (Container Energy Storage System)",
 
 EBS_NA = Product("EBS_NA", "REON EBS Na+ (Energy Block System, sodium-ion)",
                  "REON's product with the cell-level control BMS (T).", {
-    "rated_power_kw": Spec(30, CONFIRMED, "H", "\"EBS | 30kW/60kWh\" (line-level rating on the page)"),
-    "rated_energy_kwh": Spec(60, CONFIRMED, "H", "\"EBS | 30kW/60kWh\" (line-level rating on the page)"),
-    "energy_basis": U("not stated"),
+    "rated_power_kw": Spec(30, DERIVED, "H", "page heading \"EBS | 30kW/60kWh\" covers the EBS line, above the Na+/Li+ tabs; "
+                           "assigned to Na+ because Li+ claims >2x energy in the same form factor. AC/DC side not stated"),
+    "rated_energy_kwh": Spec(60, DERIVED, "H", "same heading; Na+ assignment as above. Rated vs usable not stated"),
+    "nominal_ratio_h": Spec(2.0, DERIVED, note="60 kWh / 30 kW; nominal ratio, not a guaranteed AC discharge duration"),
+    "energy_basis": U("rated vs usable, AC vs DC not stated"),
     "ac_interface": U(), "dc_window_v": U(),
     "chemistry": Spec("sodium-ion", CONFIRMED, "H"),
     "cell_format": U(),
     "cells_per_string": Spec(120, DERIVED, "", "≈ 60 kWh / (3.1 V × 160 Ah); the 160 Ah cell is ASSUMED from another vendor"),
     "parallel_columns": U(), "n_min": U(), "switch_r_on": U(), "round_trip_eff": U(),
     "cell_level_bypass": Spec(True, REON_CLAIM, "S", "\"bypass underperforming cells without shutting down\"; S names no product, T assigns it to EBS"),
-    "cycle_life": Spec(20000, REON_CLAIM, "H", "\"20,000-Cycle Life\", no test conditions"),
-    "operating_temp": Spec("-40 °F to +140 °F", REON_CLAIM, "H"),
+    "cycle_life": Spec(20000, REON_CLAIM, "H", "\"20,000-Cycle Life\" (Na+ tab); no DoD, C-rate, temperature or end-of-life definition"),
+    "operating_temp": Spec("-40 °F to +140 °F", REON_CLAIM, "H", "\"Reliable operation\" (Na+ tab); no charge vs discharge limits or power derating given"),
+    "application": Spec("commercial and industrial", CONFIRMED, "H", "\"designed for commercial and industrial applications\" (EBS line text)"),
 })
 
 EBS_LI = Product("EBS_LI", "REON EBS Li+ (Energy Block System, lithium)",
                  "Lithium variant of EBS; cell-level control assumed same as EBS line (T).", {
-    "rated_power_kw": U("page shows only the line-level 30 kW / 60 kWh; Li+ not separately rated"),
-    "rated_energy_kwh": Spec(">120", DERIVED, "", "\"more than twice the energy in the same form factor\" (H) × 60 kWh"),
+    "rated_power_kw": U("Li+ not separately rated; the 30 kW line heading is not assigned to Li+"),
+    "rated_energy_kwh": Spec("more than twice the energy in the same form factor", REON_CLAIM, "H",
+                             "no base product, conditions or kWh stated; not converted to a model input"),
     "energy_basis": U(), "ac_interface": U(), "dc_window_v": U(),
-    "chemistry": Spec("lithium (exact chemistry not stated)", CONFIRMED, "H"),
+    "chemistry": Spec("lithium (LFP/NMC not stated)", CONFIRMED, "H"),
+    "application": Spec("commercial and industrial", CONFIRMED, "H", "EBS line text; Li+ tab: \"sites with high consumption peaks and limited space\" (REON CLAIM)"),
     "cell_format": U(), "cells_per_string": U(), "parallel_columns": U(), "n_min": U(),
     "switch_r_on": U(), "round_trip_eff": U(),
     "cell_level_bypass": Spec(True, REON_CLAIM, "S", "as for the EBS line"),
@@ -129,6 +134,14 @@ MODEL_PLANT = Product("MODEL", "PeakSure modelled plant (A: conventional; B/C: R
 
 PRODUCTS = {p.key: p for p in (CES, EBS_NA, EBS_LI)}
 
+EBS_USE_CASE = {
+    "modelled": "One 30 kW / 60 kWh EBS-size block (Na+) reduces a commercial facility's monthly demand peak (demand charge)",
+    "status": ASSUMED,
+    "note": "PeakSure simulation scenario (peaksure/ebs_scenario.py); not a verified EBS deployment or REON operating profile. "
+            "REON's EMS lists 'Peak Shaving & Demand Management' (REON CLAIM, https://reoncorp.com/solutions); EBS is for C&I (CONFIRMED).",
+    "not_modelled": ["time-of-use optimisation", "demand response", "VPP", "backup", "facility peak-timing uncertainty"],
+}
+
 USE_CASE = {
     "modelled": "MLP coincident-peak shaving in ISO-NE (monthly RNS transmission peak + annual FCA capacity peak)",
     "status": ASSUMED,
@@ -142,5 +155,5 @@ def as_dict() -> dict:
     enc = lambda p: {"key": p.key, "name": p.name, "role": p.role,  # noqa: E731
                      "specs": {k: {"value": s.value, "status": s.status, "source": SOURCES.get(s.source, s.source),
                                    "note": s.note} for k, s in {**{q: p.get(q) for q in PARAMS}, **p.specs}.items()}}
-    return {"checked": CHECKED, "statuses": list(STATUSES), "sources": SOURCES, "use_case": USE_CASE,
+    return {"checked": CHECKED, "statuses": list(STATUSES), "sources": SOURCES, "use_case": USE_CASE, "ebs_use_case": EBS_USE_CASE,
             "products": [enc(p) for p in PRODUCTS.values()], "model": enc(MODEL_PLANT)}
