@@ -25,8 +25,8 @@ export default function Method() {
             <p>REON says CESS/OES are white-label products; EBS carries its cell-level BMS. A is a conventional battery, while B/C represent an EBS-equivalent plant at the same 2.5 MW / 5 MWh rating. About 84 published Na+ blocks would match that nameplate rating. The block interconnection is unknown.</p>
             <p><b className="text-ink">A · Conventional battery:</b> fixed series strings (same current through every cell; the first empty cell stops the string; the hottest cell derates it),
               an annual system capacity test as its belief, and the common rule: full power for as many whole hours as the P5 energy allows, centred on the most likely hour.</p>
-            <p><b className="text-ink">B · REON EBS model (bypass):</b> per-cell bypass with the same annual pack-test belief and full-power rule. This is a modeled comparison policy, not a verified description of REON&apos;s current control software.</p>
-            <p><b className="text-ink">C · REON EBS model + PeakSure:</b> per-cell bypass (an empty or hot cell leaves the path; the string runs while at least N_min cells keep the DC voltage valid),
+            <p><b className="text-ink">B · REON-style bypass model:</b> per-cell bypass with the same annual pack-test belief and full-power rule. This is a modeled comparison policy, not a verified description of REON&apos;s current control software.</p>
+            <p><b className="text-ink">C · REON-style bypass + PeakSure:</b> per-cell bypass (an empty or hot cell leaves the path; the string runs while at least N_min cells keep the DC voltage valid),
               a per-cell Kalman twin as its belief, and the chance-constrained commitment. Optional value-of-information probes switch single cells to measure them.</p>
           </S>
           <details className="surface disclosure"><summary>Data sources, assumptions and limitations</summary><div className="p-4 grid gap-4">

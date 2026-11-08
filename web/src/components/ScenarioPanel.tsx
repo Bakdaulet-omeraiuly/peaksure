@@ -57,12 +57,20 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
       <Row label="Battery age" hint={`year ${s.age} · ${c.start_year + s.age - 1}`}>
         <input type="range" min={1} max={15} value={s.age} onChange={(e) => s.set({ age: +e.target.value })} />
       </Row>
-      <Row label="System" hint={`${c.p_max_kw / 1000} MW`}>
+      <Row label="System rated power / energy" hint={`${c.p_max_kw / 1000} MW rated`}>
         <div className="seg">
           {(["1h", "2h", "4h"] as const).map((d) => (
-            <button key={d} data-on={s.duration === d} onClick={() => s.set({ duration: d })}>{d === "2h" ? "2 h (5 MWh model)" : d === "1h" ? "1 h" : "4 h"}</button>
+            <button key={d} data-on={s.duration === d} onClick={() => s.set({ duration: d })}>{d === "2h" ? "2 h · 5 MWh" : d === "1h" ? "1 h · 2.5 MWh*" : "4 h · 10 MWh*"}</button>
           ))}
         </div>
+        <div className="text-[11px] text-faint mt-1 leading-snug">Energy ÷ power is a nominal ratio, not a guaranteed AC discharge time. 5 MWh matches the published CESS rating (basis unstated). *1 h and 4 h are hypothetical sizes, not REON products. The commitment window is chosen separately.</div>
+      </Row>
+      <Row label="Cells in the conventional battery">
+        <div className="seg">
+          <button data-on={!s.sameCells} onClick={() => s.set({ sameCells: false })}>Own ageing</button>
+          <button data-on={s.sameCells} onClick={() => s.set({ sameCells: true })}>Identical cells</button>
+        </div>
+        <div className="text-[11px] text-faint mt-1 leading-snug">Own ageing: both start from the same year-0 cells and draws, then each hardware ages them its own way. Identical cells: A uses B&apos;s cells at this age, isolating the wiring difference.</div>
       </Row>
       <details className="disclosure"><summary>Advanced assumptions</summary>
       <Row label="Monte Carlo seed" hint="cell population">
@@ -84,7 +92,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
       </Row>
       <Row label="Colour cells by">
         <div className="seg">
-          {([["soc", "Charge"], ["soh", "Health"], ["temp", "Temp"], ["sd", "Twin unc."]] as [ColorMode, string][]).map(([k, l]) => (
+          {([["soc", "Charge"], ["diff", "Difference"], ["soh", "Health"], ["temp", "Temp"], ["sd", "Twin unc."]] as [ColorMode, string][]).map(([k, l]) => (
             <button key={k} data-on={s.colorMode === k} onClick={() => s.set({ colorMode: k })}>{l}</button>
           ))}
         </div>
@@ -93,7 +101,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
         <div className="micro mb-1">Provenance</div>
         Peaks, hours and temperatures: ISO-NE SMD 2019&ndash;2025 (real). Cell ageing: PeakSure Python model, {c.chemistry},
         TUM-informed spread. Discharge, beliefs and commitment computed live in your browser ({ms.toFixed(0)} ms).
-        Rates: ISO-NE RNS and FCA. The 2.5 MW / 5 MWh comparison size matches the public CESS rating; EBS wiring and scale are assumed.
+        Rates: ISO-NE RNS and FCA. The 2.5 MW / 5 MWh comparison size matches the published CESS rating (reoncorp.com/hardware); CESS chemistry and topology are unknown, and the 240 × 8 cells, N_min, efficiency and switch loss are model assumptions.
         <div className="mt-2">Independent analysis. Not endorsed by REON.</div>
       </div>
       </details>

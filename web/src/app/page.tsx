@@ -11,7 +11,9 @@ import { useEffect, useRef } from "react";
 import StringStrip from "@/components/StringStrip";
 import LiveReadout from "@/components/LiveReadout";
 import WeakCellFlow from "@/components/WeakCellFlow";
-import { slotsFor } from "@/components/Battery3D";
+import { slotsFor, DIFF_COLORS } from "@/components/Battery3D";
+import PlaybackBar from "@/components/PlaybackBar";
+import EvidencePanel from "@/components/EvidencePanel";
 
 const Battery3D = dynamic(() => import("@/components/Battery3D"), { ssr: false });
 
@@ -52,7 +54,7 @@ export default function Explore() {
         <div className="mb-6 max-w-[760px]">
           <div className="eyebrow mb-3">PeakSure · battery decision intelligence</div>
           <h1 className="page-title">Know what the battery can commit.</h1>
-          <p className="mt-3 text-[14px] leading-relaxed text-muted max-w-[650px]">Three modeled operators on the same cells and ISO-NE peak: a conventional fixed-string battery, an EBS-equivalent plant with cell bypass, and that plant with PeakSure&apos;s cell twin and 95% confidence commitment. The 3D racks show assumed wiring, not an EBS hardware layout.</p>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted max-w-[650px]">Three modeled operators on the same ISO-NE peak, temperatures and random draws: a conventional fixed-string battery, a REON-style plant that can bypass individual cells, and that plant with PeakSure&apos;s cell twin and 95% confidence commitment. The racks are a schematic model: REON&apos;s cell counts and wiring are not public. Every highlighted cell comes from the simulation.</p>
           <div className="flex flex-wrap items-center gap-3 mt-3">
             <div className="seg inline-flex"><button data-on={view === "peak"} onClick={() => useStudio.getState().set({ view: "peak", drainPlaying: false })}>Peak day</button><button data-on={view === "drain"} onClick={() => useStudio.getState().set({ view: "drain", playing: false, drainMin: 0 })}>Drain test: full to empty</button></div>
             <span className="text-[11px] text-faint max-w-[460px]">{view === "peak" ? "What each operator commits and delivers at the real peak hour." : "Same cells at full rated power until every string stops: shows the hardware difference (stranded charge) without any operator decision."}</span>
@@ -65,9 +67,9 @@ export default function Explore() {
               {scenario ? <Battery3D scenario={scenario} view={view} /> : <div className="absolute inset-0 grid place-items-center text-[#cbd8d1] text-[13px]">Loading model data…</div>}
               {scenario && <>
                 <div className="absolute top-3 left-4 right-4 flex flex-wrap justify-center gap-x-4 gap-y-1 pointer-events-none text-[10px] text-[#aab8b0]">
-                  {(colorMode === "soc" ? [["#7ee2a0", "charged"], ["#1f2a2d", "used"], ["#ef4a3c", "limiting"], ["#e9a23b", "stranded"], ["#68737c", "bypassed"]] : colorMode === "temp" ? [["#2b5d9a", "cool"], ["#58a6a6", "moderate"], ["#e0a53a", "warm"], ["#ef5a50", "hot"], ["#68737c", "bypassed"]] : colorMode === "soh" ? [["#a33a30", "low health"], ["#d39a35", "mid health"], ["#4fbf85", "high health"], ["#68737c", "bypassed"]] : [["#262b31", "low uncertainty"], ["#5a4b8a", "mid uncertainty"], ["#c49cf2", "high uncertainty"], ["#68737c", "bypassed"]]).map(([color, label]) => <span key={label}><i className="inline-block w-2 h-2 mr-1 rounded-sm" style={{ background: color }} />{label}</span>)}
+                  {(colorMode === "diff" ? [[DIFF_COLORS.same, "same as partner"], [DIFF_COLORS.inPath, "in circuit, partner out"], [DIFF_COLORS.outOfPath, "out of circuit, partner in"], [DIFF_COLORS.moreCharge, "more charge left (may be stranded)"], [DIFF_COLORS.lessCharge, "less charge left"]] : colorMode === "soc" ? [["#7ee2a0", "charged"], ["#1f2a2d", "used"], ["#ef4a3c", "limiting (enlarged, pushed forward)"], ["#e9a23b", "stranded (recessed)"], ["#68737c", "bypassed (recessed)"]] : colorMode === "temp" ? [["#2b5d9a", "cool"], ["#58a6a6", "moderate"], ["#e0a53a", "warm"], ["#ef5a50", "hot"], ["#68737c", "bypassed"]] : colorMode === "soh" ? [["#a33a30", "low health"], ["#d39a35", "mid health"], ["#4fbf85", "high health"], ["#68737c", "bypassed"]] : [["#262b31", "low uncertainty"], ["#5a4b8a", "mid uncertainty"], ["#c49cf2", "high uncertainty"], ["#68737c", "bypassed"]]).map(([color, label]) => <span key={label}><i className="inline-block w-2 h-2 mr-1 rounded-sm" style={{ background: color }} />{label}</span>)}
                 </div>
-                <div className="studio-stage-note">Drag to rotate when 3D graphics are available{view === "peak" ? " · Select a string below to inspect cells" : ""}</div>
+                <div className="studio-stage-note">{colorMode === "diff" ? "Difference mode: A and C are compared with B, B with A, cell by cell at the same clock minute · " : ""}Drag to rotate · hover a cell for its modelled state{view === "peak" ? " · select a string below" : ""}</div>
                 <button className="btn btn-accent absolute bottom-4 right-4 z-10" onClick={() => {
                   if (view === "drain") { useStudio.getState().set({ drainMin: 0, drainPlaying: true }); return; }
                   if (playback.current) playback.current.open = true;
@@ -77,12 +79,7 @@ export default function Explore() {
               </>}
             </div>
             {scenario && <LiveReadout scenario={scenario} view={view} slots={slots} />}
-            {scenario && view === "drain" && <div className="px-3 pt-3 flex items-center gap-3 text-[11px] text-muted">
-              <button className="btn" onClick={() => useStudio.getState().set({ drainMin: 0, drainPlaying: true })}>Replay</button>
-              <span className="num shrink-0">t+{Math.floor(drainMin)} min</span>
-              <input className="flex-1 min-w-0" type="range" min={0} max={drainEnd} step={1} value={drainMin} onChange={(e) => useStudio.getState().set({ drainMin: +e.target.value, drainPlaying: false })} aria-label="Drain test timeline" />
-              <span className="num shrink-0">{drainEnd} min</span>
-            </div>}
+            {scenario && <PlaybackBar scenario={scenario} view={view} />}
             {scenario && <WeakCellFlow scenario={scenario} view={view} />}
             {scenario && view === "peak" && scenario.ops.C.run.energyKwh > 1.05 * Math.max(scenario.ops.A.run.energyKwh, scenario.ops.B.run.energyKwh) && <p className="px-3 pt-2 text-[11px] text-faint">Dark cells on the PeakSure battery are charge it chose to deliver across a longer window, not damage. The other operators leave that charge unused.</p>}
             {scenario && view === "peak" && Math.abs(scenario.ops.A.run.energyKwh - scenario.ops.C.run.energyKwh) < 0.01 * Math.max(1, scenario.ops.C.run.energyKwh) && Math.abs(scenario.ops.B.run.energyKwh - scenario.ops.C.run.energyKwh) < 0.01 * Math.max(1, scenario.ops.C.run.energyKwh) && <p className="px-3 pt-2 text-[11px] text-faint">All three deliver the same energy at this peak, so energy is not the binding limit here. Switch to <button className="underline text-[var(--accent)]" onClick={() => useStudio.getState().set({ view: "drain", playing: false, drainMin: 0 })}>Drain test</button> to see the hardware difference: stranded charge in fixed strings.</p>}
@@ -92,8 +89,9 @@ export default function Explore() {
           {scenario && c && <Inspector sc={scenario} c={c} baseline={baseline} />}
         </div>
         <YearlyCompare />
+        <EvidencePanel />
         {c && events && <details className="surface disclosure mt-4"><summary>Change scenario and assumptions</summary><ScenarioPanel c={c} events={events} ms={ms} /></details>}
-        <p className="mt-5 text-[11px] text-faint leading-relaxed">Independent simulation using public inputs and stated assumptions. REON says CESS/OES are white-label; its cell-control product is EBS. EBS wiring and the baseline control policy are unverified. Results may favor either operator and are not hardware validation.</p>
+        <p className="mt-5 text-[11px] text-faint leading-relaxed">Independent simulation using public inputs and stated assumptions. REON says CESS/OES are white-label; its cell-control product is EBS. The 2.5 MW / 5 MWh size is the published CESS rating used as a comparison size; EBS topology, N_min, switch losses and the baseline control policy are unverified model assumptions. Results may favor either operator and are not hardware validation.</p>
       </div>
     </div>
   );

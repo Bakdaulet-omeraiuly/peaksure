@@ -34,3 +34,9 @@ Optional third question: is bypass make-before-break, and what are the commutati
 - Would REON license its cell-control technology per MW, and on what terms (upfront, annual, implementation support)?
 - Does adding REON's cell control to a listed battery require new UL 9540 / UL 9540A testing, and does the OEM need to approve it?
 - Is the EBS (and a distributed fleet of EBS units) UL 9540 listed, and what fire-code siting limits apply per unit?
+
+**Product facts we could not confirm (checked reoncorp.com, 8 Nov 2026):**
+- CESS "2.5MW/5MWh": is 5 MWh DC nameplate, usable DC, or AC energy at the 480 V interface?
+- EBS "30kW/60kWh": is this the Na+ rating, the Li+ rating, or both? Cells per block, block DC voltage window, N_min?
+- Which certifications (UL 1741 / 1973 / 9540 / 9540A) apply to which product?
+- The site now says "2-3X More Usable Capacity"; earlier material said 2–4×. Which figure and baseline should we cite?

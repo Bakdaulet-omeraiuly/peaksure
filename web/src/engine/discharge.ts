@@ -74,10 +74,18 @@ export function discharge(inp: DischargeInput): DischargeResult {
       for (let j = 0; j < N; j++) if (act[off + j]) { nAct++; const t = tBase[off + j] + rise[off + j]; if (t > tmax) tmax = t; }
       const dr = derate(tmax, chem.tDerate, chem.tMax);
       if (dr < 1 && tier === "fixed" && m % 15 === 0) events.push({ minute: startMin + m, string: s, cell: -1, kind: "derate", text: `String ${s + 1} derated to ${(dr * 100).toFixed(0)}%: hottest cell ${tmax.toFixed(1)} C` });
-      const p = Math.min(pStr, sys.pStringMax * dr);
+      let p = Math.min(pStr, sys.pStringMax * dr);
       const v = nAct * chem.vNom;
-      const amps = v > 0 ? (p * 1000) / (sys.eta * effLoss * v) : 0;
-      const dAh = amps / 60;
+      let amps = v > 0 ? (p * 1000) / (sys.eta * effLoss * v) : 0;
+      let dAh = amps / 60;
+      // Partial last step: never draw more charge than the emptiest in-path cell holds this minute
+      // (otherwise every other cell loses up to one minute of extra charge and stranded energy reads low).
+      let headroomAh = Infinity;
+      for (let j = 0; j < N; j++) if (act[off + j]) headroomAh = Math.min(headroomAh, Math.max(0, avail[off + j]));
+      if (dAh > headroomAh) {
+        const frac = dAh > 0 ? headroomAh / dAh : 0;
+        p *= frac; amps *= frac; dAh = headroomAh;
+      }
       for (let j = 0; j < N; j++) {
         const i = off + j;
         const target = act[i] ? inp.loadHeatingC * (amps / iRef) ** 2 * rRel[i] : 0;
@@ -88,7 +96,7 @@ export function discharge(inp: DischargeInput): DischargeResult {
       energy += p / 60;
       // state transitions
       if (tier === "fixed") {
-        for (let j = 0; j < N; j++) if (avail[off + j] <= 0) {
+        for (let j = 0; j < N; j++) if (avail[off + j] <= 1e-9) {
           strOn[s] = 0;
           events.push({ minute: startMin + m + 1, string: s, cell: j, kind: "string-stop", text: `String ${s + 1} stopped: cell ${s + 1}-${j + 1} empty, ${Math.round(countAbove(avail, off, N))} cells still holding charge` });
           for (let k = 0; k < N; k++) act[off + k] = 0;
@@ -98,7 +106,7 @@ export function discharge(inp: DischargeInput): DischargeResult {
         for (let j = 0; j < N; j++) {
           const i = off + j;
           if (!act[i]) continue;
-          if (avail[i] <= 0) { act[i] = 0; avail[i] = 0; events.push({ minute: startMin + m + 1, string: s, cell: j, kind: "empty", text: `Cell ${s + 1}-${j + 1} empty: bypassed` }); }
+          if (avail[i] <= 1e-9) { act[i] = 0; avail[i] = 0; events.push({ minute: startMin + m + 1, string: s, cell: j, kind: "empty", text: `Cell ${s + 1}-${j + 1} empty: bypassed` }); }
           else if (tBase[i] + rise[i] > chem.tDerate) { act[i] = 0; events.push({ minute: startMin + m + 1, string: s, cell: j, kind: "hot", text: `Cell ${s + 1}-${j + 1} at ${(tBase[i] + rise[i]).toFixed(1)} C: rested` }); }
         }
         let n2 = 0;

@@ -4,6 +4,8 @@ import { Scenario, OperatorResult } from "@/engine/scenario";
 import { Constants, fetchJson } from "@/engine/data";
 import { useStudio } from "@/state/store";
 import { BATTERY_NAMES, BATTERY_SHORT } from "@/engine/labels";
+import { cellState } from "@/engine/cellview";
+import { heClock } from "@/engine/commitment";
 
 const usd = (x: number) => (Math.abs(x) >= 1000 ? `$${(x / 1000).toFixed(1)}K` : `$${x.toFixed(0)}`);
 const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
@@ -27,20 +29,22 @@ function Commit({ op, sc, minute }: { op: OperatorResult; sc: Scenario; minute: 
     <div className="rounded-md border border-line bg-panel-2 p-2.5" style={{ borderLeft: `3px solid ${color}` }}>
       <div className="text-[12px] font-semibold" style={{ color }}>{op.label}</div>
       <div className="num text-[25px] font-semibold tracking-tight mt-2">{Math.round(d.powerKw).toLocaleString()} <span className="text-muted text-[12px] font-normal">kW</span></div>
-      <div className="text-[12px] text-muted mt-1">{d.windowH} hour window · starts HE{d.startHe}</div>
+      <div className="text-[12px] text-muted mt-1">{d.windowH} h window · HE{d.startHe}{d.windowH > 1 ? `–${d.startHe + d.windowH - 1}` : ""} ({heClock(d.startHe).slice(0, 5)}–{heClock(d.startHe + d.windowH - 1).slice(6)})</div>
+      <div className="text-[12px] text-muted num">energy {Math.round(d.powerKw).toLocaleString()} kW × {d.windowH} h = <b className="text-ink">{Math.round(op.commitment.energyKwh).toLocaleString()} kWh</b> (AC)</div>
+      {op.commitment.status !== "feasible" && op.commitment.status !== "no-commitment" && <div className="text-[11.5px] text-error">{op.commitment.status === "exceeds-rated" ? "Infeasible: above rated energy" : "Above the operator's own P5 belief"}</div>}
       <div className="mt-1.5 pt-1.5 border-t border-line text-[12px] flex justify-between">
         {decided ? (
-          <><span style={{ color: hit ? "var(--ok)" : "var(--error)" }}>{hit ? `Shaved ${Math.round(op.shavedKw).toLocaleString()} kW at the peak` : "Missed the peak hour"}</span>
-            <span className="num">{usd(op.valueUsd)}</span></>
+          <><span style={{ color: hit ? "var(--ok)" : "var(--error)" }} title="Value uses the kW actually delivered in the actual peak hour, not the committed kW">{hit ? `Delivered ${Math.round(op.shavedKw).toLocaleString()} kW in HE${sc.event.he}` : "Missed the peak hour"}</span>
+            <span className="num" title={`${Math.round(op.shavedKw)} kW × $${sc.rateUsdPerKw.toFixed(2)}/kW (RNS month${sc.event.is_annual ? " + FCA annual" : ""})`}>{usd(op.valueUsd)}</span></>
         ) : <span className="text-faint">awaiting peak hour HE{sc.event.he}</span>}
       </div>
     </div>
   );
 }
 
-function BeliefChart({ sc, baseline }: { sc: Scenario; baseline: "A" | "B" }) {
+function BeliefChart({ sc, baseline, revealed }: { sc: Scenario; baseline: "A" | "B"; revealed: boolean }) {
   const ops = [sc.ops[baseline], sc.ops.C];
-  const qs = ops.flatMap((o) => { const v = [...o.belief.samples].sort((a, b) => a - b); return [v[0], v[v.length - 1], o.truthKwh]; });
+  const qs = ops.flatMap((o) => { const v = [...o.belief.samples].sort((a, b) => a - b); return revealed ? [v[0], v[v.length - 1], o.truthKwh] : [v[0], v[v.length - 1]]; });
   const lo = Math.min(...qs) * 0.985, hi = Math.max(...qs) * 1.01;
   const W = 272, H = 132, X = (v: number) => 10 + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (W - 20);
   const row = (o: OperatorResult, y: number, color: string, label: string) => {
@@ -55,7 +59,7 @@ function BeliefChart({ sc, baseline }: { sc: Scenario; baseline: "A" | "B" }) {
         {counts.map((n, i) => <rect key={i} x={10 + i * bw} y={y - (n / mx) * 24} width={Math.max(bw - 0.6, 0.6)} height={(n / mx) * 24} fill={color} opacity={0.8} />)}
         <line x1={10} x2={W - 10} y1={y} y2={y} stroke="#2e353d" />
         <line x1={X(o.belief.p5)} x2={X(o.belief.p5)} y1={y - 28} y2={y + 2} stroke={color} strokeDasharray="2 2" />
-        <line x1={X(o.truthKwh)} x2={X(o.truthKwh)} y1={y - 30} y2={y + 3} stroke="#f0736a" strokeWidth={2} />
+        {revealed && <line x1={X(o.truthKwh)} x2={X(o.truthKwh)} y1={y - 30} y2={y + 3} stroke="#f0736a" strokeWidth={2} />}
         {ce >= lo ? <path d={`M${X(ce)},${y + 3} l4,5 l-4,5 l-4,-5 z`} fill="#e8eaed" />
                   : <text x={10} y={y + 12} fontSize={10} fill="#e8eaed">&#9664; committed {Math.round(ce).toLocaleString()} kWh (power-limited)</text>}
       </g>
@@ -68,7 +72,7 @@ function BeliefChart({ sc, baseline }: { sc: Scenario; baseline: "A" | "B" }) {
         {row(sc.ops.C, 116, "#7bd88f", `${BATTERY_SHORT.C}: per-cell twin`)}
       </svg>
       <div className="flex justify-between text-[10.5px] text-faint num"><span>{Math.round(lo).toLocaleString()} kWh</span><span>{Math.round(hi).toLocaleString()} kWh</span></div>
-      <div className="text-[10.5px] text-faint mt-1">red: truth &middot; dashed: believed P5 &middot; diamond: committed energy</div>
+      <div className="text-[10.5px] text-faint mt-1">{revealed ? "red: simulated truth (revealed after the peak)" : "simulated truth hidden until the peak hour has passed"} &middot; dashed: believed P5 &middot; diamond: committed energy</div>
     </div>
   );
 }
@@ -101,7 +105,8 @@ export default function Inspector({ sc, c, baseline }: { sc: Scenario; c: Consta
     const f = Math.min(Math.max(Math.floor(minute) - op.run.startMin, 0), op.run.nFrames - 1);
     return { op, i, soh: op.qRel[i], soc: op.run.soc[f * op.qRel.length + i], t: op.run.temp[f * op.qRel.length + i],
              act: op.run.active[f * op.qRel.length + i], tm: op.twinMean?.[i], ts: op.twinSd?.[i],
-             lim: op.key === "A" && op.limiting?.[hover.string] === hover.cell };
+             lim: op.key === "A" && op.limiting?.[hover.string] === hover.cell,
+             state: cellState(op.run, op.tier, f, i, N, 8) };
   })() : null;
 
   return (
@@ -119,7 +124,7 @@ export default function Inspector({ sc, c, baseline }: { sc: Scenario; c: Consta
       </div>
       <details className="disclosure"><summary>Technical diagnostics</summary>
       <Section title="Deliverable energy: belief vs truth">
-        <BeliefChart sc={sc} baseline={baseline} />
+        <BeliefChart sc={sc} baseline={baseline} revealed={minute >= sc.event.he * 60} />
       </Section>
       <Section title="Live telemetry" right={<span className="num text-[11px] text-faint">{fmt(minute)}</span>}>
         <table className="w-full text-[11.5px] num">
@@ -162,12 +167,12 @@ export default function Inspector({ sc, c, baseline }: { sc: Scenario; c: Consta
       {hoverInfo && (
         <Section title={`Cell ${hover!.string + 1}-${hover!.cell + 1} · ${hoverInfo.op.label}`}>
           <div className="grid grid-cols-2 text-[11.5px] num gap-y-0.5">
-            <span className="text-faint font-sans">state of health</span><span className="text-right">{(hoverInfo.soh * 100).toFixed(1)}%</span>
+            <span className="text-faint font-sans">simulated true health</span><span className="text-right">{minute >= sc.event.he * 60 ? `${(hoverInfo.soh * 100).toFixed(1)}%` : "hidden until after the peak"}</span>
             <span className="text-faint font-sans">charge now</span><span className="text-right">{(hoverInfo.soc * 100).toFixed(0)}%</span>
             <span className="text-faint font-sans">temperature</span><span className="text-right">{hoverInfo.t.toFixed(1)} C</span>
-            <span className="text-faint font-sans">status</span><span className="text-right">{hoverInfo.act ? "in path" : "bypassed / off"}</span>
-            {hoverInfo.tm !== undefined && <><span className="text-faint font-sans">twin estimate</span><span className="text-right">{(hoverInfo.tm * 100).toFixed(1)} ± {((hoverInfo.ts ?? 0) * 100).toFixed(1)}%</span></>}
-            {hoverInfo.lim && <span className="col-span-2 text-error font-sans">limits its whole string</span>}
+            <span className="text-faint font-sans">status</span><span className="text-right">{{ charged: "in path", culprit: "emptiest cell: stopped its string", bypassed: "bypassed (string still running)", stranded: "string stopped, charge left", empty: "empty, string stopped" }[hoverInfo.state]}</span>
+            {hoverInfo.tm !== undefined && <><span className="text-faint font-sans">twin belief (what C sees)</span><span className="text-right">{(hoverInfo.tm * 100).toFixed(1)} ± {((hoverInfo.ts ?? 0) * 100).toFixed(1)}%</span></>}
+            {hoverInfo.lim && <span className="col-span-2 text-error font-sans">weakest cell: limits its whole string (fixed wiring)</span>}
           </div>
         </Section>
       )}

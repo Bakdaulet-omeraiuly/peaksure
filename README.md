@@ -35,7 +35,7 @@ A factorial design (A_opt, A_twin, B_opt, perfect-information runs) separates **
 - **Results:** the Monte Carlo study (where it pays, value decomposition, calibration, probing, lifetime).
 - **Method:** what is real, what is modelled, and what is not shown.
 
-The browser physics is a TypeScript port of `peaksure/physics.py`, tested against the Python model. Cell ageing comes from the Python model through `tools/export_web.py`.
+The browser physics is a TypeScript port of `peaksure/physics.py`, tested against the Python model. Cell ageing comes from the Python model through `tools/export_web.py`. REON product facts and the modelled plant's assumptions, each with an evidence status, live in `peaksure/products.py` and are exported by `tools/export_products.py` to `web/public/data/products.json` (shown in the site's "Product facts vs model assumptions" panel).
 
 ```bash
 cd web && npm install && npm test && npm run dev     # http://localhost:3000

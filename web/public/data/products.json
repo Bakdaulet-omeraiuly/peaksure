@@ -1,0 +1,392 @@
+{
+ "checked": "2026-11-07",
+ "statuses": [
+  "CONFIRMED",
+  "REON CLAIM",
+  "DERIVED",
+  "LITERATURE",
+  "ASSUMED",
+  "UNKNOWN",
+  "MODEL OUTPUT"
+ ],
+ "sources": {
+  "H": "https://reoncorp.com/hardware",
+  "S": "https://reoncorp.com/solutions",
+  "R": "https://reoncorp.com/",
+  "P": "https://patents.google.com/patent/US20230341471A1/en",
+  "T": "REON statement to the PeakSure team (hackathon channel)",
+  "W": "REON_WHO_WE_ARE.pdf as transcribed in PeakSure-Science-Addendum §AA (PDF not in repo)"
+ },
+ "use_case": {
+  "modelled": "MLP coincident-peak shaving in ISO-NE (monthly RNS transmission peak + annual FCA capacity peak)",
+  "status": "ASSUMED",
+  "note": "Project's modelled use case; not evidence that any REON CES/EBS is deployed for it.",
+  "not_modelled": [
+   "demand response",
+   "ConnectedSolutions / Clean Peak",
+   "energy arbitrage",
+   "backup / resilience",
+   "VPP / time-of-use optimisation"
+  ]
+ },
+ "products": [
+  {
+   "key": "CES",
+   "name": "REON CESS (Container Energy Storage System)",
+   "role": "White-label container from another vendor (T). Not the product with REON's cell-level BMS.",
+   "specs": {
+    "rated_power_kw": {
+     "value": 2500,
+     "status": "CONFIRMED",
+     "source": "https://reoncorp.com/hardware",
+     "note": "\"CESS | 2.5MW/5MWh\""
+    },
+    "rated_energy_kwh": {
+     "value": 5000,
+     "status": "CONFIRMED",
+     "source": "https://reoncorp.com/hardware",
+     "note": "\"CESS | 2.5MW/5MWh\"; the PDF says \"up to\" (W)"
+    },
+    "energy_basis": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not stated whether nameplate DC, usable, or AC"
+    },
+    "ac_interface": {
+     "value": "480 V, three-phase",
+     "status": "REON CLAIM",
+     "source": "REON_WHO_WE_ARE.pdf as transcribed in PeakSure-Science-Addendum §AA (PDF not in repo)",
+     "note": "only in the PDF as transcribed; not on the website"
+    },
+    "dc_window_v": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "chemistry": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "cell_format": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "cells_per_string": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "parallel_columns": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "n_min": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "switch_r_on": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "round_trip_eff": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "cell_level_bypass": {
+     "value": false,
+     "status": "CONFIRMED",
+     "source": "REON statement to the PeakSure team (hackathon channel)",
+     "note": "REON: CES is white-label; cell-level control is in EBS"
+    }
+   }
+  },
+  {
+   "key": "EBS_NA",
+   "name": "REON EBS Na+ (Energy Block System, sodium-ion)",
+   "role": "REON's product with the cell-level control BMS (T).",
+   "specs": {
+    "rated_power_kw": {
+     "value": 30,
+     "status": "CONFIRMED",
+     "source": "https://reoncorp.com/hardware",
+     "note": "\"EBS | 30kW/60kWh\" (line-level rating on the page)"
+    },
+    "rated_energy_kwh": {
+     "value": 60,
+     "status": "CONFIRMED",
+     "source": "https://reoncorp.com/hardware",
+     "note": "\"EBS | 30kW/60kWh\" (line-level rating on the page)"
+    },
+    "energy_basis": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not stated"
+    },
+    "ac_interface": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "dc_window_v": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "chemistry": {
+     "value": "sodium-ion",
+     "status": "CONFIRMED",
+     "source": "https://reoncorp.com/hardware",
+     "note": ""
+    },
+    "cell_format": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "cells_per_string": {
+     "value": 120,
+     "status": "DERIVED",
+     "source": "",
+     "note": "≈ 60 kWh / (3.1 V × 160 Ah); the 160 Ah cell is ASSUMED from another vendor"
+    },
+    "parallel_columns": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "n_min": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "switch_r_on": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "round_trip_eff": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "cell_level_bypass": {
+     "value": true,
+     "status": "REON CLAIM",
+     "source": "https://reoncorp.com/solutions",
+     "note": "\"bypass underperforming cells without shutting down\"; S names no product, T assigns it to EBS"
+    },
+    "cycle_life": {
+     "value": 20000,
+     "status": "REON CLAIM",
+     "source": "https://reoncorp.com/hardware",
+     "note": "\"20,000-Cycle Life\", no test conditions"
+    },
+    "operating_temp": {
+     "value": "-40 °F to +140 °F",
+     "status": "REON CLAIM",
+     "source": "https://reoncorp.com/hardware",
+     "note": ""
+    }
+   }
+  },
+  {
+   "key": "EBS_LI",
+   "name": "REON EBS Li+ (Energy Block System, lithium)",
+   "role": "Lithium variant of EBS; cell-level control assumed same as EBS line (T).",
+   "specs": {
+    "rated_power_kw": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "page shows only the line-level 30 kW / 60 kWh; Li+ not separately rated"
+    },
+    "rated_energy_kwh": {
+     "value": ">120",
+     "status": "DERIVED",
+     "source": "",
+     "note": "\"more than twice the energy in the same form factor\" (H) × 60 kWh"
+    },
+    "energy_basis": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "ac_interface": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "dc_window_v": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "chemistry": {
+     "value": "lithium (exact chemistry not stated)",
+     "status": "CONFIRMED",
+     "source": "https://reoncorp.com/hardware",
+     "note": ""
+    },
+    "cell_format": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "cells_per_string": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "parallel_columns": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "n_min": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "switch_r_on": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "round_trip_eff": {
+     "value": null,
+     "status": "UNKNOWN",
+     "source": "",
+     "note": "not published"
+    },
+    "cell_level_bypass": {
+     "value": true,
+     "status": "REON CLAIM",
+     "source": "https://reoncorp.com/solutions",
+     "note": "as for the EBS line"
+    }
+   }
+  }
+ ],
+ "model": {
+  "key": "MODEL",
+  "name": "PeakSure modelled plant (A: conventional; B/C: REON-style bypass)",
+  "role": "Comparison plant for MLP coincident-peak shaving in ISO-NE (project use case).",
+  "specs": {
+   "rated_power_kw": {
+    "value": 2500,
+    "status": "ASSUMED",
+    "source": "",
+    "note": "comparison size chosen to match the published CESS rating; for B/C ≈ 84 EBS blocks (2500/30), interconnection unknown"
+   },
+   "rated_energy_kwh": {
+    "value": 5000,
+    "status": "ASSUMED",
+    "source": "",
+    "note": "treated as DC nameplate; 2.5 MWh (1 h) and 10 MWh (4 h) are hypothetical scenarios"
+   },
+   "energy_basis": {
+    "value": "DC nameplate; deliverable energy computed at AC after η and switch loss",
+    "status": "ASSUMED",
+    "source": "",
+    "note": ""
+   },
+   "ac_interface": {
+    "value": null,
+    "status": "UNKNOWN",
+    "source": "",
+    "note": "not modelled"
+   },
+   "dc_window_v": {
+    "value": "N_min × cell voltage ≥ DC floor",
+    "status": "ASSUMED",
+    "source": "",
+    "note": "DC floor enters only via N_min (10% headroom)"
+   },
+   "chemistry": {
+    "value": "sodium-ion (TUM ageing fit), 3.1 V nominal",
+    "status": "LITERATURE",
+    "source": "TUM tables, Addendum §AH",
+    "note": "matches EBS Na+; CES chemistry UNKNOWN"
+   },
+   "cell_format": {
+    "value": null,
+    "status": "UNKNOWN",
+    "source": "",
+    "note": "not modelled"
+   },
+   "cells_per_string": {
+    "value": 240,
+    "status": "ASSUMED",
+    "source": "",
+    "note": "conflicts with ≈120 cells per EBS block (DERIVED); topology unknown"
+   },
+   "parallel_columns": {
+    "value": 8,
+    "status": "ASSUMED",
+    "source": "",
+    "note": ""
+   },
+   "n_min": {
+    "value": 216,
+    "status": "DERIVED",
+    "source": "",
+    "note": "240 × (1 − 0.10 headroom); headroom ASSUMED"
+   },
+   "switch_r_on": {
+    "value": "≈ 80 µΩ per cell path",
+    "status": "DERIVED",
+    "source": "",
+    "note": "switch loss 1% (ASSUMED) × 3.1 V / ≈ 420 A string current"
+   },
+   "round_trip_eff": {
+    "value": 0.96,
+    "status": "ASSUMED",
+    "source": "",
+    "note": "one-way inverter/conversion efficiency η used for discharge"
+   },
+   "cell_level_bypass": {
+    "value": "A: no; B/C: yes",
+    "status": "ASSUMED",
+    "source": "",
+    "note": "B/C bypass logic is PeakSure's model of REON-style control"
+   },
+   "nominal_ratio_h": {
+    "value": 2.0,
+    "status": "DERIVED",
+    "source": "",
+    "note": "5000 kWh / 2500 kW; a nominal ratio, not a guaranteed AC discharge duration"
+   }
+  }
+ }
+}

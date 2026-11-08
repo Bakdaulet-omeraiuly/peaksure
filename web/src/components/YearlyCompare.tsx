@@ -25,7 +25,7 @@ export default function YearlyCompare() {
       <div className="panel-h"><span className="micro">15-year modeled comparison</span><span className="badge">{data.n_runs} paired runs</span></div>
       <div className="p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2 text-[12px] text-muted">
-          <span>B · REON EBS model versus C · REON EBS + PeakSure · annual savings</span>
+          <span>B · REON-style bypass versus C · REON-style + PeakSure · annual savings</span>
           <span className="num">Year {selected.year}: B · EBS ${Math.round(selected.reon_usd / 1000)}k · C · EBS + PeakSure ${Math.round(selected.peaksure_usd / 1000)}k · Δ {money(selected.delta_usd)}</span>
         </div>
         <div className="overflow-x-auto"><svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[600px]" role="img" aria-label="Annual modeled savings: REON EBS baseline versus REON EBS with PeakSure">
@@ -40,7 +40,7 @@ export default function YearlyCompare() {
             <text x={x(i)} y={H-9} textAnchor="middle" fontSize="10" fill={r.year === age ? "#16825b" : "#718178"}>{r.year}</text>
           </g>)}
         </svg></div>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-muted mt-1"><span>● B · REON EBS model</span><span className="text-[#16825b]">● C · REON EBS + PeakSure</span><span>Click a year to update both modeled batteries above.</span></div>
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-muted mt-1"><span>● B · REON-style bypass</span><span className="text-[#16825b]">● C · REON-style + PeakSure</span><span>Click a year to update both modeled batteries above.</span></div>
         <p className="text-[11px] text-faint mt-2">Annual values average {data.n_runs} paired simulations. The REON baseline control rule is assumed; this is not measured REON performance. Positive and negative differences are shown.</p>
       </div>
     </section>

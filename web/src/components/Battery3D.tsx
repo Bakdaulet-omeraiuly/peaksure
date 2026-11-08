@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Scenario, OperatorResult } from "@/engine/scenario";
 import { DischargeResult } from "@/engine/discharge";
-import { cellState, frameOf } from "@/engine/cellview";
+import { cellDiffers, cellState, frameOf } from "@/engine/cellview";
 import { BATTERY_NAMES } from "@/engine/labels";
 import { useStudio, ColorMode } from "@/state/store";
 
@@ -43,11 +43,21 @@ const STRANDED_STOPS: [number, string][] = [[0, "#3a2a12"], [1, "#e9a23b"]];
 const SOH: [number, string][] = [[0, "#a33a30"], [0.5, "#d39a35"], [1, "#4fbf85"]];
 const TEMP: [number, string][] = [[0, "#2b5d9a"], [0.45, "#58a6a6"], [0.7, "#e0a53a"], [1, "#ef5a50"]];
 const SD: [number, string][] = [[0, "#262b31"], [0.35, "#5a4b8a"], [1, "#c49cf2"]];
+// Difference mode: only cells whose engine state or charge differs from the partner battery light up.
+export const DIFF_COLORS = { same: "#1c2126", moreCharge: "#4fc3f7", lessCharge: "#e9a23b", inPath: "#7ee2a0", outOfPath: "#c86cf0" };
+export interface Partner { run: DischargeResult; tier: "fixed" | "bypass"; minuteRef: React.MutableRefObject<number> }
 
 function cellColor(op: OperatorResult, run: DischargeResult, f: number, i: number, mode: ColorMode, out: THREE.Color,
-                   probed: Set<number>, N: number) {
+                   probed: Set<number>, N: number, partner?: Partner, minute?: number) {
   const SN = op.qRel.length;
   const st = cellState(run, op.tier, f, i, N, SN / N);
+  if (mode === "diff") {
+    if (!partner || minute === undefined || !cellDiffers(run, op.tier, partner.run, partner.tier, minute, i, N, SN / N)) return out.set(DIFF_COLORS.same);
+    const pf = frameOf(partner.run, minute);
+    const pst = cellState(partner.run, partner.tier, pf, i, N, SN / N);
+    if ((st !== "charged") !== (pst !== "charged")) return out.set(st === "charged" ? DIFF_COLORS.inPath : DIFF_COLORS.outOfPath);
+    return out.set(run.soc[f * SN + i] > partner.run.soc[pf * SN + i] ? DIFF_COLORS.moreCharge : DIFF_COLORS.lessCharge);
+  }
   if (st === "bypassed") return out.set(STATE_COLORS.bypassed);
   if (probed.has(i)) return out.set("#f2b84b");
   if (mode === "soc") {
@@ -60,8 +70,9 @@ function cellColor(op: OperatorResult, run: DischargeResult, f: number, i: numbe
   return op.twinSd ? ramp(SD, op.twinSd[i] / 0.03, out) : out.set("#262b31");
 }
 
-function Container({ op, run, which, ox, minuteRef, hoverable }: {
+function Container({ op, run, which, ox, minuteRef, hoverable, partner }: {
   op: OperatorResult; run: DischargeResult; which: Slot; ox: number; minuteRef: React.MutableRefObject<number>; hoverable: boolean;
+  partner?: Partner;
 }) {
   const S = 8, N = op.qRel.length / S, SN = op.qRel.length;
   const mesh = useRef<THREE.InstancedMesh>(null);
@@ -78,7 +89,8 @@ function Container({ op, run, which, ox, minuteRef, hoverable }: {
     const m = mesh.current;
     if (!m) return;
     const f = frameOf(run, minuteRef.current);
-    if (last.current.f !== f || last.current.mode !== colorMode || last.current.run !== run) {
+    const pf = colorMode === "diff" && partner ? frameOf(partner.run, minuteRef.current) * 100000 : 0;
+    if (last.current.f !== f + pf || last.current.mode !== colorMode || last.current.run !== run) {
       for (let i = 0; i < SN; i++) {
         const st = cellState(run, op.tier, f, i, N, S);
         const out = st !== "charged";
@@ -87,11 +99,11 @@ function Container({ op, run, which, ox, minuteRef, hoverable }: {
         tmp.scale.set(big, big, st === "culprit" ? 1.6 : out ? 0.45 : big);
         tmp.updateMatrix();
         m.setMatrixAt(i, tmp.matrix);
-        m.setColorAt(i, cellColor(op, run, f, i, colorMode, col, probed, N));
+        m.setColorAt(i, cellColor(op, run, f, i, colorMode, col, probed, N, partner, minuteRef.current));
       }
       m.instanceMatrix.needsUpdate = true;
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
-      last.current = { f, mode: colorMode, run };
+      last.current = { f: f + pf, mode: colorMode, run };
     }
     const fl = flow.current;
     if (fl) {
@@ -172,7 +184,7 @@ function SvgFallback({ scenario, view, slots }: { scenario: Scenario; view: "pea
             {Array.from({ length: N }, (_, j) => {
               const i = s * N + j;
               return <rect key={j} x={rackX + (j % 12) * 4.25} y={rackY + Math.floor(j / 12) * 4.8} width="3.7" height="4.2" rx="0.6"
-                fill={cellColor(op, run, f, i, mode, shade, probed, N).getStyle()} />;
+                fill={cellColor(op, run, f, i, mode, shade, probed, N, partnerOf(scenario, key, view, minute), minute).getStyle()} />;
             })}
             <path d={`M${rackX + 55},${rackY} V${rackY + 97}`} fill="none" stroke={on ? "#79cbf5" : "#53616b"} strokeWidth="2" />
             {on && <path d={`M${rackX + 55},${rackY} V${rackY + 97}`} fill="none" stroke="#d3f3ff" strokeWidth="3" strokeDasharray="3 15" className="current-flow" />}
@@ -182,6 +194,13 @@ function SvgFallback({ scenario, view, slots }: { scenario: Scenario; view: "pea
       </g>;
     })}
   </svg>;
+}
+
+/** Difference partner: A and C are compared with B (the REON-style bypass hardware); B with A. */
+function partnerOf(sc: Scenario, k: Slot, view: "peak" | "drain", minute: number): Partner {
+  const p: Slot = k === "B" ? "A" : "B";
+  const op = sc.ops[p];
+  return { run: view === "drain" ? op.drain! : op.run, tier: op.tier, minuteRef: { current: minute } };
 }
 
 export default function Battery3D({ scenario, view }: { scenario: Scenario; view: "peak" | "drain" }) {
@@ -219,8 +238,11 @@ export default function Battery3D({ scenario, view }: { scenario: Scenario; view
         const op = scenario.ops[k];
         const run = view === "drain" ? op.drain! : op.run;
         const ox = -span / 2 + SHELL.w / 2 + idx * (SHELL.w + GAP);
+        const mref = view === "drain" ? drainRef : minuteRef;
+        const pk: Slot = k === "B" ? "A" : "B";
+        const partner: Partner = { run: view === "drain" ? scenario.ops[pk].drain! : scenario.ops[pk].run, tier: scenario.ops[pk].tier, minuteRef: mref };
         return <Container key={`${view}-${k}`} op={op} run={run} which={k} ox={ox} hoverable={view === "peak"}
-                          minuteRef={view === "drain" ? drainRef : minuteRef} />;
+                          minuteRef={mref} partner={partner} />;
       })}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[20, 6]} />

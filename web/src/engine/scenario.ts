@@ -1,7 +1,7 @@
 // Assemble one live scenario: a real ISO-NE peak, a battery age, and three modeled operators.
 //   A Conventional battery: fixed strings + annual pack test + full-power rule.
-//   B REON EBS model: bypass + annual pack test + full-power rule (assumed policy).
-//   C REON EBS + PeakSure: bypass + per-cell twin + 95%-confidence commitment (+ optional VoI probes).
+//   B REON-style bypass model (schematic; EBS topology unknown): bypass + annual pack test + full-power rule (assumed policy).
+//   C REON-style bypass + PeakSure: bypass + per-cell twin + 95%-confidence commitment (+ optional VoI probes).
 import { Constants, Life, PeakEvent, decodeI16, decodeU16, rnsRate } from "./data";
 import { Chem, SystemSpec, Tier, containerTemp, deliverable } from "./physics";
 import { Belief, Thermal, cellTemps, packBelief, twinBelief } from "./belief";
@@ -9,8 +9,14 @@ import { Decision, fixedRule, optimize } from "./decision";
 import { DischargeResult, discharge } from "./discharge";
 import { Probe, runVoi } from "./voi";
 import { BATTERY_NAMES } from "./labels";
+import { CommitmentSummary, summarizeCommitment } from "./commitment";
 
-export interface Knobs { kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss?: number }
+export interface Knobs {
+  kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss?: number;
+  /** true: A uses the REON-style plant's cells at this age (pure hardware comparison on identical cells).
+   *  false (default): each hardware uses its own ageing path from the same year-0 cells and random draws. */
+  sameCells?: boolean;
+}
 
 export interface OperatorResult {
   key: "A" | "B" | "C";
@@ -31,11 +37,12 @@ export interface OperatorResult {
   limiting?: Int32Array;
   drain?: DischargeResult;         // full-power discharge from full to cut-off (hardware comparison)
   cellsReplaced: number;           // cumulative cells replaced by annual augmentation up to this age
+  commitment: CommitmentSummary;   // power, window, energy = power x window, feasibility at the AC boundary
 }
 
 export interface Scenario {
   event: PeakEvent; age: number; calYear: number; durationKey: string; eNom: number; qNom: number;
-  sys: SystemSpec; chem: Chem; tCell: Float64Array; tContainer: number; rateUsdPerKw: number;
+  sys: SystemSpec; chem: Chem; tCell: Float64Array; tContainer: number; rateUsdPerKw: number; sameCells: boolean;
   ops: { A: OperatorResult; B: OperatorResult; C: OperatorResult };
 }
 
@@ -63,7 +70,7 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
   const mk = (key: "A" | "B" | "C"): OperatorResult => {
     const tier: Tier = key === "A" ? "fixed" : "bypass";
     const st = life.tiers[tier][yi];
-    const qRel = decodeU16(st.soh, 20000);
+    const qRel = decodeU16((knobs.sameCells ? life.tiers.bypass[yi] : st).soh, 20000);
     const q = qRel.map((v) => v * qNom);
     const truth = deliverable(q, tier, soc0, tCell, chem, sys);
     let belief: Belief, before: Belief | undefined, decision: Decision, probes: Probe[] = [];
@@ -99,15 +106,17 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
       decision: { startHe: 1, windowH: drainH, powerKw: c.p_max_kw, expKw: 0 }, peakHe: 1, loadHeatingC: c.load_heating_c });
     const cellKwh = (qNom * c.v_nom) / 1000;
     let augKwh = 0;
-    for (let y = 0; y <= yi; y++) augKwh += life.tiers[tier][y].aug_kwh;
+    const hist: Tier = knobs.sameCells ? "bypass" : tier;      // cells (and their replacement history) actually shown
+    for (let y = 0; y <= yi; y++) augKwh += life.tiers[hist][y].aug_kwh;
     const cellsReplaced = Math.round(augKwh / cellKwh);
     const inWindow = ev.he >= decision.startHe && ev.he < decision.startHe + decision.windowH;
     const shaved = inWindow ? run.peakHourAvgKw : 0;
     return { key, tier, label: BATTERY_NAMES[key], qRel, belief, beforeProbes: undefined,
              beliefBeforeProbes: before, decision, truthKwh: truth.energyKwh, truthPowerKw: truth.powerKw, run,
-             shavedKw: shaved, valueUsd: shaved * rate, probes, twinMean, twinSd, limiting: truth.limiting, drain, cellsReplaced } as OperatorResult;
+             shavedKw: shaved, valueUsd: shaved * rate, probes, twinMean, twinSd, limiting: truth.limiting, drain, cellsReplaced,
+             commitment: summarizeCommitment(decision, belief, c.p_max_kw, eNom, c.eta) } as OperatorResult;
   };
 
   return { event: ev, age, calYear, durationKey: life.duration, eNom, qNom, sys, chem, tCell, tContainer: tCont,
-           rateUsdPerKw: rate, ops: (() => { const A = mk("A"), B = mk("B"), C = mk("C"); C.drain = B.drain; return { A, B, C }; })() };
+           rateUsdPerKw: rate, sameCells: !!knobs.sameCells, ops: (() => { const A = mk("A"), B = mk("B"), C = mk("C"); C.drain = B.drain; return { A, B, C }; })() };
 }

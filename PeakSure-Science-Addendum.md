@@ -1120,6 +1120,42 @@ Each five-minute trace frame also exports the first block's 120 quantized cell c
 
 The same export includes the team's Paxton-sized EBS sizing and spreadsheet NPV from §AI6. This is a separate project-level calculation; the 84-block discharge trace is not presented as a simulation of Paxton's 167-unit plant. Unpriced compliance line items remain unknown costs.
 
+# AK. Product Evidence Audit and Two-Battery Comparison (8 Nov 2026)
+
+## AK1. Which REON product is modelled
+
+Checked on reoncorp.com/hardware, /solutions, the home page and Google Patents (7–8 Nov 2026). Profiles live in `peaksure/products.py` (exported to `web/public/data/products.json`; tests in `tests/test_products.py` and `web/src/engine/consistency.test.ts`).
+
+- **CESS**: "2.5MW/5MWh" is CONFIRMED on the hardware page; whether this is DC nameplate, usable or AC energy is UNKNOWN. REON told the team that CESS and OES are white-label products, so CESS has **no** REON cell-level bypass. The 480 V three-phase AC interface appears only in the challenge PDF as transcribed in §AA (REON CLAIM; the PDF is not in the repo). CESS chemistry, cell format, cells per string, columns, DC window, N_min, switch R_on and efficiency are UNKNOWN.
+- **EBS (Na+ and Li+)**: the page shows one line-level rating "EBS | 30kW/60kWh"; Na+ is sodium-ion with "20,000-Cycle Life" and −40 to +140 °F (REON CLAIM); Li+ is "more than twice the energy in the same form factor" (DERIVED > 120 kWh). Internal topology is UNKNOWN. About 120 cells per block is DERIVED from an ASSUMED 160 Ah, 3.1 V cell.
+- **Cell-level bypass**: "bypass underperforming cells without shutting down" is a REON CLAIM on the solutions page, which names no product; REON's statement assigns it to EBS.
+- **Patent US 2023/0341471 A1** is a pending application. It describes series columns in parallel with per-cell couple/decouple switches; it is not proof of any product's design.
+- The home page now says "2-3X More Usable Capacity". The older "2–4×" (§H5/§AA) is a superseded REON CLAIM; both are company claims only.
+
+## AK2. What the model is, and is not
+
+The modelled plant (2.5 MW / 5 MWh, 8 × 240 cells, N_min 216, 3.1 V Na-ion, η 0.96, 1% switch loss) is a **comparison model**. Its size equals the published CESS rating; B/C are a **REON-style bypass model** (schematic), not an EBS or CES layout. `config.SYSTEM_FLAGS` now marks `p_max_kw` and `e_nom_kwh` ASSUMED (they were CONFIRMED, which conflated the CESS rating with the modelled bypass plant). 1-h (2.5 MWh) and 4-h (10 MWh) systems are hypothetical scenarios. 5 MWh is treated as DC nameplate; deliverable energy is computed at the AC side (× η × (1 − switch loss)). Energy ÷ power = 2 h is a DERIVED nominal ratio, not a guaranteed AC duration.
+
+The project's use case, MLP coincident-peak shaving in ISO-NE (monthly RNS + annual FCA), is a modelled use case, not evidence of deployment. Demand response, ConnectedSolutions / Clean Peak, arbitrage, resilience and VPP/TOU are not modelled.
+
+## AK3. Audit findings and fixes
+
+1. **Commitment energy.** The UI now shows commitment power × window = energy, the window as HE range and clock time, the believed P5, and a feasibility status (`web/src/engine/commitment.ts`, `peaksure/decision.commitment_status`). 2.5 MW × 3 h = 7.5 MWh is flagged infeasible on a 5 MWh profile.
+2. **4-h system with a 3-h window** is valid, not a state bug: the 10 MWh hypothetical system's operator chooses a 3 h window at 2.5 MW (7.5 MWh), within its P5 belief. The UI now states that window length is a decision, not the battery size.
+3. **Age, year and HE.** Battery age (years), calendar year and peak HE (a clock hour) are shown separately; tests check they are not confused.
+4. **Minute-step overdraw.** The browser discharge drew a full minute even when the emptiest cell held less, so every other cell lost up to one extra minute of charge. The last step is now partial, so stranded energy at the end of the drain test matches the analytic stopping-level value to within 2% (tested in `consistency.test.ts`; before the fix it read low by up to one minute of string current per string). Python is unaffected (it uses the analytic `deliverable`).
+5. **Belief vs truth.** The belief chart and cell hover hide the simulated true deliverable energy and cell health until the peak hour has passed; the twin's belief is labelled as what C sees.
+6. **Fair comparison.** A and B share the event, temperatures, year-0 cells and random draws, but each hardware ages the cells its own way. A new "Identical cells" option gives A the bypass plant's cells at the same age, isolating the wiring difference. The decision-rule effect (B vs C) stays separate from the hardware effect (A vs B), as in the Shapley decomposition.
+7. **Economics.** Displayed value uses kW actually delivered in the actual peak hour × (RNS/12 + FCA × 12 on the annual peak), not committed kW. `econ.run_level` NPV is savings minus augmentation only (no capex/O&M); it is used for paired differences where those cancel. Capex-aware NPV is in `costs.py`. The peak **day** is assumed known (only the hour is uncertain), so timing value is an upper bound.
+
+## AK4. Two-battery 3D comparison
+
+All cell states come from `cellState` on engine output (tests check bypassed cells equal inactive cells on running strings, fixed strings never show bypass, and bypass strings keep ≥ N_min cells). New: one shared Play / Pause / Reset timeline; steps "Before peak → Limiting cell → Bypass decision → Result" whose minutes come from engine events (disabled when the event does not occur); a Difference colour mode comparing each battery cell by cell with its partner at the same clock minute; shape cues (limiting cell enlarged, out-of-circuit cells recessed) and text counts so status is not colour-only; and a live "hardware difference now" line that says "negligible" when it is.
+
+## AK5. Still needed from REON
+
+CESS energy basis and AC/DC boundary; EBS cells per block, block DC window, DC/DC stage, columns and N_min; switch R_on per cell path; round-trip efficiency; how EBS blocks are paralleled at MW scale; certification status per product.
+
 ---
 
 # Z. Change Log (Part II)
@@ -1166,6 +1202,8 @@ The same export includes the team's Paxton-sized EBS sizing and spreadsheet NPV 
 | 38 | Added a separate EBS-size block discharge comparison with voltage-floor, weak-cell and switch-loss assumptions; exported sensitivity results to `/ebs` (§AJ) | Exploratory simulation | EBS topology is not public; keep block feasibility separate from the 15-year plant study |
 | 39 | Exported representative EBS cell states for synchronized 3D and isometric views; named the battery cases across simulations (§AJ) | Visualization | Show the actual weak-cell bypass sequence and identify each comparison battery |
 | 40 | Checked the interactive scenario presets across three seeds and all durations; tied EBS outcome text to the exported result and added a no-WebGL cell view for the main comparison | Verification / presentation | Keep scenario changes coherent and show the model in browsers without 3D graphics |
+| 41 | Product evidence audit: separate CESS / EBS Na+ / EBS Li+ / modelled-plant profiles with CONFIRMED / REON CLAIM / DERIVED / LITERATURE / ASSUMED / UNKNOWN / MODEL OUTPUT status; plant size flags changed CONFIRMED → ASSUMED (§AK1–AK2) | Correction (evidence) | CESS is white-label; its rating is a comparison size, not a bypass-plant spec |
+| 42 | Commitment energy and feasibility shown and tested; partial last discharge minute (stranded energy now matches the analytic value); truth hidden until after the peak; identical-cells option; Difference mode, shared playback and engine-driven steps (§AK3–AK4) | Correction / visualization | Accuracy and transparency audit |
 
 ---
 

@@ -57,16 +57,16 @@
  "chemistry": "Sodium-ion (layered oxide / hard carbon)",
  "flags": {
   "p_max_kw": [
-   "CONFIRMED",
-   "REON CES 2.5 MW (REON_WHO_WE_ARE.pdf)"
+   "ASSUMED",
+   "Comparison size = published CESS 2.5 MW (CONFIRMED for CESS, reoncorp.com/hardware, 2026-11-07). CESS is white-label; B/C/D = REON-style bypass plant (~84 EBS blocks of 30 kW / 60 kWh, interconnection UNKNOWN)"
   ],
   "e_nom_kwh": [
-   "CONFIRMED",
-   "REON CES up to 5 MWh"
+   "ASSUMED",
+   "5 MWh treated as DC nameplate; CESS 5 MWh basis (DC/usable/AC) UNKNOWN; 1-h and 4-h sizes are hypothetical"
   ],
   "n_strings / n_series": [
    "ASSUMED",
-   "CES string design not public; ask REON"
+   "EBS string design not public (a 60 kWh block is ~120 cells); ask REON"
   ],
   "headroom": [
    "ASSUMED",

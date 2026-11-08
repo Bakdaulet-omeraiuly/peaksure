@@ -16,7 +16,7 @@ export function useBaseData() {
 
 export function useScenario(): { scenario: Scenario | null; c: Constants | null; events: PeakEvent[] | null; ms: number } {
   const { c, events } = useBaseData();
-  const { eventIdx, age, duration, seed, kHvac, sigmaT, probeBudget, reportBias, switchLoss, set } = useStudio();
+  const { eventIdx, age, duration, seed, kHvac, sigmaT, probeBudget, reportBias, switchLoss, sameCells, set } = useStudio();
   const lifeKey = `${duration}_s${seed}`;
   const [loaded, setLoaded] = useState<{ key: string; life: Life } | null>(null);
   useEffect(() => {
@@ -36,7 +36,7 @@ export function useScenario(): { scenario: Scenario | null; c: Constants | null;
     if (!c || !events || loaded?.key !== lifeKey || eventIdx < 0 || eventIdx >= events.length)
       return { scenario: null, c, events, ms: 0 };
     const t0 = performance.now();
-    const scenario = buildScenario(c, loaded.life, events[eventIdx], age, { kHvac, sigmaT, probeBudget, reportBias, switchLoss });
+    const scenario = buildScenario(c, loaded.life, events[eventIdx], age, { kHvac, sigmaT, probeBudget, reportBias, switchLoss, sameCells });
     return { scenario, c, events, ms: performance.now() - t0 };
-  }, [c, events, loaded, lifeKey, eventIdx, age, kHvac, sigmaT, probeBudget, reportBias, switchLoss]);
+  }, [c, events, loaded, lifeKey, eventIdx, age, kHvac, sigmaT, probeBudget, reportBias, switchLoss, sameCells]);
 }

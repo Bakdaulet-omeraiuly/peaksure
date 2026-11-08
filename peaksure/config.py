@@ -85,10 +85,10 @@ CHEMISTRIES = {"Na-ion": NA_ION, "LFP": LFP}
 
 @dataclass(frozen=True)
 class Config:
-    # --- system (REON CES) ---
+    # --- modelled plant (comparison size; see peaksure/products.py; NOT a REON CES/EBS spec) ---
     chemistry: str = "Na-ion"
-    p_max_kw: float = 2500.0          # CONFIRMED (REON_WHO_WE_ARE.pdf)
-    e_nom_kwh: float = 5000.0         # CONFIRMED ("up to 5 MWh")
+    p_max_kw: float = 2500.0          # ASSUMED comparison size (= published CESS rating, reoncorp.com/hardware)
+    e_nom_kwh: float = 5000.0         # ASSUMED, treated as DC nameplate (CESS "2.5MW/5MWh"; basis unstated)
     n_strings: int = 8                # ASSUMED
     n_series: int = 240               # ASSUMED (switchable cell units per string)
     headroom: float = 0.10            # ASSUMED: share of series cells above N_min (DC window)
@@ -154,8 +154,8 @@ class Config:
 
 
 SYSTEM_FLAGS = {
-    "p_max_kw": (CONFIRMED, "2.5 MW, CESS size; REON says the CESS is white-label, so B/C/D = ~84 EBS blocks of 30 kW / 60 kWh"),
-    "e_nom_kwh": (CONFIRMED, "5 MWh (same 2-h ratio as one EBS block)"),
+    "p_max_kw": (ASSUMED, "Comparison size = published CESS 2.5 MW (CONFIRMED for CESS, reoncorp.com/hardware, 2026-11-07). CESS is white-label; B/C/D = REON-style bypass plant (~84 EBS blocks of 30 kW / 60 kWh, interconnection UNKNOWN)"),
+    "e_nom_kwh": (ASSUMED, "5 MWh treated as DC nameplate; CESS 5 MWh basis (DC/usable/AC) UNKNOWN; 1-h and 4-h sizes are hypothetical"),
     "n_strings / n_series": (ASSUMED, "EBS string design not public (a 60 kWh block is ~120 cells); ask REON"),
     "headroom": (ASSUMED, "DC-window headroom sets N_min; first-order driver (Lot Desk deck)"),
     "switch_loss": (ASSUMED, "0.5-2% sensitivity; MOSFET I^2 R_ds(on)"),

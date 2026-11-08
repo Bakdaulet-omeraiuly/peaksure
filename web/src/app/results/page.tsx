@@ -18,7 +18,7 @@ interface R {
 }
 
 const usd = (x: number) => (Math.abs(x) >= 1e6 ? `$${(x / 1e6).toFixed(2)}M` : Math.abs(x) >= 1e3 ? `$${(x / 1e3).toFixed(1)}K` : `$${x.toFixed(0)}`);
-const NAMES: Record<string, string> = { ...BATTERY_NAMES, D: "D · REON EBS + PeakSure + VoI", C_T3: "C · REON EBS + PeakSure, resting SOC" };
+const NAMES: Record<string, string> = { ...BATTERY_NAMES, D: "D · REON-style + PeakSure + VoI", C_T3: "C · REON-style + PeakSure, resting SOC" };
 const CHART_NAMES: Record<string, string> = { A: "A Conventional", B: "B REON EBS", C: "C EBS + PeakSure", C_T3: "C EBS + resting" };
 const COL: Record<string, string> = { A: "#9aa6b8", B: "#79b0ff", C: "#7bd88f", D: "#3fb6a8", C_T3: "#c49cf2" };
 const LAB: Record<string, string> = {
@@ -114,7 +114,7 @@ export default function Results() {
       <div className="page-wrap max-w-[1280px]">
         <div className="eyebrow mb-3">Research findings</div>
         <h1 className="page-title mb-3">Where cell intelligence matters.</h1>
-        <p className="text-muted text-[14px] max-w-[760px] leading-relaxed mb-6">A 15-year paired simulation of A · Conventional battery, B · REON EBS model (bypass), and C · REON EBS model + PeakSure. Figures are model results, not hardware validation.</p>
+        <p className="text-muted text-[14px] max-w-[760px] leading-relaxed mb-6">A 15-year paired simulation of A · Conventional battery, B · REON-style bypass model, and C · REON-style bypass + PeakSure. Figures are model results, not hardware validation.</p>
         <div className="surface p-5 sm:p-7 text-[14px] leading-relaxed text-muted mb-5">
             <span className="eyebrow block mb-2">Main finding</span> On the modeled 2-hour EBS-equivalent plant doing coincident-peak duty, cell-level intelligence adds little
             (V1 + V2 = {usd(r.dec[1].mean + r.dec[2].mean)}/yr): energy rarely limits the decision, and peak-hour timing dominates. It pays where energy or

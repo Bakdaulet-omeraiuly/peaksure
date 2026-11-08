@@ -99,3 +99,20 @@ def expected_value(d_samples: np.ndarray, dec: Decision, p_hour: np.ndarray) -> 
     ks = np.arange(1, dec.window_h + 1)
     prob_ok = 1.0 - np.searchsorted(d, dec.power_kw * ks, side="left") / d.size
     return float(dec.power_kw * (prob_ok * _coverage(p_hour, si, dec.window_h)).sum())
+
+
+def commitment_status(dec: Decision, d_p5_kwh: float, p_max_kw: float, e_nom_kwh: float, eta: float) -> str:
+    """Classify a commitment at the AC boundary (mirrors web/src/engine/commitment.ts).
+
+    commitment energy = power x window. 'exceeds-rated' if it is above the DC nameplate x eta (an upper
+    bound on AC energy) or power above rating; 'exceeds-belief' if above the operator's believed P5.
+    """
+    e = dec.energy_kwh
+    tol = 1e-6 * max(1.0, e)
+    if dec.power_kw <= 0:
+        return "no-commitment"
+    if e > e_nom_kwh * eta + tol or dec.power_kw > p_max_kw + 1e-6:
+        return "exceeds-rated"
+    if e > d_p5_kwh + tol:
+        return "exceeds-belief"
+    return "feasible"
