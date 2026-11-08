@@ -27,20 +27,22 @@ export function cellState(run: DischargeResult, tier: Tier, f: number, i: number
   return "bypassed";
 }
 
-export interface RunStats { deliveredKwh: number; usableKwh: number; strandedKwh: number; stringsOn: number; bypassed: number }
+export interface RunStats { deliveredKwh: number; usableKwh: number; strandedKwh: number; stringsOn: number; activeCells: number; bypassed: number }
 
 export function runStats(run: DischargeResult, tier: Tier, minute: number, vNom: number, nSeries: number, nStrings: number): RunStats {
   const SN = nSeries * nStrings, f = frameOf(run, minute);
   let delivered = 0;
   const end = Math.min(Math.floor(minute), run.startMin + run.nFrames - 1);
   for (let m = run.startMin; m < end; m++) delivered += run.powerKw[m] ?? 0;
-  let usable = 0, stranded = 0, bypassed = 0, on = 0;
+  let usable = 0, stranded = 0, bypassed = 0, on = 0, activeCells = 0;
   for (let s = 0; s < nStrings; s++) on += run.stringsOnline[f * nStrings + s];
   for (let i = 0; i < SN; i++) {
+    activeCells += run.active[f * SN + i];
     const kwh = (run.soc[f * SN + i] * run.fullAh[i] * vNom) / 1000;
     const st = cellState(run, tier, f, i, nSeries, nStrings);
     if (st === "stranded") stranded += kwh;
-    else { usable += kwh; if (st === "bypassed") bypassed++; }
+    else if (st === "bypassed") bypassed++;
+    else if (st === "charged") usable += kwh;
   }
-  return { deliveredKwh: delivered / 60, usableKwh: usable, strandedKwh: stranded, stringsOn: on, bypassed };
+  return { deliveredKwh: delivered / 60, usableKwh: usable, strandedKwh: stranded, stringsOn: on, activeCells, bypassed };
 }

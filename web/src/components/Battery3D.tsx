@@ -38,7 +38,7 @@ const ramp = (stops: [number, string][], v: number, out: THREE.Color) => {
 // Charge: green fades towards slate as it is used. Low charge is not an alarm, so no red here;
 // red is reserved for the empty cell that stops a fixed string, amber for stranded charge.
 export const SOC_STOPS: [number, string][] = [[0, "#1f2a2d"], [0.25, "#24564a"], [0.6, "#2f9a6a"], [1, "#7ee2a0"]];
-export const STATE_COLORS = { culprit: "#ef4a3c", stranded: "#e9a23b", bypassed: "#3b4a63", empty: "#151a1f" };
+export const STATE_COLORS = { culprit: "#ef4a3c", stranded: "#e9a23b", bypassed: "#68737c", empty: "#151a1f" };
 const STRANDED_STOPS: [number, string][] = [[0, "#3a2a12"], [1, "#e9a23b"]];
 const SOH: [number, string][] = [[0, "#a33a30"], [0.5, "#d39a35"], [1, "#4fbf85"]];
 const TEMP: [number, string][] = [[0, "#2b5d9a"], [0.45, "#58a6a6"], [0.7, "#e0a53a"], [1, "#ef5a50"]];
@@ -47,9 +47,10 @@ const SD: [number, string][] = [[0, "#262b31"], [0.35, "#5a4b8a"], [1, "#c49cf2"
 function cellColor(op: OperatorResult, run: DischargeResult, f: number, i: number, mode: ColorMode, out: THREE.Color,
                    probed: Set<number>, N: number) {
   const SN = op.qRel.length;
+  const st = cellState(run, op.tier, f, i, N, SN / N);
+  if (st === "bypassed") return out.set(STATE_COLORS.bypassed);
   if (probed.has(i)) return out.set("#f2b84b");
   if (mode === "soc") {
-    const st = cellState(run, op.tier, f, i, N, SN / N);
     if (st === "charged") return ramp(SOC_STOPS, run.soc[f * SN + i], out);
     if (st === "stranded") return ramp(STRANDED_STOPS, run.soc[f * SN + i] / 0.3, out);   // brighter = more charge left behind
     return out.set(STATE_COLORS[st]);

@@ -29,6 +29,7 @@ export default function LiveReadout({ scenario, view, slots }: { scenario: Scena
             ? ["Stranded if drained to empty", kwh(drainEnd.strandedKwh), drainEnd.strandedKwh > 0.5 ? "#b77712" : undefined]
             : ["Stranded (string stopped)", kwh(st.strandedKwh), st.strandedKwh > 0.5 ? "#b77712" : undefined],
           ["Strings running", `${st.stringsOn} / ${S}`],
+          ["Cells in circuit", `${st.activeCells.toLocaleString()} / ${(S * N).toLocaleString()}`],
           ["Cells switched out", st.bypassed.toLocaleString()],
           ["Cells replaced by year " + scenario.age, op.cellsReplaced.toLocaleString()],
         ];
