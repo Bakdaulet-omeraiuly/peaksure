@@ -1108,6 +1108,16 @@ Source: `PeakSure_REON_Paxton_With_MA_Compliance.xlsx`. Code: `costs.PAXTON_INPU
 
 ---
 
+# AJ. Exploratory EBS Block Model (7 Nov 2026)
+
+`peaksure/ebs.py` and `tools/export_ebs.py` add a **separate** EBS-size discharge model. It does not replace the longitudinal 8-string study or its 15-year results. It uses the public Na+ EBS block rating (30 kW / 60 kWh) and compares fixed versus per-cell bypass on identical generated cells. The 84-block plant size follows from the published block rating and the comparison plant size; independent parallel blocks are an assumed aggregation, not a confirmed REON interconnection.
+
+The assumed block has 120 series cells, a DC/DC input floor swept from 280 to 350 V, 10% bypass headroom, 0.1 mΩ switch resistance per active cell, 96% DC-to-AC efficiency and one deliberately weakened cell per block in the stress cases. A 750 V direct-input case tests the consequence of no suitable block converter. The model integrates a representative Na-ion voltage curve as charge falls, stops a fixed string at its first empty cell, and removes empty cells from the bypass path until the DC floor or active-cell minimum is reached. Temperature, ageing, balancing, converter efficiency maps, shared-bus behavior and real EBS firmware are outside this block model.
+
+`web/public/data/ebs.json` contains the calculated fixed/bypass traces and sensitivity grid; the `/ebs` page reads that export. The team's required annual gross savings to cover an assumed EBS price premium is shown separately as an **economic hurdle**, not inferred from one discharge. EBS cell count, DC/DC design, switch R_on, weak-cell prevalence, price and MW-scale interconnection require REON confirmation before any hardware or investment claim.
+
+---
+
 # Z. Change Log (Part II)
 
 | # | Change | Type | Reason |
@@ -1149,6 +1159,7 @@ Source: `PeakSure_REON_Paxton_With_MA_Compliance.xlsx`. Code: `costs.PAXTON_INPU
 | 35 | Two products: full system and BMS-only retrofit, with break-even retrofit price by battery age; team sheet reproduced and compared with simulated savings (§AI4–AI5) | Addition | Product scope |
 | 36 | Two-phase strategy: Phase 1 retrofit (prove the technology), Phase 2 new batteries (scale); Massachusetts retrofit candidates Sterling, Reading, Holden (§AI4) | Framing / addition | Team decision |
 | 37 | Paxton-sized EBS plant, per-MW licensing (REON and owner sides) and Massachusetts compliance allowances from the team workbook (§AI6) | Addition (ASSUMED) | Team workbook |
+| 38 | Added a separate EBS-size block discharge comparison with voltage-floor, weak-cell and switch-loss assumptions; exported sensitivity results to `/ebs` (§AJ) | Exploratory simulation | EBS topology is not public; keep block feasibility separate from the 15-year plant study |
 
 ---
 

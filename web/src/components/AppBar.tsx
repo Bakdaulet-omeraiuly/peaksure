@@ -12,7 +12,7 @@ export default function AppBar({ context }: { context?: React.ReactNode }) {
           <span className="font-semibold text-[19px] tracking-tight text-ink">PeakSure</span>
         </Link>
         <nav className="site-nav flex items-center gap-1" aria-label="Main navigation">
-          {[["/", "Explore"], ["/results", "Findings"], ["/strategy", "Product & cost"], ["/method", "Method"]].map(([href, label]) => (
+          {[["/", "Explore"], ["/ebs", "EBS model"], ["/results", "Findings"], ["/strategy", "Product & cost"], ["/method", "Method"]].map(([href, label]) => (
             <Link key={href} href={href} className={`px-3 py-2 rounded-md text-[13px] font-medium whitespace-nowrap ${path === href ? "bg-[#e8f2ec] text-[#0c6548]" : "text-muted hover:text-ink hover:bg-panel-2"}`}>{label}</Link>
           ))}
         </nav>

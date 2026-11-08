@@ -46,7 +46,8 @@ def main() -> int:
              f"`{man.get('git_commit')}`, {man.get('n_main')} paired runs per main condition, {man.get('n_side')} per "
              f"side study, {man.get('seconds')} s of compute. **Simulated ground truth, not hardware validation.** "
              "Independent analysis, not endorsed by REON.\n")
-    L.append("System: REON CES 2.5 MW / 5 MWh (2 h), sodium-ion parameters, 15 years from 2027. Events are ISO-NE "
+    L.append("System: 2.5 MW / 5 MWh (2 h) modeled plant, conventional BMS versus an EBS-equivalent cell-bypass system; "
+             "its 8 × 240 cell wiring is assumed, not published EBS topology. Sodium-ion parameters, 15 years from 2027. Events are ISO-NE "
              "system monthly peaks 2019–2025 (bootstrapped by year), with WCMA temperatures. Rates: RNS and FCA (see the Addendum).\n")
 
     L.append("## T1. Main benchmark (mean [95% CI])\n")
@@ -58,7 +59,7 @@ def main() -> int:
         L.append(f"| {names[r.cond]} | {ci(r.savings)} | {ci(r.npv)} | {r.capture[0]*100:.1f}% | {r.delivered[0]*100:.1f}% | "
                  f"{r.annual[0]*100:.0f}% | {p5} | {prem} |")
 
-    L.append("\n## T2. Value decomposition, 2-h CES ($/yr, paired, exact by construction)\n")
+    L.append("\n## T2. Value decomposition, 2-h modeled plant ($/yr, paired, exact by construction)\n")
     L.append("| Component | Mean | 95% CI |")
     L.append("|---|---|---|")
     for _, r in dec.iterrows():
@@ -111,7 +112,7 @@ def main() -> int:
 
     L.append("\n## Reading the results\n")
     v12 = dec.set_index("component")["mean"]
-    L.append(f"- At the CES's 2-h duration, V1 + V2 = {usd(v12['V1 Physical (bypass)'] + v12['V2 Informational (cell twin)'])}/yr. "
+    L.append(f"- At the modeled 2-h duration, V1 + V2 = {usd(v12['V1 Physical (bypass)'] + v12['V2 Informational (cell twin)'])}/yr. "
              "Energy rarely limits the coincident-peak decision; peak-hour timing dominates.")
     if len(sens):
         s = sens.set_index("tag")

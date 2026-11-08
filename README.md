@@ -41,6 +41,9 @@ The browser physics is a TypeScript port of `peaksure/physics.py`, tested agains
 cd web && npm install && npm test && npm run dev     # http://localhost:3000
 ```
 
+The `/ebs` page is a separate exploratory Na+ EBS block discharge model. Regenerate its
+assumption and voltage-floor sensitivity data with `python tools/export_ebs.py`.
+
 ## Run (Python model)
 ```bash
 pip install -r requirements.txt pytest
