@@ -1045,6 +1045,62 @@ The reproducible exploratory study is in `peaksure/experiments.py --only researc
 
 **AH3. R_on and DC window: what we model and what we ask REON.** The conduction-loss map (I·R_on/V_cell; §AF) is now code (`switch_loss_from_ron`). `breakeven_switch_loss` gives, year by year, the switch loss at which bypass delivers no more than a fixed string on the same cells. Questions to send: `REON_QUESTIONS.md`.
 
+# AI. Product Update, Chemistry Comparison and Price Ranges (7 Nov 2026)
+
+## AI1. Which REON product has cell-level control (from REON)
+- **CESS (container, 2.5 MW / 5 MWh) and OES (cabinets) are white-label products from other vendors.** REON's website still describes the CESS as using "REON's cell-level intelligence"; REON's direct statement takes precedence.
+- **EBS (Energy Block System) is the product with REON's cell-level control BMS.** Public specs: Na+ version 30 kW / 60 kWh, 20,000-cycle claim, −40 to +140 °F; Li+ version holds "more than twice the energy in the same form factor" (no kWh given).
+- **What this means for the model:**
+  - Condition A = a conventional-BMS battery (for example the white-label CESS). B, C and D = the same 2.5 MW / 5 MWh built from about 84 EBS blocks (2,500 / 30 = 5,000 / 60 = 83.3).
+  - The power-to-energy ratio is still 2 h, so existing results carry over as a first approximation.
+  - The string design changes: a 60 kWh block holds roughly 120 cells at 3.1 V / 160 Ah, so strings are shorter than our 240-cell assumption. Bypassing one cell then costs a larger share of string voltage, and the DC window matters more.
+- **New questions for REON:** EBS cells per block and block DC voltage; whether each block has its own DC/DC or inverter stage; how blocks are paralleled; EBS Li+ energy per block; EBS price or price premium.
+
+## AI2. Lithium-ion (LFP) next to sodium-ion
+- The simulator already supports both chemistries. Na-ion is the main study (64 runs); LFP is the chemistry sensitivity (24 runs, conditions A–C).
+- `peaksure/curves.py` adds representative voltage curves: Na-ion slopes over 1.5–3.8 V (energy average about 3.13 V); LFP sits on a 3.25–3.34 V plateau (about 3.28 V).
+- **Finding (illustrative, not yet in the simulator):** with a 480 V AC inverter (about 750 V DC minimum) and a 240-cell string, the sloped Na-ion curve reaches the DC floor at roughly half charge, and earlier still once cells are bypassed; LFP stays above it until nearly empty. The exact SOCs are computed live by `curves.min_soc_above_floor` in the Streamlit *Chemistry & cost* tab. Unless the EBS has a wide-range DC/DC stage or many more cells in series, the DC window could cap Na-ion usable energy. The simulator tracks Ah only and does not yet apply this limit.
+
+## AI3. Installed-cost ranges (REON gave no price signal)
+All prices are installed $/kWh for a conventional 2-h, few-MWh US municipal project. Code: `peaksure/costs.py`.
+
+| Chemistry | Low | Central | High | Basis |
+|---|---|---|---|---|
+| LFP | 219 | 373.75 | 846 | Central: team sheet (S1), Modo Energy Sep 2026 global 2-h median $325/kWh × 1.15 US premium. Low: BNEF 2025 US turnkey (narrower scope). High: Concord 2024 all-in |
+| Na-ion | 250.75 | 427.94 | 968.67 | LFP × 1.145, the team sheet's sodium premium (A2; illustrative, not verified) |
+| Full-system premium over conventional | −5% | +10% | +20% | Team sheet A1 (+10%, no REON quote). Relectrify claims cell-level electronics cost less than a standard BMS; Chalmers reports higher upfront cost |
+| BMS-only retrofit | $25/kWh | $50/kWh | $75/kWh | Central: team sheet A8, $250k for 5 MWh. Low/high ±50% (our assumption). Third-party compatibility unverified |
+| O&M | $60k/yr conventional | $65k/yr REON | +$7k/yr retrofit | Team sheet A5, A10 (illustrative), per 5 MWh |
+| Discount rate, life | 8% | 15 yr | 10 yr after retrofit | Team sheet A6, A7, A11. Product economics use 8%; science tables keep 7.5% |
+
+Public benchmarks used (scope differs; never compare without it):
+- BNEF 2025 (via Energy-Storage.news): stationary pack $70/kWh; turnkey system $117 global, $73 China, $177 Europe, $219 US; global 2-h $124, 4-h $110.
+- China tender (CNESA, Sep 2026, 100 MW / 400 MWh): Na-ion system bids about $153/kWh vs LFP about $79/kWh.
+- Cells (Wood Mackenzie 2025): LFP about $52/kWh, Na-ion about $59/kWh. CATL's ~$19/kWh Na-ion figure is a claim or forecast.
+- US C&I installed, larger containers: about $180–320/kWh (vendor and industry guides, indicative).
+- Massachusetts projects (REON ROI sheet): Concord 2024 $657/kWh equipment and $846/kWh all-in; Sterling 2016 $692/kWh.
+
+**Results** (cost does not change the simulation, so no rerun is needed): `costs.breakeven_capex` gives, per run, the installed $/kWh at which 15-year NPV (savings − augmentation − O&M − capex) is zero, and `costs.npv_at_price` gives NPV at any price and EBS premium. Both are computed live from `results/` in the Streamlit *Chemistry & cost* tab; numbers are not copied here (AGENTS.md rule 1). At 2 h, the break-even price for conventional and EBS + PeakSure is close, so the installed price per kWh, not the chemistry or cell-level control, decides the business case.
+
+## AI4. Strategy: two phases (retrofit first, then new batteries)
+Both phases shave the town's ISO-NE coincident peak, so the same simulation applies (`peaksure/costs.py`, Streamlit *Chemistry & cost* tab):
+1. **Phase 1, BMS-only retrofit:** REON's cell-level control added to batteries towns already own. No battery cost, so it is the cheapest way to show the technology works on real peaks. The customer pays the retrofit price and gains the difference in value between the retrofitted and unchanged battery over its remaining life. Output: `costs.retrofit_breakeven`, the most the retrofit can cost per kWh of battery, by battery age at retrofit and scenario.
+   - Candidates (`costs.TOWN_BATTERIES`, `costs.town_retrofit_table`): Sterling 2 MW / 3.9 MWh (2016), Reading 5 MW / 10 MWh (2019), Holden 5 MW / 22 MWh (2024). Each uses the closest simulated case at its current age, scaled per kWh; none is simulated individually.
+   - Approximation: the retrofitted battery follows the bypass path from year 0, so its cells age under bypass and its twin has the full history before the retrofit. Older retrofits are therefore slightly optimistic.
+   - Same decision rule on both sides (B vs A for hardware only; C vs A_opt for hardware + twin).
+   - Open: REON has not confirmed that its cell control can be retrofitted to other vendors' batteries (compatibility, warranty, safety, certification).
+2. **Phase 2, new batteries:** once Phase 1 gives field evidence, sell new batteries built with REON's cell control (EBS blocks; about 84 for a 2.5 MW / 5 MWh plant). Compared with a new conventional battery; the customer pays the battery price plus any premium. Output: NPV vs installed price and the break-even price.
+   - Open: REON has not confirmed MW-scale EBS fleets, block interconnection, or per-block DC/DC.
+
+## AI5. Team financial model vs simulation
+The team's one-sheet model (`PeakSure_REON_One_Sheet_Financial_Model_With_Sources.xlsx`) is reproduced exactly by `costs.team_sheet()` (tested). It **assumes** REON's extra savings: +10% for the full system and +$55k/yr for the retrofit. The simulator **computes** them from cell physics on ISO-NE peaks. The app shows both with identical prices, O&M, life and discount rate, so only the savings differ. Notes on the sheet:
+- It still calls the full-system product "REON CESS"; per §AI1 the CESS is white-label and the cell-level product is the EBS.
+- Its 14.5% sodium premium (A2) is listed but not used in its own scenarios; the model applies it to Na-ion.
+- The module-replacement comparator (A12–A14) exists only in the sheet; the simulator does not model partial module replacement.
+- At 2 h, the simulated REON savings are far below the sheet's assumptions; they approach or exceed them only in the 1-h, 4-h, cooling and fault scenarios. Numbers are computed live in the app (AGENTS.md rule 1).
+
+---
+
 # Z. Change Log (Part II)
 
 | # | Change | Type | Reason |
@@ -1079,6 +1135,12 @@ The reproducible exploratory study is in `peaksure/experiments.py --only researc
 | 28 | Added paired synthetic mixed-age, twin-trend resting-SOC, and independent pack-test safety-envelope studies (§AG; generated results §T6). The baseline was verified unchanged. | Addition / limitation | Explicit scientific focus, with assumptions and negative outcomes retained |
 | 29 | **Ageing fitted to TUM Tables 4–5** (§AH1): cal_a 0.030→0.014, Ea 35→28.4, β25 0.10→2.0, β45 0.90→1.79, low-SOC penalty 0.30→0, cyc_b 1e-4→2.1e-5. Full study, RESULTS.md and web data regenerated | Correction (ASSUMED→DERIVED) | Fit to published data |
 | 30 | Bypass transient and R_on break-even checks added (§AH2–AH3); minute-step assumption confirmed for energy | Addition / verification | Model validity |
+| 31 | REON: CESS and OES are white-label; the EBS carries the cell-level BMS. A = conventional BMS, B/C/D = ~84 EBS blocks (§AI1) | Correction (framing) | Statement from REON |
+| 32 | Na-ion vs LFP voltage curves and DC-floor check (`peaksure/curves.py`, §AI2) | Addition | Chemistry comparison |
+| 33 | Installed-cost ranges per chemistry, EBS premium range, O&M, capex-aware NPV and break-even price (`peaksure/costs.py`, §AI3); Na-ion range provisional | Addition (ASSUMED) | No REON price signal |
+| 34 | Prices, premiums, O&M, discount rate and retrofit inputs taken from the team financial model; Na-ion = LFP × 1.145 (§AI3) | Update (ASSUMED) | Team sheet |
+| 35 | Two products: full system and BMS-only retrofit, with break-even retrofit price by battery age; team sheet reproduced and compared with simulated savings (§AI4–AI5) | Addition | Product scope |
+| 36 | Two-phase strategy: Phase 1 retrofit (prove the technology), Phase 2 new batteries (scale); Massachusetts retrofit candidates Sterling, Reading, Holden (§AI4) | Framing / addition | Team decision |
 
 ---
 

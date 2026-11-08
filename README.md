@@ -1,7 +1,7 @@
 # PeakSure
 
 **Know what your battery can deliver when it counts.**
-A cell-aware decision tool for REON's cell-level energy storage, built for coincident-peak management at Massachusetts municipal light plants (MIT Energy & Climate Hack 2026, REON challenge).
+A cell-aware decision tool for REON's cell-level energy storage (the EBS, Energy Block System; REON's CESS and OES are white-label products from other vendors), built for coincident-peak management at Massachusetts municipal light plants (MIT Energy & Climate Hack 2026, REON challenge).
 
 > Independent analysis. Not endorsed by REON. No experiment result is final until it appears in `results/` with seeds and confidence intervals.
 
@@ -26,7 +26,7 @@ A factorial design (A_opt, A_twin, B_opt, perfect-information runs) separates **
 | `peaksure/` | Simulator: physics, twin, decision, Monte Carlo |
 | `tools/` | Data preparation from ISO-NE SMD hourly files |
 | `data/processed/` | Derived ISO-NE peak events (2019–2026) with WCMA temperatures |
-| `app/` | Streamlit demo |
+| `app/` | Streamlit demo (includes a Chemistry & cost tab: Na-ion vs LFP voltage curves, price ranges, capex-aware NPV) |
 | `tests/` | Unit tests (including the brief's 16-cell example) |
 
 ## PeakSure Studio (web demo)

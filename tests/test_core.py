@@ -159,3 +159,71 @@ def test_zero_twin_error_perfect_info_dominates_twin():
     cfg = Config(years=2)
     p = simulate(cfg, "C_perf", 0)["events"].exp_kw.mean()
     assert p > 0
+
+
+# ----------------------------------------------------------- cost ranges and voltage curves
+def test_price_ranges_ordered():
+    from peaksure import costs
+    for r in costs.PRICE_RANGES.values():
+        assert r.low <= r.central <= r.high
+    assert costs.REON_PREMIUM["low"] <= costs.REON_PREMIUM["central"] <= costs.REON_PREMIUM["high"]
+
+
+def test_breakeven_capex_zeroes_npv():
+    import pandas as pd
+    from peaksure import costs
+    cfg = Config()
+    rl = pd.DataFrame(dict(cond=["A", "C"], run=[0, 0], npv=[4.0e6, 4.1e6], savings_yr=[4.5e5, 4.6e5]))
+    be = costs.breakeven_capex(rl, cfg)
+    for i, row in be.iterrows():
+        n = costs.npv_at_price(rl.iloc[[i]], cfg, row.breakeven_kwh, premium=0.0)
+        assert n.npv_full.iloc[0] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_voltage_curves():
+    from peaksure import curves
+    assert curves.energy_avg_v("Na-ion") == pytest.approx(NA_ION.v_nom, abs=0.1)
+    assert 3.2 < curves.energy_avg_v("LFP") < 3.35
+    # flat LFP keeps a 240-cell string above 750 V far deeper than sloped Na-ion
+    assert curves.min_soc_above_floor("LFP", 240, 750) < 0.1 < 0.4 < curves.min_soc_above_floor("Na-ion", 240, 750)
+    # discharge sits below charge
+    assert np.all(curves.terminal_v("Na-ion", np.linspace(0.1, 0.9, 9), 0.5, False)
+                  < curves.terminal_v("Na-ion", np.linspace(0.1, 0.9, 9), 0.5, True))
+
+
+def test_team_sheet_reproduces_spreadsheet():
+    from peaksure import costs
+    t = costs.team_sheet()
+    assert costs.TEAM_CONV_CAPEX_KWH == pytest.approx(373.75)
+    assert t["s1"]["conv_npv"] == pytest.approx(1_041_472.75, abs=1)
+    assert t["s1"]["reon_npv"] == pytest.approx(1_154_179.51, abs=1)
+    assert t["s1"]["needed_extra_gross"] == pytest.approx(26_832.52, abs=1)
+    assert t["s2"]["retrofit_npv"] == pytest.approx(72_083.91, abs=1)
+    assert t["s2"]["replacement_npv"] == pytest.approx(-163_844.71, abs=1)
+    assert t["s2"]["retrofit_max_capex"] == pytest.approx(322_083.91, abs=1)
+
+
+def test_retrofit_breakeven_identical_paths_cost_only_om():
+    import pandas as pd
+    from peaksure import costs
+    cfg = Config()
+    rows = [dict(cond=c, run=0, m=y * 12, sim_year=y, month=1, is_annual=False, shaved_kw=1000.0, power_kw=1000.0)
+            for c in ("A", "B") for y in range(cfg.years)]
+    ev = pd.DataFrame(rows)
+    mo = pd.DataFrame([dict(cond=c, run=0, sim_year=y, aug_kwh=0.0) for c in ("A", "B") for y in range(cfg.years)])
+    r = costs.retrofit_breakeven(ev, mo, cfg, "A", "B", ages=[0, 5], om_delta_per_5mwh=5000.0)
+    for _, row in r.iterrows():
+        expect = -5000.0 * costs.annuity(cfg.discount_rate, cfg.years - row.age) / cfg.e_nom_kwh
+        assert row.breakeven_kwh == pytest.approx(expect)
+
+
+def test_town_retrofit_table_scales_by_size():
+    import pandas as pd
+    from peaksure import costs
+    rf = pd.DataFrame([dict(scenario=s, age=a, breakeven_kwh=10.0, lo=8.0, hi=12.0)
+                       for s in ("2-h, LFP", "4-h system") for a in range(15)])
+    t = costs.town_retrofit_table(rf, 15, 4.0).set_index("town")
+    for town, b in costs.TOWN_BATTERIES.items():
+        assert t.loc[town, "max_cost"] == pytest.approx(10.0 * b["mwh"] * 1000)
+        assert t.loc[town, "npv"] == pytest.approx(6.0 * b["mwh"] * 1000)
+        assert t.loc[town, "age"] == min(costs.ASSESS_YEAR - b["year"], 14)

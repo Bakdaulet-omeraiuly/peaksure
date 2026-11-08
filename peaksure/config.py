@@ -154,9 +154,9 @@ class Config:
 
 
 SYSTEM_FLAGS = {
-    "p_max_kw": (CONFIRMED, "REON CES 2.5 MW (REON_WHO_WE_ARE.pdf)"),
-    "e_nom_kwh": (CONFIRMED, "REON CES up to 5 MWh"),
-    "n_strings / n_series": (ASSUMED, "CES string design not public; ask REON"),
+    "p_max_kw": (CONFIRMED, "2.5 MW, CESS size; REON says the CESS is white-label, so B/C/D = ~84 EBS blocks of 30 kW / 60 kWh"),
+    "e_nom_kwh": (CONFIRMED, "5 MWh (same 2-h ratio as one EBS block)"),
+    "n_strings / n_series": (ASSUMED, "EBS string design not public (a 60 kWh block is ~120 cells); ask REON"),
     "headroom": (ASSUMED, "DC-window headroom sets N_min; first-order driver (Lot Desk deck)"),
     "switch_loss": (ASSUMED, "0.5-2% sensitivity; MOSFET I^2 R_ds(on)"),
     "dispatch_days": (ASSUMED, "Operators dispatch on several candidate days per month"),
