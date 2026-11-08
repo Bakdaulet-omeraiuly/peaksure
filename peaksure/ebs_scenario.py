@@ -43,15 +43,20 @@ class Scenario:
 
 WINDOWS_H = (1, 2, 3)                       # ASSUMED facility peak-window lengths (sensitivity)
 WEAK_CASES = (1.0, 0.9, 0.8)                # 1.0 = natural TUM spread only; 0.9/0.8 = labelled stress cases
-DEMAND_CHARGE = {"low": 10.0, "central": 15.0, "high": 20.0}   # $/kW-month, ASSUMED range, not a verified tariff
+# $/kW-month. G-2 CONFIRMED (National Grid MA, effective 2026-10-01); low / high are ASSUMED sensitivity values.
+DEMAND_CHARGE = {"G-2": 15.24, "low": 10.0, "high": 20.0}
+CURVE_KW = (5.0, 10.0, 15.0, 20.0, 25.0, 30.0)
 
 FLAGS = {
     "rated_kw": ("CONFIRMED", "reoncorp.com/hardware: 'EBS | 30kW/60kWh' (line heading; AC/DC boundary not stated)"),
     "rated_kwh": ("CONFIRMED", "same heading; variant not stated. Na+ assignment DERIVED from the Li+ '>2x energy' claim"),
     "nominal_ratio_h": (DERIVED, "60 kWh / 30 kW = 2 h; nominal ratio, not a guaranteed AC discharge duration"),
     "use_case": (ASSUMED, "C&I demand-charge peak shaving: PeakSure scenario; REON's EMS lists peak shaving (REON CLAIM)"),
-    "window": (ASSUMED, "facility billing peak assumed inside a known window starting HE15; timing uncertainty not modelled"),
-    "demand_charge": (ASSUMED, "$10-20/kW-month range for illustration; no specific tariff verified"),
+    "window": (ASSUMED, "facility billing peak assumed inside a window starting HE15; consistent with NREL/OpenEI simulated "
+                        "Boston retail summer peaks at HE15-16 (RELATED EXTERNAL DATA); timing uncertainty not modelled"),
+    "demand_charge": ("CONFIRMED", "National Grid MA G-2 delivery demand charge $15.24/kW-month, M.D.P.U. No. 1-26-I, effective "
+                                   "2026-10-01; billed on the greatest 15-minute demand. "
+                                   "$10 and $20 are ASSUMED sensitivity values"),
     "sigma_meas": (ASSUMED, "2% per-cell capacity estimate error, same for both batteries"),
     "cells / N_min / DC floor / R_on / eta": (ASSUMED, "from EBSCase: 120 cells, N_min 108, 300 V floor, 0.1 mOhm, 96%"),
     "temperature": (ASSUMED, "not modelled (25 C); REON's -40 to +140 F claim gives no charge/discharge or derating limits"),
@@ -93,6 +98,15 @@ def deliverable_energy(base: EBSCase, samples: np.ndarray, bypass: bool, kw: flo
     minutes = 60 * 1.2 * base.cells_per_block * base.cell_ah * 3.8 / 1000 / max(kw, 1e-6)
     r = simulate(_case(base, samples.shape[0], kw), samples, bypass, minutes=minutes, detail=True)
     return np.asarray(r["block_energy_kwh"])
+
+
+def energy_curve(base: EBSCase, cells: np.ndarray, bypass: bool) -> dict:
+    """Deliverable AC energy vs constant discharge power. cells: (K, n) belief samples or (1, n) simulated plant."""
+    rows = [deliverable_energy(base, cells, bypass, kw) for kw in CURVE_KW]
+    if cells.shape[0] == 1:
+        return dict(kw=list(CURVE_KW), kwh=[float(r[0]) for r in rows])
+    return dict(kw=list(CURVE_KW), p5=[float(np.percentile(r, 5)) for r in rows],
+                p50=[float(np.percentile(r, 50)) for r in rows], p95=[float(np.percentile(r, 95)) for r in rows])
 
 
 def commit(base: EBSCase, samples: np.ndarray, bypass: bool, hours: float, sc: Scenario) -> tuple[float, float]:
@@ -167,8 +181,18 @@ def export(sc: Scenario = Scenario(), base: EBSCase = EBSCase()) -> dict:
                 c[name]["status"] = commitment_status(c[name]["commit_kw"], h, c[name]["belief_p5"],
                                                       sc.rated_kw, sc.rated_kwh, base.eta)
             cases.append(c)
+    curves = []
+    for weak in WEAK_CASES:
+        b = replace(base, weak_factor=weak)
+        q_true = true_cells(b)
+        mean, sd = estimate(q_true, sc)
+        samples = belief_samples(mean, sd, sc)
+        curves.append(dict(weak_factor=weak,
+                           belief={hw: energy_curve(b, samples, hw == "bypass") for hw in ("fixed", "bypass")},
+                           plant={hw: energy_curve(b, q_true[None, :], hw == "bypass") for hw in ("fixed", "bypass")}))
     return dict(
         title="EBS scenario: C&I demand-charge peak shaving (PeakSure simulation)",
+        energy_curves=curves,
         use_case="One 30 kW / 60 kWh EBS-size block reduces a commercial facility's monthly demand peak. "
                  "PeakSure simulation scenario; not a verified EBS deployment or REON operating profile.",
         profiles={"EBS Na+": "simulated (rating from the EBS line heading; cells, N_min, DC floor, R_on, efficiency ASSUMED)",

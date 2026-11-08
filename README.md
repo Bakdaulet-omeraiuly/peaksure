@@ -46,6 +46,10 @@ assumption and voltage-floor sensitivity data with `python tools/export_ebs.py`.
 The page opens with a single-block EBS C&I demand-charge scenario (`peaksure/ebs_scenario.py`,
 regenerate with `python tools/export_ebs_scenario.py`). It is a PeakSure simulation scenario, not
 a verified EBS deployment; see Addendum §AL for which EBS facts are confirmed, claimed or assumed.
+Above it, an advisory demand-target planner for one EBS block at a National Grid MA G-2 site reads meter data in the
+`peaksure-facility-load/0.1` CSV format (a labelled SYNTHETIC sample is bundled; rebuild it with
+`python tools/build_facility_loads.py --download`). See `PILOT_READINESS.md` (demo / pilot / not live control) and
+`DATA_AUDIT.md` (which public data was used, and how).
 
 ## Run (Python model)
 ```bash

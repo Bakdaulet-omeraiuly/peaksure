@@ -7,6 +7,7 @@ import data from "../../../public/data/ebs.json";
 
 const EBSPair3D = dynamic(() => import("@/components/EBSPair3D"), { ssr: false });
 import EBSScenario from "@/components/EBSScenario";
+import PilotWorkflow from "@/components/PilotWorkflow";
 
 const fmt = (v: number, digits = 0) => v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits });
 const W = 600, H = 190, L = 42, T = 12, IW = W - L - 18, IH = H - T - 30;
@@ -36,6 +37,7 @@ export default function EBS() {
     <div className="eyebrow mb-3">EBS · block simulation</div>
     <h1 className="page-title mb-3">EBS: conventional vs REON-style cell bypass</h1>
     <p className="text-[13px] text-muted leading-relaxed max-w-[850px] mb-4">REON&apos;s hardware page lists the EBS line at <b>30 kW / 60 kWh</b> with Na+ (sodium-ion) and Li+ (lithium) variants. It does not say which variant that rating describes, whether it is rated or usable energy, or on which side of the inverter it is measured. Na+ claims (20,000 cycles; −40 to +140 °F) come without test conditions. Li+ is only described as &ldquo;more than twice the energy in the same form factor&rdquo;, so it is not simulated. Cell count, N_min, DC floor, switch resistance and efficiency below are model assumptions. This is a simulation, not REON hardware validation.</p>
+    <PilotWorkflow />
     <EBSScenario />
     <div className="eyebrow mb-3 mt-6">Fleet sensitivity · 84 blocks · drain at rated power</div>
     <p className="text-[14px] text-muted leading-relaxed max-w-[850px] mb-5">A separate exploratory model of {data.assumptions.blocks} independent Na+ EBS-size blocks, rated {fmt(data.assumptions.blocks * data.assumptions.block_kw / 1000, 2)} MW / {fmt(data.assumptions.blocks * 60 / 1000, 2)} MWh together. Both cases discharge the <b>same generated cells</b> at {data.assumptions.block_kw} kW per block: a fixed string stops at its first empty cell; bypass switches that cell out while voltage and the minimum active-cell count allow it.</p>

@@ -1,0 +1,82 @@
+{
+ "source": "tests/test_facility.py reference; sample_facility_load_SYNTHETIC.csv peak day",
+ "peak_date": "2026-07-08",
+ "day_kw": [
+  11.971,
+  11.971,
+  11.971,
+  11.971,
+  5.083,
+  19.943,
+  28.0,
+  43.83,
+  66.083,
+  84.593,
+  89.252,
+  93.498,
+  97.751,
+  99.982,
+  101.284,
+  101.05,
+  99.043,
+  76.556,
+  62.0,
+  64.331,
+  49.959,
+  11.971,
+  11.971,
+  11.971
+ ],
+ "cases": [
+  {
+   "energy_kwh": 47.5,
+   "power_kw": 30.0,
+   "target_kw": 90.85133333333334,
+   "need_kwh": 47.49999999999996,
+   "reduction_kw": 10.432666666666663,
+   "first_he": 12,
+   "last_he": 17,
+   "binding": "energy"
+  },
+  {
+   "energy_kwh": 53.4,
+   "power_kw": 30.0,
+   "target_kw": 89.86800000000001,
+   "need_kwh": 53.39999999999996,
+   "reduction_kw": 11.415999999999997,
+   "first_he": 12,
+   "last_he": 17,
+   "binding": "energy"
+  },
+  {
+   "energy_kwh": 20.0,
+   "power_kw": 30.0,
+   "target_kw": 95.822,
+   "need_kwh": 20.0,
+   "reduction_kw": 5.462000000000003,
+   "first_he": 13,
+   "last_he": 17,
+   "binding": "energy"
+  },
+  {
+   "energy_kwh": 200.0,
+   "power_kw": 30.0,
+   "target_kw": 71.44544444444445,
+   "need_kwh": 200.0,
+   "reduction_kw": 29.83855555555556,
+   "first_he": 10,
+   "last_he": 18,
+   "binding": "energy"
+  },
+  {
+   "energy_kwh": 53.6,
+   "power_kw": 15.0,
+   "target_kw": 89.83466666666668,
+   "need_kwh": 53.59999999999995,
+   "reduction_kw": 11.449333333333328,
+   "first_he": 12,
+   "last_he": 17,
+   "binding": "energy"
+  }
+ ]
+}

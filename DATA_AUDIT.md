@@ -1,0 +1,22 @@
+# PeakSure data audit (8 Nov 2026)
+
+Machine-readable provenance: `data/public_data_manifest.json` (URLs, checksums, licence notes). Raw third-party files are stored locally in ignored folders (`data/openei-loads/`, `data/tariffs/`, see `.gitignore`) and are **not committed**; only small derived files are.
+
+**No public REON cell-level or operational dataset was found.** REON publishes product headings and marketing claims (reoncorp.com/hardware, /solutions), not datasheets or telemetry. Nothing in this repository is REON data.
+
+| Dataset / source | REON-specific? | Chemistry match? | Downloaded? | Processed? | Used for | Licence | Limitation |
+|---|---|---|---|---|---|---|---|
+| reoncorp.com/hardware and /solutions (accessed 2026-11-08) | Yes: **REON COMPANY CLAIM** (product headings and claims) | n/a | Page HTML read | Text extracted | EBS rating heading, variants, C&I application, Na+ claims, EMS peak-shaving claim (`peaksure/products.py`) | Website terms | No datasheet; rating basis (AC/DC, usable) and EBS internals not stated |
+| REON patent US 2023/0341471 A1 (Google Patents) | REON filing | n/a | Page read | No | Context only | Public record | Pending application; not proof of product design |
+| TUM Na-ion ageing, Bahrke et al. 2026, DOI 10.14459/2026mp1840745 | No: **MATCHED EXTERNAL DATA** for chemistry (Na-ion layered oxide / hard carbon 18650); EBS cell format unknown | Na-ion: yes; cell format: unknown | Raw `.mat`: **no** (rsync timed out from this environment); paper tables: yes | Tables 4–5 fitted (`peaksure/fit_tum.py`, `data/processed/tum_naion_tables.csv`) | Ageing parameters, capacity spread (1.15%) in the plant study and EBS block model | CC BY 4.0 | Fitted to published tables, not raw trajectories; lab 18650 cells, not EBS |
+| NREL/OpenEI Commercial Hourly Load Profiles, Boston Logan TMY3, DOI 10.25984/1788456 | No: **RELATED EXTERNAL DATA** | n/a (load data) | Yes: 3 files (retail, strip mall, small office) | Yes (`tools/build_facility_loads.py`) | Synthetic sample CSV, peak-day shapes, check of the assumed HE15 peak window | US federal (NREL/OEDI) public data; no explicit licence on the OSTI record | Simulated prototype buildings, typical-year weather, hourly (bill is 15-min); superseded by End-Use Load Profiles and flagged by NREL as containing errors |
+| National Grid MA delivery rates, M.D.P.U. No. 1-26-I, effective 2026-10-01 | No (tariff) | n/a | Yes (PDF) | Yes (text extracted) | G-2 demand charge **$15.24/kW-month** (CONFIRMED), customer charge $45 | Public tariff | Distribution demand only; supply has no demand charge in G-2; future rate changes not modelled |
+| National Grid MA G-2 tariff, M.D.P.U. No. 1547, effective 2024-10-01 | No (tariff) | n/a | Yes (PDF) | Yes | Billing demand = greatest 15-minute peak in the month; ≤ 200 kW customers (CONFIRMED) | Public tariff | kVA (90%) clause and minimum charge not modelled |
+| OpenEI Utility Rate Database entries for G-2 | No | n/a | Pages read | Cross-check only | Confirmed the same G-2 structure | Public | Community-maintained; primary tariff used instead |
+| ISO-NE SMD 2019–2025 (plant-scale study) | No | n/a | Yes (earlier) | Yes (`tools/build_peak_events.py`) | Coincident peaks for the CES-sized MLP study | ISO-NE terms | Unchanged by this work |
+| data.matr.io LFP, Naumann LFP (Mendeley), Battery Archive | No: RELATED EXTERNAL DATA (LFP) | Not Na-ion | No | No | Listed in `DATA_SOURCES.md` for an LFP sensitivity only | Various | Not used: EBS Li+ chemistry and capacity are not stated, so no LFP calibration is justified |
+| NREL End-Use Load Profiles (ComStock) | No | n/a | No | No | Recommended replacement for the OpenEI profiles | CC BY 4.0 | Large S3 dataset; not needed for the prototype |
+
+**Effect on the model.** The G-2 tariff replaced an assumed $10–20/kW-month central value in the EBS scenario (now the default; $10 and $20 kept as sensitivities). The OpenEI data did not change any battery parameter; it supports the assumed HE15 window and provides the labelled synthetic sample. The plant-scale results (`RESULTS.md`) are unchanged.
+
+**Ask REON for:** EBS datasheet (rating basis, AC/DC boundary, usable energy, efficiency, DC window, cells per block, N_min, switch R_on), cell-level telemetry export format and sample data, field capacity/resistance distributions, the test conditions behind the 20,000-cycle and temperature claims, EBS Li+ capacity and chemistry, and any customer meter data REON can share under NDA for a supervised pilot.

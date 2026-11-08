@@ -1,0 +1,67 @@
+{
+ "generated": "2026-11-08",
+ "script": "tools/build_facility_loads.py",
+ "datasets": [
+  {
+   "title": "NREL Commercial Hourly Load Profiles (TMY3), Boston Logan",
+   "publisher": "NREL / DOE OEDI",
+   "doi": "10.25984/1788456",
+   "licence": "US federal (NREL/OEDI) public data; no explicit licence on the OSTI record",
+   "classification": "RELATED EXTERNAL DATA",
+   "downloaded": true,
+   "processed": true,
+   "files": [
+    {
+     "name": "Stand-alone retail",
+     "file": "RefBldgStand-aloneRetailNew2004_v1.3_7.1_5A_USA_IL_CHICAGO-OHARE.csv",
+     "url": "https://openei.org/datasets/files/961/pub/COMMERCIAL_LOAD_DATA_E_PLUS_OUTPUT/USA_MA_Boston-Logan.Intl.AP.725090_TMY3/RefBldgStand-aloneRetailNew2004_v1.3_7.1_5A_USA_IL_CHICAGO-OHARE.csv",
+     "sha256": "059787dbb1cf3e409d1fd9882bccd0fb2014bdb6acc9ad6442b5126650e4b6ef",
+     "rows": 8760,
+     "committed": false
+    },
+    {
+     "name": "Strip mall",
+     "file": "RefBldgStripMallNew2004_v1.3_7.1_5A_USA_IL_CHICAGO-OHARE.csv",
+     "url": "https://openei.org/datasets/files/961/pub/COMMERCIAL_LOAD_DATA_E_PLUS_OUTPUT/USA_MA_Boston-Logan.Intl.AP.725090_TMY3/RefBldgStripMallNew2004_v1.3_7.1_5A_USA_IL_CHICAGO-OHARE.csv",
+     "sha256": "e9dd3d7fc6d5bd2fa40ddf0172c745f927e17572cf648878c4bab90177cb6b1f",
+     "rows": 8760,
+     "committed": false
+    },
+    {
+     "name": "Small office",
+     "file": "RefBldgSmallOfficeNew2004_v1.3_7.1_5A_USA_IL_CHICAGO-OHARE.csv",
+     "url": "https://openei.org/datasets/files/961/pub/COMMERCIAL_LOAD_DATA_E_PLUS_OUTPUT/USA_MA_Boston-Logan.Intl.AP.725090_TMY3/RefBldgSmallOfficeNew2004_v1.3_7.1_5A_USA_IL_CHICAGO-OHARE.csv",
+     "sha256": "6300cc23362a9aa67c2d9f99398f8ced3a37d5a49d930fe6fbd8fe809caca8c1",
+     "rows": 8760,
+     "committed": false
+    }
+   ],
+   "derived": [
+    "web/public/data/facility_loads.json",
+    "web/public/data/sample_facility_load_SYNTHETIC.csv"
+   ]
+  },
+  {
+   "title": "National Grid MA (Massachusetts Electric) delivery rates, M.D.P.U. No. 1-26-I, effective 2026-10-01",
+   "publisher": "National Grid",
+   "url": "https://www.nationalgridus.com/media/pdfs/billing-payments/tariffs/mae/meco_delivery.pdf",
+   "classification": "CONFIRMED tariff (not battery data)",
+   "downloaded": true,
+   "processed": true,
+   "used": "G-2 delivery demand charge $15.24/kW-month; customer charge $45.00",
+   "sha256": "a3f93f31359e537348d0bb8ddb321f790abc5dd66374392a5ea3c547da4de36a",
+   "committed": false
+  },
+  {
+   "title": "National Grid MA G-2 tariff, M.D.P.U. No. 1547, effective 2024-10-01",
+   "publisher": "National Grid",
+   "url": "https://www.nationalgridus.com/media/pdfs/billing-payments/tariffs/mae/meco_g2.pdf",
+   "classification": "CONFIRMED tariff terms",
+   "downloaded": true,
+   "processed": true,
+   "used": "billing demand = greatest 15-minute peak in the month; 200 kW eligibility limit",
+   "sha256": "8b98e4f3c98ff843717fbc3a62731722f34f993a48e4e16786b264c453de5506",
+   "committed": false
+  }
+ ]
+}

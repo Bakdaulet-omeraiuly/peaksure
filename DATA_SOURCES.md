@@ -1,6 +1,6 @@
 # PeakSure: Battery Data Sources
 
-Compiled on 2026-11-07. Everything here is public. Nothing has been downloaded yet; these are links only.
+Compiled on 2026-11-07. Everything here is public. **Update 2026-11-08:** the TUM Na-ion ageing *tables* are processed (`data/processed/tum_naion_tables.csv`, `peaksure/fit_tum.py`); the raw TUM `.mat` files were not downloaded (rsync from this environment timed out). NREL/OpenEI building loads and National Grid MA tariffs were downloaded for the EBS scenario; see `DATA_AUDIT.md` and `data/public_data_manifest.json`.
 Put the files you download into the matching folders: `data/tum-naion/`, `data/tum-lfp/`, `data/batteryarchive/`, `data/papers/`.
 
 > **Companion document:** `PeakSure-Science-Addendum.md` covers the scientific design (twin calibration, optimal commitment, Tier 3) and the market, economic, CO₂ and REON data (RNS, FCA, Sterling, BNEF prices, emissions). This file covers only the raw battery datasets.

@@ -20,7 +20,7 @@ export default function EBSScenario() {
   const [d, setD] = useState<EbsScenarioFile | null>(null);
   const [hours, setHours] = useState(2);
   const [weak, setWeak] = useState(1);
-  const [tariff, setTariff] = useState<"low" | "central" | "high">("central");
+  const [tariff, setTariff] = useState<string>("G-2");
   const [mode, setMode] = useState<"window" | "drain">("window");
   const [minute, setMinute] = useState(-30);
   const [playing, setPlaying] = useState(false);
@@ -75,8 +75,8 @@ export default function EBSScenario() {
         <select className="border border-line rounded-md p-2 bg-white" value={weak} onChange={(e) => setWeak(+e.target.value)}>
           <option value={1}>natural spread only</option><option value={0.9}>stress: one cell at 90%</option><option value={0.8}>stress: one cell at 80%</option></select></label>
       <label><span className="block font-semibold text-ink mb-1">Demand charge <Badge s={flag("demand_charge")} /></span>
-        <select className="border border-line rounded-md p-2 bg-white" value={tariff} onChange={(e) => setTariff(e.target.value as typeof tariff)}>
-          {Object.entries(d.demand_charge).map(([k, v]) => <option key={k} value={k}>${v}/kW-month ({k})</option>)}</select></label>
+        <select className="border border-line rounded-md p-2 bg-white" value={tariff} onChange={(e) => setTariff(e.target.value)}>
+          {Object.entries(d.demand_charge).map(([k, v]) => <option key={k} value={k}>{k === "G-2" ? `$${v}/kW-month · National Grid MA G-2 (confirmed)` : `$${v}/kW-month · ${k} (assumed)`}</option>)}</select></label>
       <div className="seg inline-flex"><button data-on={mode === "window"} onClick={() => setMode("window")}>Peak window</button><button data-on={mode === "drain"} onClick={() => setMode("drain")}>Drain test (30 kW to stop)</button></div>
     </div>
 

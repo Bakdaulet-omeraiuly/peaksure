@@ -3,7 +3,7 @@ title: "PeakSure: Scientific Addendum"
 subtitle: "How we make the model defensible, and what is genuinely new"
 ---
 
-> **Reading guide.** Part I (§0–§I, §H) is the original addendum. **Part II (§J–§Z)** is the strengthening pass: research question, architecture, benchmark design, calibration, VoI protocol, engineering constraints, economics, demo, evidence audit, roadmap, pitch, and change log. Corrections to Part I are listed in §Z. **No experiment has been run yet. All results are placeholders.**
+> **Reading guide.** Part I (§0–§I, §H) is the original addendum. **Part II (§J–§Z)** is the strengthening pass: research question, architecture, benchmark design, calibration, VoI protocol, engineering constraints, economics, demo, evidence audit, roadmap, pitch, and change log. Corrections to Part I are listed in §Z. ~~No experiment has been run yet. All results are placeholders.~~ **Superseded (8 Nov 2026):** experiments have run; generated results are in `RESULTS.md` (from `results/`), and later sections (§AE onward) describe the implemented model.
 
 # 0. Purpose
 
@@ -333,7 +333,7 @@ Status key: **V** = confirmed in a primary or official source; **S** = secondary
 
 > Part II adds sections J–Z. Part I (§0–§I and §H) is preserved. Where Part II **corrects** Part I, the correction is stated explicitly and listed in the change log (§Z).
 >
-> **Status of results:** no experiment in this document has been executed yet. Every result table and figure below is a **placeholder**. Nothing here is proven until the code runs, with seeds and confidence intervals.
+> **Status of results (superseded 8 Nov 2026: generated results now live in `RESULTS.md`; this Part II text is the original design):** no experiment in this document had been executed when it was written. Every result table and figure below is a **placeholder**. Nothing here is proven until the code runs, with seeds and confidence intervals.
 
 ---
 
@@ -731,7 +731,7 @@ With 20–80 dispatch days per year (§Q4), annual throughput is low. **Calendar
 
 ---
 
-# T. Expected Figures and Result Tables (placeholders: NO RESULTS YET)
+# T. Expected Figures and Result Tables (original placeholders; generated results are now in `RESULTS.md`)
 
 **Figures**
 1. **F1:** Deliverable energy vs year (P5/P50/P95 bands) for A, B, C. *[placeholder]*
@@ -1185,6 +1185,23 @@ CESS energy basis and AC/DC boundary; EBS cells per block, block DC window, DC/D
 
 `/ebs` now opens with this scenario. `EBSPair3D` shows both blocks from the exported 5-minute frames: one colour per state (green normal, yellow approaching empty, red limiting, grey bypassed, slate idle), a blue ring for the cell selected for diagnosis, shape cues (limiting enlarged, bypassed and idle recessed), per-state counts as text, a Difference view, shared Play / Pause / Reset and stages (Before peak → Cell limit → Bypass decision → Result) read from engine events, disabled when the event does not occur. The layout is labelled "schematic topology; internal EBS construction not confirmed". The previous `EBSBlock3D` (fixed weak-cell index, yellow meaning both weak and stranded, unlabelled current path) was removed; the 84-block sensitivity section now defaults to natural spread.
 
+# AM. Public Data Integration and Advisory Planner (8 Nov 2026)
+
+**Primary demo: EBS Na+ (one 30 kW / 60 kWh block) at a commercial site on National Grid MA rate G-2.** Chosen because (1) EBS is the REON product that carries cell-level control (REON statement) and its rating and C&I application are on REON's hardware page; (2) CESS is white-label with no bypass, so it cannot show REON's cell-level value; (3) a G-2 demand charge is a decision PeakSure can support (a daily demand target) with a confirmed public tariff; (4) public load data exist for the site type. The CES-sized MLP study is unchanged and remains the plant-scale research case. No source shows an EBS deployed at a G-2 site; this is a modelled use case.
+
+**Data integrated** (details and checksums: `DATA_AUDIT.md`, `data/public_data_manifest.json`):
+- National Grid MA delivery rates (M.D.P.U. No. 1-26-I, effective 2026-10-01): G-2 demand charge $15.24/kW-month, customer charge $45 (CONFIRMED). G-2 tariff (No. 1547): billing demand = greatest 15-minute peak in the month; ≤ 200 kW customers (CONFIRMED). Used as the default tariff in `ebs_scenario.py` and the planner; $10 / $20 kept as ASSUMED sensitivities.
+- NREL/OpenEI commercial hourly load profiles, Boston Logan TMY3 (DOI 10.25984/1788456): stand-alone retail, strip mall, small office. Simulated prototype buildings, superseded and flagged by NREL as containing errors: RELATED EXTERNAL DATA, not REON and not metered. Used for (a) the synthetic sample CSV, (b) checking the assumed HE15 window (summer retail peaks fall at HE15–16), (c) peak-day shapes. No battery parameter was fitted to it.
+- TUM Na-ion raw cell data: not downloaded (rsync timed out from this environment); the existing table-based fit (§AH) is unchanged. No REON cell or operational data is public.
+
+**Planner** (`peaksure/facility.py`, `web/src/engine/facility.ts`, `PilotWorkflow.tsx`): data contract `peaksure-facility-load/0.1` (timestamp, kW; 15- or 60-minute) with schema, unit (W / MW), gap, duplicate, negative, interval and staleness checks; peak day; demand target T = lowest level such that Σ(L − T)⁺·Δt ≤ twin P5 deliverable energy at rated power and max(L − T) ≤ rated power. The dispatch is shaped, so its energy ≤ peak discharge × hours (the constant-power P × H case is the upper bound). A "Why this recommendation?" explanation, P50 comparison, simulated-plant check revealed only on request, sensitivity table and JSON/Markdown report export with the input checksum. Python and TypeScript agree on a fixture (`web/src/engine/__fixtures__/python_facility.json`).
+
+**What this shows honestly:** on the retail peak day the 60 kWh block is energy-limited (the peak is broad), so it shaves about a tenth of the peak; with natural cell spread the conventional and REON-style blocks recommend the same target, and only weak-cell stress cases separate them. Numbers are generated by the export and the page, not quoted here.
+
+**Known model limitation found:** the EBS block model uses a fixed 0.5C overpotential (`curves.terminal_v(..., 0.5, ...)`) regardless of actual current, so deliverable energy is nearly flat in discharge power. Fixing it changes `ebs.py` results and should be done together with REON's cell data.
+
+**Readiness:** demo-ready (offline); suitable for a supervised, read-only data pilot on supplied meter CSVs with human review (`PILOT_READINESS.md`); not ready for live battery control.
+
 ---
 
 # Z. Change Log (Part II)
@@ -1234,6 +1251,7 @@ CESS energy basis and AC/DC boundary; EBS cells per block, block DC window, DC/D
 | 41 | Product evidence audit: separate CESS / EBS Na+ / EBS Li+ / modelled-plant profiles with CONFIRMED / REON CLAIM / DERIVED / LITERATURE / ASSUMED / UNKNOWN / MODEL OUTPUT status; plant size flags changed CONFIRMED → ASSUMED (§AK1–AK2) | Correction (evidence) | CESS is white-label; its rating is a comparison size, not a bypass-plant spec |
 | 42 | Commitment energy and feasibility shown and tested; partial last discharge minute (stranded energy now matches the analytic value); truth hidden until after the peak; identical-cells option; Difference mode, shared playback and engine-driven steps (§AK3–AK4) | Correction / visualization | Accuracy and transparency audit |
 | 43 | EBS C&I peak-shaving scenario: EBS evidence re-checked (30 kW / 60 kWh is the EBS line heading; Na+ assignment DERIVED; Li+ capacity only claimed, not simulated), single-block belief / 95% commitment / simulated outcome with identical cells, stop reasons from the engine, new `/ebs` 3D comparison (§AL) | Addition / correction (evidence) | EBS-specific, honest comparison |
+| 44 | Primary demo set to EBS Na+ at a National Grid MA G-2 site; G-2 tariff CONFIRMED and integrated; NREL/OpenEI simulated building loads integrated as RELATED EXTERNAL DATA (sample CSV, window check); facility data contract, validation, demand-target planner with Why / plant check / sensitivity / report export; stale 'no results yet' notes superseded; fixed-0.5C overpotential flagged (§AM) | Addition / correction | REON review prototype |
 
 ---
 
