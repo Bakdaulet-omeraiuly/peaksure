@@ -227,3 +227,26 @@ def test_town_retrofit_table_scales_by_size():
         assert t.loc[town, "max_cost"] == pytest.approx(10.0 * b["mwh"] * 1000)
         assert t.loc[town, "npv"] == pytest.approx(6.0 * b["mwh"] * 1000)
         assert t.loc[town, "age"] == min(costs.ASSESS_YEAR - b["year"], 14)
+
+
+def test_paxton_and_licensing_reproduce_workbook():
+    from peaksure import costs
+    p = costs.paxton_sheet()
+    assert (p["units"], p["nominal_kwh"], p["power_kw_installed"]) == (167, 10020, 5010)
+    assert p["capex"] == pytest.approx(3_994_975.0, abs=1)
+    assert p["npv"] == pytest.approx(914_098.70, abs=1)
+    assert p["breakeven_net"] == pytest.approx(406_897.03, abs=1)
+    assert costs.paxton_sheet(price_kwh=500)["npv"] == pytest.approx(-350_926.30, abs=1)
+    assert costs.licensing_sheet()["npv"] == pytest.approx(626_953.66, abs=1)
+
+
+def test_compliance_costs_flow_into_npv():
+    from peaksure import costs
+    c = costs.compliance_frame()
+    c.loc[0, "ebs_upfront"] = 100_000
+    c.loc[1, "ebs_annual"] = 10_000
+    c.loc[2, "license_upfront"] = 50_000
+    base, p = costs.paxton_sheet(), costs.paxton_sheet(c)
+    af = costs.annuity(costs.paxton("discount_rate"), costs.paxton("life_years"))
+    assert p["npv"] == pytest.approx(base["npv"] - 100_000 - 10_000 * af)
+    assert costs.licensing_sheet(c)["npv"] == pytest.approx(costs.licensing_sheet()["npv"] - 50_000)

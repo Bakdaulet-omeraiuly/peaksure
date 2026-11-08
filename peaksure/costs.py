@@ -310,3 +310,129 @@ def town_retrofit_table(rf: pd.DataFrame, life_years: int, price_kwh: float) -> 
                          max_cost=r.breakeven_kwh * kwh, retrofit_cost=price_kwh * kwh,
                          npv=(r.breakeven_kwh - price_kwh) * kwh, src=b["src"]))
     return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------- Massachusetts case, licensing, compliance
+# From PeakSure_REON_Paxton_With_MA_Compliance.xlsx (team, Nov 2026). Illustrative; not REON quotes and
+# not verified Paxton cash flows.
+PAXTON_INPUTS = {
+    "power_kw": (3000.0, "Paxton reference: 3 MW"),
+    "hours": (3.0, "Paxton reference: 9 MWh / 3 MW"),
+    "unit_kw": (30.0, "Provisional REON EBS spec; verify exact variant"),
+    "unit_kwh": (60.0, "Provisional REON EBS spec; verify exact variant"),
+    "usable_fraction": (0.9, "Assumption; discharge limits, not a verified datasheet"),
+    "additional_costs": (250_000.0, "Placeholder project costs; exclude costs already in the turnkey benchmark"),
+    "life_years": (20, "Illustrative; replacements and degradation not modelled in the sheet"),
+    "discount_rate": (0.08, "Illustrative"),
+    "gross_savings_yr": (500_000.0, "ILLUSTRATIVE: $10M / 20 yr Paxton lifetime savings claim; not verified"),
+    "om_reserve_yr": (0.0, "Placeholder = 0; must be estimated before an investment decision"),
+}
+PAXTON_PRICE_POINTS = (300.0, None, 500.0, 850.0)   # None = US-adjusted Modo benchmark
+
+# Phase 1 as a licence: REON sells its cell-control technology per MW to battery owners/partners.
+LICENSING_INPUTS = {
+    "portfolio_mw": (5.0, "Assumption"),
+    "upfront_fee_per_mw": (100_000.0, "Hypothetical contract term"),
+    "annual_license_per_mw": (12_000.0, "Hypothetical contract term"),
+    "implementation_cost": (175_000.0, "Hypothetical REON cost"),
+    "annual_recurring_cost": (15_000.0, "Hypothetical REON cost"),
+    "contract_years": (10, "Assumption"),
+}
+
+# Massachusetts market entry & compliance. All costs are UNKNOWN placeholders (0 = not yet priced,
+# not a verified zero). Columns: EBS upfront, EBS annual, licensing upfront, licensing annual.
+COMPLIANCE_ITEMS = [
+    ("Business role & contracting", "Vendor vs owner/operator; municipal RFP, site agreements, IP and SLA"),
+    ("Siting / local permits", "MA 225 CMR 29.00 applicability and effective dates; local siting and land-use review"),
+    ("Pre-filing / community engagement", "Site selection, community consultation, local filing where required"),
+    ("Fire code & AHJ", "527 CMR 1.00; local fire department; NFPA 855 where adopted; fire-response plan"),
+    ("UL 9540 / UL 9540A evidence", "NRTL system listing and thermal-runaway test documentation; a retrofit may invalidate the listing"),
+    ("Electrical design / inspections", "527 CMR 12.00; licensed installer, inspection and commissioning"),
+    ("Utility interconnection", "Host municipal utility approval; no grid export assumed until approved"),
+    ("ISO-NE wholesale registration", "Only if participating in wholesale markets"),
+    ("Environmental & site studies", "Wetlands, stormwater, noise and land-use screening as applicable"),
+    ("Battery waste / decommissioning", "310 CMR 30.000; waste handlers, recycling and end-of-life plan"),
+    ("Clean Peak eligibility assessment", "MA Clean Peak eligibility; no incentive revenue booked"),
+    ("Cybersecurity / utility integration", "SCADA, telemetry, dispatch, cybersecurity, utility data-sharing"),
+    ("Third-party retrofit feasibility", "Licensing: OEM permission, compatibility, warranty, recertification, insurer approval"),
+]
+COMPLIANCE_COLUMNS = ("ebs_upfront", "ebs_annual", "license_upfront", "license_annual")
+
+
+def compliance_frame() -> pd.DataFrame:
+    """Editable compliance table with zero placeholders."""
+    return pd.DataFrame([dict(requirement=r, authority=a, **{c: 0.0 for c in COMPLIANCE_COLUMNS})
+                         for r, a in COMPLIANCE_ITEMS])
+
+
+def _totals(compliance: pd.DataFrame | None) -> dict:
+    if compliance is None or compliance.empty:
+        return {c: 0.0 for c in COMPLIANCE_COLUMNS}
+    return {c: float(pd.to_numeric(compliance[c], errors="coerce").fillna(0.0).sum()) for c in COMPLIANCE_COLUMNS}
+
+
+def paxton(key: str):
+    return PAXTON_INPUTS[key][0]
+
+
+def licensing(key: str):
+    return LICENSING_INPUTS[key][0]
+
+
+def ebs_sizing(power_kw: float, hours: float, unit_kw: float, unit_kwh: float, usable: float) -> dict:
+    """EBS units needed for a power and duration target (sheet logic: max of power- and energy-limited counts)."""
+    import math
+    energy = power_kw * hours
+    n_power = math.ceil(power_kw / unit_kw)
+    n_energy = math.ceil(energy / (unit_kwh * usable))
+    n = max(n_power, n_energy)
+    return dict(energy_kwh=energy, units_power=n_power, units_energy=n_energy, units=n,
+                nominal_kwh=n * unit_kwh, power_kw_installed=n * unit_kw, usable_kwh=n * unit_kwh * usable)
+
+
+def paxton_sheet(compliance: pd.DataFrame | None = None, gross_savings_yr: float | None = None,
+                 price_kwh: float | None = None) -> dict:
+    """Recompute the Paxton-sized EBS case from its inputs. `gross_savings_yr` overrides the sheet's assumption."""
+    t = _totals(compliance)
+    sz = ebs_sizing(paxton("power_kw"), paxton("hours"), paxton("unit_kw"), paxton("unit_kwh"), paxton("usable_fraction"))
+    price = TEAM_CONV_CAPEX_KWH if price_kwh is None else price_kwh
+    battery_capex = sz["nominal_kwh"] * price
+    capex = battery_capex + paxton("additional_costs") + t["ebs_upfront"]
+    gross = paxton("gross_savings_yr") if gross_savings_yr is None else gross_savings_yr
+    net = gross - paxton("om_reserve_yr") - t["ebs_annual"]
+    af = annuity(paxton("discount_rate"), paxton("life_years"))
+    breakeven = capex / af
+    return dict(**sz, price_kwh=price, battery_capex=battery_capex, capex=capex, gross=gross, net=net, annuity=af,
+                npv=net * af - capex, payback=capex / net if net > 0 else float("inf"),
+                breakeven_net=breakeven, margin=net - breakeven)
+
+
+def licensing_sheet(compliance: pd.DataFrame | None = None) -> dict:
+    """REON's view of Phase 1 licensing (sheet logic)."""
+    t = _totals(compliance)
+    mw = licensing("portfolio_mw")
+    upfront_rev = mw * licensing("upfront_fee_per_mw")
+    upfront_net = upfront_rev - licensing("implementation_cost") - t["license_upfront"]
+    annual_net = mw * licensing("annual_license_per_mw") - licensing("annual_recurring_cost") - t["license_annual"]
+    npv = upfront_net + annual_net * annuity(paxton("discount_rate"), licensing("contract_years"))
+    return dict(portfolio_mw=mw, upfront_revenue=upfront_rev, upfront_net=upfront_net, annual_net=annual_net, npv=npv)
+
+
+def licensee_value(ev: pd.DataFrame, mo: pd.DataFrame, cfg: Config, base: str = "A_opt", new: str = "C") -> dict:
+    """Customer side of a licence on one battery: simulated value of cell control vs licence fees.
+
+    The licence starts with `contract_years` of battery life left. Annual licence fees are treated like
+    extra O&M in retrofit_breakeven; NPV = PV(extra savings - annual fee) - upfront fee.
+    """
+    mw = cfg.p_max_kw / 1000.0
+    years = licensing("contract_years")
+    age = max(0, cfg.years - years)
+    annual_fee = licensing("annual_license_per_mw") * mw
+    upfront_fee = licensing("upfront_fee_per_mw") * mw
+    be = retrofit_breakeven(ev, mo, cfg, base, new, ages=[age],
+                            om_delta_per_5mwh=annual_fee * 5000.0 / cfg.e_nom_kwh).iloc[0]
+    gross = retrofit_gross_by_age(ev, mo, cfg, base, new, age)
+    return dict(mw=mw, age=age, years=years, upfront_fee=upfront_fee, annual_fee=annual_fee,
+                extra_savings_yr=gross[0], extra_savings_lo=gross[1], extra_savings_hi=gross[2],
+                npv=be.breakeven_kwh * cfg.e_nom_kwh - upfront_fee,
+                npv_lo=be.lo * cfg.e_nom_kwh - upfront_fee, npv_hi=be.hi * cfg.e_nom_kwh - upfront_fee)

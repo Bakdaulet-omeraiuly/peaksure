@@ -96,7 +96,7 @@ t1 = T1.set_index("cond")
 
 tabs = st.tabs(["Overview", "Peak day (live)", "Benchmark", "Where it pays", "Value decomposition",
                 "Twin calibration", "VoI probing", "Temperature", "Economics", "Lifetime & CO2",
-                "Chemistry & cost", "Assumptions & evidence"])
+                "Chemistry & cost", "MA case & licensing", "Assumptions & evidence"])
 
 
 def sens_row(tag):
@@ -885,8 +885,120 @@ with tabs[10]:
             "1-h, 4-h, cooling and fault scenarios, where the simulated retrofit value is much larger.")
 
 
-# =============================================================== 11. assumptions
+# =============================================================== 10c. Massachusetts case, licensing, compliance
+@st.cache_data(show_spinner=False)
+def sens_scaled_savings(tag, power_kw):
+    ev_s, mo_s = an.load("events_sens"), an.load("monthly_sens")
+    if ev_s.empty or tag not in set(ev_s.tag):
+        return {}
+    cfg_ = an.tag_cfg(tag).with_(discount_rate=costs.paxton("discount_rate"))
+    rl_ = econ.run_level(ev_s[ev_s.tag == tag], mo_s[mo_s.tag == tag], cfg_)
+    return (rl_.groupby("cond").savings_yr.mean() * power_kw / cfg_.p_max_kw).to_dict()
+
+
+@st.cache_data(show_spinner=False)
+def licensee_rows():
+    out = []
+    ev_s, mo_s = an.load("events_sens"), an.load("monthly_sens")
+    cases = [("2-h, 2.5 MW / 5 MWh (main study)", None), ("3-h, 2.5 MW / 7.5 MWh", "sens_duration_3h"),
+             ("4-h, 2.5 MW / 10 MWh", "sens_duration_4h"), ("2-h with failing HVAC", "sens_hvac_failing"),
+             ("2-h with cell faults", "sens_fault_scenario")]
+    for name, tag in cases:
+        if tag is None:
+            e, m, cfg_ = ev, mo, CFG.with_(discount_rate=costs.paxton("discount_rate"))
+        else:
+            if ev_s.empty or tag not in set(ev_s.tag):
+                continue
+            e, m = ev_s[ev_s.tag == tag], mo_s[mo_s.tag == tag]
+            cfg_ = an.tag_cfg(tag).with_(discount_rate=costs.paxton("discount_rate"))
+        v = costs.licensee_value(e, m, cfg_)
+        out.append(dict(case=name, **v))
+    return pd.DataFrame(out)
+
+
 with tabs[11]:
+    ui.callout("From the team workbook <i>PeakSure_REON_Paxton_With_MA_Compliance.xlsx</i>: a Paxton-sized plant built from "
+               "EBS units (Phase 2), REON licensing its technology per MW (Phase 1), and the Massachusetts compliance steps "
+               "for both. Inputs are illustrative, not REON quotes or verified Paxton cash flows. As in the sheet, the "
+               "savings are compared side by side with what the simulator computes.", "warn")
+
+    st.markdown("#### Massachusetts compliance allowances (feed every cost below)")
+    ui.note("All costs start at $0 because none have been priced: <b>$0 means unknown, not verified zero</b>. Edit the cells to "
+            "add estimates; the plant and licensing results below update. Do not double-count costs already in the turnkey price.")
+    comp = st.data_editor(
+        costs.compliance_frame(), hide_index=True, width="stretch", key="ma_compliance", disabled=["requirement", "authority"],
+        column_config={
+            "requirement": st.column_config.TextColumn("Requirement"),
+            "authority": st.column_config.TextColumn("Authority / next step", width="large"),
+            "ebs_upfront": st.column_config.NumberColumn("EBS plant upfront ($)", min_value=0, step=1000, format="$%d"),
+            "ebs_annual": st.column_config.NumberColumn("EBS plant annual ($/yr)", min_value=0, step=500, format="$%d"),
+            "license_upfront": st.column_config.NumberColumn("Licensing upfront ($)", min_value=0, step=1000, format="$%d"),
+            "license_annual": st.column_config.NumberColumn("Licensing annual ($/yr)", min_value=0, step=500, format="$%d"),
+        })
+    tot = costs._totals(comp)
+    ui.cards([ui.card("EBS plant compliance, upfront", ui.usd(tot["ebs_upfront"]), "added to plant capex", "neutral", "ASSUMED"),
+              ui.card("EBS plant compliance, annual", ui.usd(tot["ebs_annual"]), "subtracted from annual net", "neutral", "ASSUMED"),
+              ui.card("Licensing compliance, upfront", ui.usd(tot["license_upfront"]), "REON cost", "neutral", "ASSUMED"),
+              ui.card("Licensing compliance, annual", ui.usd(tot["license_annual"]), "REON cost", "neutral", "ASSUMED")])
+
+    st.markdown("#### Phase 2: Paxton-sized plant built from EBS units")
+    px = costs.paxton_sheet(comp)
+    ui.cards([
+        ui.card("EBS units", f"{px['units']:,}", f"{px['units_energy']} for energy vs {px['units_power']} for power "
+                f"({costs.paxton('usable_fraction'):.0%} usable)", "info", "TEAM"),
+        ui.card("Installed", f"{px['nominal_kwh']/1000:,.2f} MWh / {px['power_kw_installed']/1000:,.2f} MW",
+                f"target {costs.paxton('power_kw')/1000:g} MW for {costs.paxton('hours'):g} h", "info", "TEAM"),
+        ui.card("Total capex", ui.usd(px["capex"]), f"${px['price_kwh']:.2f}/kWh + ${costs.paxton('additional_costs'):,.0f} "
+                "additional + compliance", "neutral", "TEAM"),
+    ])
+    sim = sens_scaled_savings("sens_duration_3h", costs.paxton("power_kw"))
+    sources = [("Sheet assumption (Paxton $10M / 20 yr)", None)]
+    if sim:
+        sources += [("Simulated, conventional BMS (A)", sim.get("A")), ("Simulated, REON EBS + PeakSure (C)", sim.get("C"))]
+    rows = []
+    for label, g in sources:
+        r = costs.paxton_sheet(comp, gross_savings_yr=g)
+        rows.append({"Savings source": label, "Gross savings / yr": ui.usd(r["gross"]), "Net / yr": ui.usd(r["net"]),
+                     f"NPV ({costs.paxton('life_years')} yr, {costs.paxton('discount_rate'):.0%})": ui.usd(r["npv"]),
+                     "Payback (yr)": f"{r['payback']:.1f}", "Break-even net / yr": ui.usd(r["breakeven_net"]),
+                     **{f"NPV at ${pp:.0f}/kWh" if pp else f"NPV at ${costs.TEAM_CONV_CAPEX_KWH:.2f}/kWh":
+                        ui.usd(costs.paxton_sheet(comp, gross_savings_yr=g, price_kwh=pp)["npv"])
+                        for pp in costs.PAXTON_PRICE_POINTS}})
+    st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    ui.note("Simulated savings come from the 3-h study (2.5 MW / 7.5 MWh, Na-ion, ISO-NE peaks 2019-2025), scaled per kW to "
+            f"{costs.paxton('power_kw')/1000:g} MW, and averaged over its 15 simulated years; the sheet's own formula then applies "
+            f"them over {costs.paxton('life_years')} years with O&amp;M and reserve at ${costs.paxton('om_reserve_yr'):,.0f} "
+            "(a placeholder). The plant is priced as EBS units at the conventional benchmark with no premium, as in the sheet. "
+            "167 distributed EBS units may need site-by-site permits, extra balance of plant and validated controls.")
+
+    st.markdown("#### Phase 1: licensing REON's cell-control technology")
+    lic = costs.licensing_sheet(comp)
+    ui.cards([
+        ui.card("REON licensing NPV", ui.usd(lic["npv"]), f"{lic['portfolio_mw']:g} MW portfolio, "
+                f"{costs.licensing('contract_years')} yr, {costs.paxton('discount_rate'):.0%}", "good" if lic["npv"] > 0 else "bad", "TEAM"),
+        ui.card("Upfront, net of implementation", ui.usd(lic["upfront_net"]),
+                f"${costs.licensing('upfront_fee_per_mw'):,.0f}/MW fee - ${costs.licensing('implementation_cost'):,.0f}", "neutral", "TEAM"),
+        ui.card("Annual, net of recurring cost", ui.usd(lic["annual_net"]),
+                f"${costs.licensing('annual_license_per_mw'):,.0f}/MW-yr - ${costs.licensing('annual_recurring_cost'):,.0f}", "neutral", "TEAM"),
+    ])
+    st.markdown("##### The battery owner's side: is the licence worth its fees?")
+    lv = licensee_rows()
+    if len(lv):
+        show = pd.DataFrame({
+            "Battery (simulated case)": lv.case, "Licence fees": lv.apply(lambda r: f"{ui.usd(r.upfront_fee)} + {ui.usd(r.annual_fee)}/yr", axis=1),
+            "Extra savings / yr (simulated)": lv.apply(lambda r: f"{ui.usd(r.extra_savings_yr)} [{ui.usd(r.extra_savings_lo)}, {ui.usd(r.extra_savings_hi)}]", axis=1),
+            "Owner NPV over the licence": lv.apply(lambda r: f"{ui.usd(r.npv)} [{ui.usd(r.npv_lo)}, {ui.usd(r.npv_hi)}]", axis=1),
+            "Most upfront fee the owner can pay ($/MW)": ((lv.npv + lv.upfront_fee) / lv.mw).map(ui.usd)})
+        st.dataframe(show, hide_index=True, width="stretch")
+        ui.note(f"Licence starts with {costs.licensing('contract_years')} years of battery life left (year "
+                f"{int(lv.age.iloc[0])} of 15). Extra savings = hardware + cell twin vs the same battery unchanged, same decision "
+                "rule (C vs A_opt), including avoided augmentation. The annual fee is treated like extra O&amp;M. Last column: "
+                "the upfront fee per MW at which the owner breaks even, after paying the annual fee. A licence on a third-party "
+                "battery needs OEM permission and may invalidate its UL 9540 listing (see compliance table).")
+
+
+# =============================================================== 11. assumptions
+with tabs[12]:
     st.markdown("#### Evidence and assumptions (every parameter in the model)")
     rows = [dict(Parameter=k, Flag=v[0], Source=v[1]) for k, v in SYSTEM_FLAGS.items()]
     rows += [dict(Parameter=f"Na-ion: {k}", Flag=v[0], Source=v[1]) for k, v in NA_ION.flags.items()]

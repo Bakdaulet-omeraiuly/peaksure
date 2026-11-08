@@ -1099,6 +1099,13 @@ The team's one-sheet model (`PeakSure_REON_One_Sheet_Financial_Model_With_Source
 - The module-replacement comparator (A12–A14) exists only in the sheet; the simulator does not model partial module replacement.
 - At 2 h, the simulated REON savings are far below the sheet's assumptions; they approach or exceed them only in the 1-h, 4-h, cooling and fault scenarios. Numbers are computed live in the app (AGENTS.md rule 1).
 
+## AI6. Massachusetts case, licensing and compliance (team workbook)
+Source: `PeakSure_REON_Paxton_With_MA_Compliance.xlsx`. Code: `costs.PAXTON_INPUTS`, `paxton_sheet`, `LICENSING_INPUTS`, `licensing_sheet`, `licensee_value`, `COMPLIANCE_ITEMS`; Streamlit tab *MA case & licensing*. `paxton_sheet()` and `licensing_sheet()` reproduce the workbook exactly (tested).
+- **Phase 2, Paxton-sized plant:** 3 MW for 3 h built from EBS units (30 kW / 60 kWh, 90% usable) needs 167 units, energy-limited (10.02 MWh nominal, 5.01 MW installed), priced at the US-adjusted Modo benchmark plus $250k additional costs, 20 years at 8%. The sheet assumes $500k/yr gross savings from Paxton's reported $10M over 20 years. The app also runs the sheet's formula with simulated savings from the 3-h study, scaled per kW to 3 MW and averaged over its 15 simulated years.
+- **Phase 1, licensing:** REON sells its technology per MW (hypothetical $100k/MW upfront, $12k/MW-yr, 5 MW portfolio, 10 years; REON's own implementation and recurring costs). The app adds the battery owner's side: simulated extra savings over the licence term against the fees (annual fee treated like O&M), by battery duration and condition.
+- **Compliance:** 13 Massachusetts requirements (siting 225 CMR 29.00, fire 527 CMR 1.00 / NFPA 855, UL 9540/9540A, electrical 527 CMR 12.00, interconnection, ISO-NE registration, environmental, 310 CMR 30.000 decommissioning, Clean Peak, cybersecurity, third-party retrofit feasibility). Every cost is an unpriced placeholder ($0 = unknown); the app lets users enter estimates, which flow into the plant capex and annual net and into REON's licensing NPV.
+- Limits: the 3-h simulation is 2.5 MW / 7.5 MWh Na-ion with 240-cell strings, not distributed 60 kWh EBS units; 167 distributed units may need site-by-site permits, extra balance of plant and validated controls; a retrofit licence may invalidate a third-party battery's UL 9540 listing.
+
 ---
 
 # Z. Change Log (Part II)
@@ -1141,6 +1148,7 @@ The team's one-sheet model (`PeakSure_REON_One_Sheet_Financial_Model_With_Source
 | 34 | Prices, premiums, O&M, discount rate and retrofit inputs taken from the team financial model; Na-ion = LFP × 1.145 (§AI3) | Update (ASSUMED) | Team sheet |
 | 35 | Two products: full system and BMS-only retrofit, with break-even retrofit price by battery age; team sheet reproduced and compared with simulated savings (§AI4–AI5) | Addition | Product scope |
 | 36 | Two-phase strategy: Phase 1 retrofit (prove the technology), Phase 2 new batteries (scale); Massachusetts retrofit candidates Sterling, Reading, Holden (§AI4) | Framing / addition | Team decision |
+| 37 | Paxton-sized EBS plant, per-MW licensing (REON and owner sides) and Massachusetts compliance allowances from the team workbook (§AI6) | Addition (ASSUMED) | Team workbook |
 
 ---
 

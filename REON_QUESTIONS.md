@@ -29,3 +29,8 @@ Optional third question: is bypass make-before-break, and what are the commutati
 - Can REON's cell-level control be retrofitted to other vendors' batteries already in the field (for example Sterling, Reading, Holden)? What are the compatibility, warranty, safety and certification limits?
 - What would a retrofit cost, per kWh or per cell, including installation?
 - Can EBS blocks be combined into a MW-scale plant, and how do they connect to a shared inverter?
+
+**Licensing and Massachusetts compliance:**
+- Would REON license its cell-control technology per MW, and on what terms (upfront, annual, implementation support)?
+- Does adding REON's cell control to a listed battery require new UL 9540 / UL 9540A testing, and does the OEM need to approve it?
+- Is the EBS (and a distributed fleet of EBS units) UL 9540 listed, and what fire-code siting limits apply per unit?
