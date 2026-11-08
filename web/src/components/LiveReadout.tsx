@@ -19,10 +19,15 @@ export default function LiveReadout({ scenario, view, slots }: { scenario: Scena
         const run = view === "drain" ? op.drain! : op.run;
         const st = runStats(run, op.tier, minute, scenario.chem.vNom, N, S);
         const d = op.decision;
+        // Charge a full drain at rated power would leave behind (same cells, same day): what the hardware cannot reach.
+        const dr = op.drain!;
+        const drainEnd = runStats(dr, op.tier, dr.startMin + dr.nFrames - 1, scenario.chem.vNom, N, S);
         const rows: [string, string, string?][] = [
           ["Delivered so far", kwh(st.deliveredKwh)],
           ["Still in usable cells", kwh(st.usableKwh)],
-          ["Stranded (string stopped)", kwh(st.strandedKwh), st.strandedKwh > 0.5 ? "#b77712" : undefined],
+          view === "peak"
+            ? ["Stranded if drained to empty", kwh(drainEnd.strandedKwh), drainEnd.strandedKwh > 0.5 ? "#b77712" : undefined]
+            : ["Stranded (string stopped)", kwh(st.strandedKwh), st.strandedKwh > 0.5 ? "#b77712" : undefined],
           ["Strings running", `${st.stringsOn} / ${S}`],
           ["Cells switched out", st.bypassed.toLocaleString()],
           ["Cells replaced by year " + scenario.age, op.cellsReplaced.toLocaleString()],
