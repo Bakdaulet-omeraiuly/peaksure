@@ -24,3 +24,8 @@ data/openei-loads/
 data/tariffs/
 # test-runner cache created at the repo root
 /node_modules/
+# video build intermediates (tools/make_video.py)
+video/frames/
+video/pitch_frames/
+# local build outputs; final files are copied to submission/
+video/
