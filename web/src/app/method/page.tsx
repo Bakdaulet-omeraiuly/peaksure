@@ -22,6 +22,7 @@ export default function Method() {
               P(deliverable energy &ge; power &times; window) &ge; 95%.</p>
           </S>
           <S t="Three modeled operators">
+            <p>REON says CESS/OES are white-label products; EBS carries its cell-level BMS. A is a conventional battery, while B/C represent an EBS-equivalent plant at the same 2.5 MW / 5 MWh rating. About 84 published Na+ blocks would match that nameplate rating. The block interconnection is unknown.</p>
             <p><b className="text-ink">Conventional:</b> fixed series strings (same current through every cell; the first empty cell stops the string; the hottest cell derates it),
               an annual system capacity test as its belief, and the common rule: full power for as many whole hours as the P5 energy allows, centred on the most likely hour.</p>
             <p><b className="text-ink">REON baseline (assumed):</b> per-cell bypass with the same annual pack-test belief and full-power rule. This is a modeled comparison policy, not a verified description of REON&apos;s current control software.</p>
@@ -35,7 +36,7 @@ export default function Method() {
             <p><b className="text-ink">Model mismatch:</b> the robust commitment uses the lower of the cell twin and an independent annual pack-test belief. A smoothed disagreement signal raises an alert; it does not prove the twin is correct. The added conservatism may reduce savings.</p>
           </S>
           <S t="What runs where">
-            <p>Real data: ISO-NE SMD hourly files 2019&ndash;2025 (system monthly peaks, hours, WCMA temperatures), ISO-NE RNS and FCA rates, REON CES rating.</p>
+            <p>Real data: ISO-NE SMD hourly files 2019&ndash;2025 (system monthly peaks, hours, WCMA temperatures), ISO-NE RNS and FCA rates, and the public CESS rating used as a comparison plant size.</p>
             <p>Python model (repository <code>peaksure/</code>): 15-year cell ageing (calendar Arrhenius &times; SOC stress, DoD-weighted cycling, lognormal cell-to-cell spread
               informed by TUM&apos;s sodium-ion data), the twin, Monte Carlo with paired runs and bootstrap confidence intervals.</p>
             <p>Browser (this site): the same physics re-implemented in TypeScript and tested against the Python model (agreement to 0.001 kWh), minute-by-minute discharge
@@ -44,16 +45,16 @@ export default function Method() {
           <S t="REON's open questions, answered from public sources">
             <p>From REON&apos;s challenge video, the brief, REON_WHO_WE_ARE, patent US 2023/0341471, inverter datasheets and the TUM sodium-ion paper:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li><b className="text-ink">Chemistry:</b> not stated for the CES. REON ships both Na-ion and Li-ion products. We model Na-ion as the base case and LFP as a sensitivity.</li>
-              <li><b className="text-ink">Cells per string and N_min (derived):</b> the CES AC side is 480 V three-phase, and a 480 V inverter needs about 750 V DC or more. With 1.5&ndash;3.8 V Na-ion cells, that gives about 240&ndash;300 cells per string, and N_min of about 242 at 3.1 V. The DC window limits deep discharge.</li>
+              <li><b className="text-ink">Chemistry:</b> EBS has Na+ and Li+ versions; the modeled plant uses Na-ion as the base case and LFP as a sensitivity. The actual EBS cell format is unconfirmed.</li>
+              <li><b className="text-ink">Cells per string and N_min (assumed):</b> the simulator uses 8 strings of 240 cells with 10% bypass headroom. This is a plant-level abstraction, not a published EBS topology. An illustrative 750 V DC floor may constrain Na-ion at low charge; this voltage limit is not yet enforced by the simulator.</li>
               <li><b className="text-ink">Switch losses (derived, the key number):</b> each cell&apos;s switch carries the full string current, about 420 A for 8 strings. Loss = I&middot;R_on / V_cell: 0.25 m&Omega; gives 3.4%, 1 m&Omega; gives 13.5%. Our 1% base case needs about 80 &micro;&Omega; per cell path. Try the slider in Explore.</li>
               <li><b className="text-ink">Cell temperature spread:</b> vendor practice is about 2&ndash;3 &deg;C cell to cell with liquid cooling and 5&ndash;10 &deg;C with air cooling. The &ldquo;hot cell&rdquo; benefit shrinks with liquid cooling.</li>
               <li><b className="text-ink">Probing:</b> supported. The brief lets us switch any cell in or out, and the patent lists per-cell voltage, current, temperature and impedance sensors. Probe accuracy is our assumption.</li>
             </ul>
-            <p>The two numbers that matter most and are still unknown: the switch R_on per cell path (with the number of parallel columns), and the CES DC window.</p>
+            <p>Key unknowns: EBS cells per block, block DC voltage and interconnection, and switch R_on per cell path.</p>
           </S>
           <S t="What it does not show">
-            <p>Ground truth is a simulator, not REON hardware. The CES string design (cells per string, N_min, DC window), chemistry, switch losses and thermal spread are not public;
+            <p>Ground truth is a simulator, not REON hardware. EBS string design (cells per string, N_min, DC window), switch losses and thermal spread are not public;
               they are assumptions with sensitivity ranges. Probing and per-cell resting SOC are capabilities stated in the hackathon brief; their accuracy is unconfirmed.
               Grid CO&#8322; is not claimed. REON&apos;s &ldquo;2&ndash;4&times;&rdquo; is a company claim, not our result.</p>
             <p>Full method, evidence audit and change log: <code>PeakSure-Science-Addendum.md</code>; results: <code>RESULTS.md</code> in the repository.</p>

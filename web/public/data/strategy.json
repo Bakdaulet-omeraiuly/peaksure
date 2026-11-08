@@ -1,0 +1,332 @@
+{
+  "source": {
+    "config": {
+      "chemistry": "Na-ion",
+      "p_max_kw": 2500.0,
+      "e_nom_kwh": 5000.0,
+      "n_strings": 8,
+      "n_series": 240,
+      "headroom": 0.1,
+      "eta_discharge": 0.96,
+      "switch_loss": 0.01,
+      "years": 15,
+      "start_year": 2027,
+      "dispatch_days_summer": 5,
+      "dispatch_days_other": 3,
+      "rest_soc": 0.9,
+      "tier3_weak_share": 0.25,
+      "tier3_rest_soc": 0.35,
+      "initial_age_years": [
+        0.0
+      ],
+      "guard_threshold": 0.015,
+      "eol_retention": 0.7,
+      "t_hvac_set": 23.0,
+      "k_hvac": 0.25,
+      "sigma_t_cell": 2.5,
+      "load_heating_c": 3.0,
+      "forecast_temp_sd": 2.0,
+      "sigma_meas": 0.02,
+      "meas_bias": 0.0,
+      "trend_bias": 0.0,
+      "sigma_pack_test": 0.02,
+      "sigma_probe": 0.005,
+      "probe_energy_kwh": 0.05,
+      "probe_budget": 0,
+      "twin_samples": 64,
+      "alpha": 0.05,
+      "rns_2026": 183.71,
+      "rns_increments": [
+        9.0,
+        11.0,
+        13.0,
+        10.0
+      ],
+      "fca_kw_month": 3.58,
+      "discount_rate": 0.075,
+      "augment_cost_kwh": 150.0,
+      "turnkey_cost_kwh": 117.0,
+      "co2_kg_per_kwh": [
+        31.0,
+        50.0,
+        92.0
+      ],
+      "n_runs": 64,
+      "seed0": 0
+    },
+    "config_hash": "8f1d2b3cf5",
+    "n_main": 64,
+    "n_side": 24,
+    "started": "2026-11-07 17:45:27",
+    "git_commit": "7d80ffb",
+    "seconds": 938.0,
+    "finished": "2026-11-07 18:01:05"
+  },
+  "team": {
+    "s1": {
+      "conv_capex": 1868749.9999999998,
+      "reon_capex": 2055625.0,
+      "conv_gross": 400000.0,
+      "reon_gross": 440000.00000000006,
+      "conv_npv": 1041472.7538949682,
+      "reon_npv": 1154179.5079723913,
+      "conv_payback": 5.496323529411764,
+      "reon_payback": 5.481666666666666,
+      "needed_extra_gross": 26832.521209918763,
+      "incr_npv": 112706.75407742313
+    },
+    "s2": {
+      "retrofit_capex": 250000.0,
+      "retrofit_gross": 55000.0,
+      "retrofit_npv": 72083.9071491895,
+      "retrofit_payback": 5.208333333333333,
+      "retrofit_max_capex": 322083.9071491895,
+      "replacement_capex": 600000.0,
+      "replacement_gross": 70000.0,
+      "replacement_npv": -163844.7090688059,
+      "replacement_payback": 9.23076923076923
+    }
+  },
+  "assumptions": {
+    "premium": {
+      "low": -0.05,
+      "central": 0.1,
+      "high": 0.2,
+      "flag": "ASSUMED",
+      "note": "No REON price signal; team sheet uses +10% (A1); competitor claims span cheaper to dearer."
+    },
+    "retrofit_cost": {
+      "low": 25.0,
+      "central": 50.0,
+      "high": 75.0,
+      "flag": "ASSUMED",
+      "note": "Central: team sheet A8, $250k for 5 MWh. Low/high: +/-50% (our assumption). No public price for a cell-level BMS retrofit; third-party compatibility, warranty and safety are unverified."
+    },
+    "discount_rate": 0.08,
+    "life_years": 15,
+    "dc_floor_v": 750,
+    "active_cells": 240,
+    "nominal_mw": 2.5,
+    "nominal_mwh": 5.0,
+    "ebs_block_kw": 30,
+    "ebs_block_kwh": 60
+  },
+  "chemistries": [
+    {
+      "name": "Na-ion",
+      "price": {
+        "low": 250.75,
+        "central": 427.94,
+        "high": 968.67
+      },
+      "price_note": "LFP range x 1.145: the team sheet's 14.5% sodium-ion premium (illustrative, not verified; China tender bids show a larger gap, cell prices a smaller one).",
+      "runs": 64,
+      "npv_full": {
+        "A": 1202680.114517188,
+        "C": 877471.7872399951
+      },
+      "retrofit": {
+        "age": 5.0,
+        "remaining_years": 10.0,
+        "breakeven_kwh": -7.292103786313634,
+        "lo": -10.055587354119663,
+        "hi": -4.294719328244119
+      },
+      "curve": [
+        {
+          "soc": 0.0,
+          "v": 1.5
+        },
+        {
+          "soc": 0.05,
+          "v": 2.4
+        },
+        {
+          "soc": 0.1,
+          "v": 2.6
+        },
+        {
+          "soc": 0.15,
+          "v": 2.7
+        },
+        {
+          "soc": 0.2,
+          "v": 2.8
+        },
+        {
+          "soc": 0.25,
+          "v": 2.86
+        },
+        {
+          "soc": 0.3,
+          "v": 2.92
+        },
+        {
+          "soc": 0.35,
+          "v": 2.97
+        },
+        {
+          "soc": 0.4,
+          "v": 3.02
+        },
+        {
+          "soc": 0.45,
+          "v": 3.065
+        },
+        {
+          "soc": 0.5,
+          "v": 3.11
+        },
+        {
+          "soc": 0.55,
+          "v": 3.16
+        },
+        {
+          "soc": 0.6,
+          "v": 3.21
+        },
+        {
+          "soc": 0.65,
+          "v": 3.265
+        },
+        {
+          "soc": 0.7,
+          "v": 3.32
+        },
+        {
+          "soc": 0.75,
+          "v": 3.38
+        },
+        {
+          "soc": 0.8,
+          "v": 3.44
+        },
+        {
+          "soc": 0.85,
+          "v": 3.505
+        },
+        {
+          "soc": 0.9,
+          "v": 3.57
+        },
+        {
+          "soc": 0.95,
+          "v": 3.65
+        },
+        {
+          "soc": 1.0,
+          "v": 3.75
+        }
+      ],
+      "floor_min_soc": 0.515
+    },
+    {
+      "name": "LFP",
+      "price": {
+        "low": 219,
+        "central": 373.75,
+        "high": 846
+      },
+      "price_note": "Central: team sheet, Modo 2026 global 2-h median $325/kWh x 1.15 US premium. Low: BNEF 2025 US turnkey average (narrower scope). High: Concord 2024 all-in.",
+      "runs": 24,
+      "npv_full": {
+        "A": 1465581.7639418158,
+        "C": 1228162.8952368163
+      },
+      "retrofit": {
+        "age": 5.0,
+        "remaining_years": 10.0,
+        "breakeven_kwh": -5.347104914362464,
+        "lo": -10.77625364559262,
+        "hi": 0.8123365489953367
+      },
+      "curve": [
+        {
+          "soc": 0.0,
+          "v": 2.5
+        },
+        {
+          "soc": 0.05,
+          "v": 3.12
+        },
+        {
+          "soc": 0.1,
+          "v": 3.18
+        },
+        {
+          "soc": 0.15,
+          "v": 3.2
+        },
+        {
+          "soc": 0.2,
+          "v": 3.22
+        },
+        {
+          "soc": 0.25,
+          "v": 3.23
+        },
+        {
+          "soc": 0.3,
+          "v": 3.24
+        },
+        {
+          "soc": 0.35,
+          "v": 3.248
+        },
+        {
+          "soc": 0.4,
+          "v": 3.255
+        },
+        {
+          "soc": 0.45,
+          "v": 3.258
+        },
+        {
+          "soc": 0.5,
+          "v": 3.26
+        },
+        {
+          "soc": 0.55,
+          "v": 3.265
+        },
+        {
+          "soc": 0.6,
+          "v": 3.27
+        },
+        {
+          "soc": 0.65,
+          "v": 3.28
+        },
+        {
+          "soc": 0.7,
+          "v": 3.29
+        },
+        {
+          "soc": 0.75,
+          "v": 3.295
+        },
+        {
+          "soc": 0.8,
+          "v": 3.3
+        },
+        {
+          "soc": 0.85,
+          "v": 3.305
+        },
+        {
+          "soc": 0.9,
+          "v": 3.31
+        },
+        {
+          "soc": 0.95,
+          "v": 3.34
+        },
+        {
+          "soc": 1.0,
+          "v": 3.57
+        }
+      ],
+      "floor_min_soc": 0.0545
+    }
+  ]
+}

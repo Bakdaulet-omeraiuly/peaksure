@@ -17,10 +17,10 @@ function Row({ label, children, hint }: { label: string; children: React.ReactNo
 }
 
 const PRESETS: { name: string; note: string; date: string; age: number; duration: "1h" | "2h" | "4h"; kHvac: number; sigmaT: number; probeBudget: number }[] = [
-  { name: "REON CES, 2025 annual peak", note: "base case: 2 h, year 9", date: "2025-06-24", age: 9, duration: "2h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 0 },
+  { name: "EBS-equivalent plant, 2025 peak", note: "base case: 2 h, year 9", date: "2025-06-24", age: 9, duration: "2h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 0 },
   { name: "Hot afternoon, weak cooling", note: "year 12, HVAC k 0.9, spread 6 C", date: "2025-06-24", age: 12, duration: "2h", kHvac: 0.9, sigmaT: 6, probeBudget: 0 },
   { name: "Winter peak, aged 1-h battery", note: "-18 C, year 12", date: "2019-01-21", age: 12, duration: "1h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 0 },
-  { name: "VoI diagnostic probes", note: "May 2019 peak, CES year 6, budget 4", date: "2019-05-20", age: 6, duration: "2h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 4 },
+  { name: "VoI diagnostic probes", note: "May 2019 peak, modeled year 6, budget 4", date: "2019-05-20", age: 6, duration: "2h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 4 },
 ];
 
 export default function ScenarioPanel({ c, events, ms }: { c: Constants; events: PeakEvent[]; ms: number }) {
@@ -60,7 +60,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
       <Row label="System" hint={`${c.p_max_kw / 1000} MW`}>
         <div className="seg">
           {(["1h", "2h", "4h"] as const).map((d) => (
-            <button key={d} data-on={s.duration === d} onClick={() => s.set({ duration: d })}>{d === "2h" ? "2 h (CES 5 MWh)" : d === "1h" ? "1 h" : "4 h"}</button>
+            <button key={d} data-on={s.duration === d} onClick={() => s.set({ duration: d })}>{d === "2h" ? "2 h (5 MWh model)" : d === "1h" ? "1 h" : "4 h"}</button>
           ))}
         </div>
       </Row>
@@ -93,7 +93,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
         <div className="micro mb-1">Provenance</div>
         Peaks, hours and temperatures: ISO-NE SMD 2019&ndash;2025 (real). Cell ageing: PeakSure Python model, {c.chemistry},
         TUM-informed spread. Discharge, beliefs and commitment computed live in your browser ({ms.toFixed(0)} ms).
-        Rates: ISO-NE RNS and FCA. CES 2.5 MW / up to 5 MWh per REON; string design assumed.
+        Rates: ISO-NE RNS and FCA. The 2.5 MW / 5 MWh comparison size matches the public CESS rating; EBS wiring and scale are assumed.
         <div className="mt-2">Independent analysis. Not endorsed by REON.</div>
       </div>
       </details>

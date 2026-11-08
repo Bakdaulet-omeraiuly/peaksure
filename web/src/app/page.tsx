@@ -52,7 +52,7 @@ export default function Explore() {
         <div className="mb-6 max-w-[760px]">
           <div className="eyebrow mb-3">PeakSure · battery decision intelligence</div>
           <h1 className="page-title">Know what the battery can commit.</h1>
-          <p className="mt-3 text-[14px] leading-relaxed text-muted max-w-[650px]">Three modeled batteries on the same cells and the same ISO-NE peak: a conventional fixed-string battery, REON&apos;s cell bypass with a standard operator, and REON with PeakSure&apos;s cell-level twin and 95% confidence commitment.</p>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted max-w-[650px]">Three modeled operators on the same cells and ISO-NE peak: a conventional fixed-string battery, an EBS-equivalent plant with cell bypass, and that plant with PeakSure&apos;s cell twin and 95% confidence commitment. The 3D racks show assumed wiring, not an EBS hardware layout.</p>
           <div className="flex flex-wrap items-center gap-3 mt-3">
             <div className="seg inline-flex"><button data-on={view === "peak"} onClick={() => useStudio.getState().set({ view: "peak", drainPlaying: false })}>Peak day</button><button data-on={view === "drain"} onClick={() => useStudio.getState().set({ view: "drain", playing: false, drainMin: 0 })}>Drain test: full to empty</button></div>
             <span className="text-[11px] text-faint max-w-[460px]">{view === "peak" ? "What each operator commits and delivers at the real peak hour." : "Same cells at full rated power until every string stops: shows the hardware difference (stranded charge) without any operator decision."}</span>
@@ -93,7 +93,7 @@ export default function Explore() {
         </div>
         <YearlyCompare />
         {c && events && <details className="surface disclosure mt-4"><summary>Change scenario and assumptions</summary><ScenarioPanel c={c} events={events} ms={ms} /></details>}
-        <p className="mt-5 text-[11px] text-faint leading-relaxed">Independent simulation using public inputs and stated assumptions. The REON baseline control policy is assumed, not verified as REON&apos;s current software. Results may favor either operator and are not REON hardware validation.</p>
+        <p className="mt-5 text-[11px] text-faint leading-relaxed">Independent simulation using public inputs and stated assumptions. REON says CESS/OES are white-label; its cell-control product is EBS. EBS wiring and the baseline control policy are unverified. Results may favor either operator and are not hardware validation.</p>
       </div>
     </div>
   );
