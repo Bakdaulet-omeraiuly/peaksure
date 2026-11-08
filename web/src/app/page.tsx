@@ -1,98 +1,98 @@
 "use client";
-import dynamic from "next/dynamic";
+// Proposal: the two-stage plan. Numbers are read from the generated results, never typed in.
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import AppBar from "@/components/AppBar";
-import ScenarioPanel from "@/components/ScenarioPanel";
-import Inspector from "@/components/Inspector";
-import Timeline from "@/components/Timeline";
-import { useScenario } from "@/state/useScenario";
-import { useStudio } from "@/state/store";
-import YearlyCompare from "@/components/YearlyCompare";
-import { useEffect, useRef } from "react";
-import StringStrip from "@/components/StringStrip";
-import LiveReadout from "@/components/LiveReadout";
-import WeakCellFlow from "@/components/WeakCellFlow";
-import { slotsFor, DIFF_COLORS } from "@/components/Battery3D";
-import PlaybackBar from "@/components/PlaybackBar";
-import EvidencePanel from "@/components/EvidencePanel";
+import { fetchJson } from "@/engine/data";
 
-const Battery3D = dynamic(() => import("@/components/Battery3D"), { ssr: false });
+type Sens = { tag: string; v1: number; v2: number };
+type Dec = { component: string; mean: number };
+type Strategy = { assumptions: { premium: { low: number; central: number; high: number }; retrofit_cost: { low: number; high: number }; discount_rate: number } };
+const usd = (x: number) => `${x < 0 ? "−" : ""}$${(Math.abs(x) / 1000).toFixed(Math.abs(x) < 10000 ? 1 : 0)}K`;
 
-export default function Explore() {
-  const { scenario, c, events, ms } = useScenario();
-  const baseline = useStudio((s) => s.baseline);
-  const playback = useRef<HTMLDetailsElement>(null);
-  const view = useStudio((s) => s.view);
-  const drainPlaying = useStudio((s) => s.drainPlaying);
-  const drainMin = useStudio((s) => s.drainMin);
-  const colorMode = useStudio((s) => s.colorMode);
-  const slots = slotsFor(view);
-  const drainEnd = scenario ? Math.max(scenario.ops.A.drain!.nFrames, scenario.ops.B.drain!.nFrames) - 1 : 0;
-  const showBypass = () => {
-    if (!scenario) return;
-    const event = scenario.ops.B.drain!.events.find((e) => e.kind === "empty") ?? scenario.ops.B.drain!.events.find((e) => e.kind === "hot");
-    useStudio.getState().set({ view: "drain", playing: false, drainMin: Math.max(0, (event?.minute ?? 0) - 60), drainPlaying: true });
-  };
-  // drain-test playback (minutes since full charge)
+const CASES: [string, string][] = [
+  ["base", "2-h battery, healthy cells"], ["duration_1h", "1-h battery"], ["duration_4h", "4-h battery"],
+  ["hvac_weak", "Weak cooling"], ["hvac_failing", "Failing cooling"], ["fault_scenario", "Cell faults"],
+  ["chem_LFP", "2-h battery with LFP cells"],
+];
+
+function Stage({ n, title, tag, children }: { n: string; title: string; tag: string; children: React.ReactNode }) {
+  return <section className="surface p-6">
+    <div className="flex items-center gap-2 mb-2"><span className="w-7 h-7 rounded-full bg-[#153b2f] text-white grid place-items-center text-[13px] font-semibold">{n}</span>
+      <span className="eyebrow">{tag}</span></div>
+    <h2 className="text-[19px] font-semibold tracking-tight mb-3">{title}</h2>
+    <div className="text-[13.5px] leading-relaxed text-muted space-y-2">{children}</div>
+  </section>;
+}
+
+export default function Proposal() {
+  const [r, setR] = useState<{ sens: Sens[]; dec: Dec[] } | null>(null);
+  const [s, setS] = useState<Strategy | null>(null);
   useEffect(() => {
-    if (!drainPlaying || !scenario) return;
-    const end = drainEnd;
-    let raf = 0, prev = performance.now();
-    const tick = (t: number) => {
-      const m = useStudio.getState().drainMin + ((t - prev) / 1000) * (end / 14);
-      prev = t;
-      if (m >= end) { useStudio.getState().set({ drainMin: end, drainPlaying: false }); return; }
-      useStudio.getState().set({ drainMin: m });
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [drainPlaying, scenario, drainEnd]);
-  return (
-    <div className="site-shell">
-      <AppBar />
-      <div className="page-wrap">
-        <div className="mb-6 max-w-[760px]">
-          <div className="eyebrow mb-3">PeakSure · battery decision intelligence</div>
-          <h1 className="page-title">Know what the battery can commit.</h1>
-          <p className="mt-3 text-[14px] leading-relaxed text-muted max-w-[650px]">Three modeled operators on the same ISO-NE peak, temperatures and random draws: a conventional fixed-string battery, a REON-style plant that can bypass individual cells, and that plant with PeakSure&apos;s cell twin and 95% confidence commitment. The racks are a schematic model: REON&apos;s cell counts and wiring are not public. Every highlighted cell comes from the simulation.</p>
-          <div className="flex flex-wrap items-center gap-3 mt-3">
-            <div className="seg inline-flex"><button data-on={view === "peak"} onClick={() => useStudio.getState().set({ view: "peak", drainPlaying: false })}>Peak day</button><button data-on={view === "drain"} onClick={() => useStudio.getState().set({ view: "drain", playing: false, drainMin: 0 })}>Drain test: full to empty</button></div>
-            <span className="text-[11px] text-faint max-w-[460px]">{view === "peak" ? "What each operator commits and delivers at the real peak hour." : "Same cells at full rated power until every string stops: shows the hardware difference (stranded charge) without any operator decision."}</span>
-          </div>
-          {scenario && <button className="btn btn-accent mt-3" onClick={showBypass}>Show the weak-cell bypass</button>}
-        </div>
-        <div className="explore-grid">
-          <main className="surface overflow-hidden min-w-0 p-2">
-            <div className="studio-stage">
-              {scenario ? <Battery3D scenario={scenario} view={view} /> : <div className="absolute inset-0 grid place-items-center text-[#cbd8d1] text-[13px]">Loading model data…</div>}
-              {scenario && <>
-                <div className="absolute top-3 left-4 right-4 flex flex-wrap justify-center gap-x-4 gap-y-1 pointer-events-none text-[10px] text-[#aab8b0]">
-                  {(colorMode === "diff" ? [[DIFF_COLORS.same, "same as partner"], [DIFF_COLORS.inPath, "in circuit, partner out"], [DIFF_COLORS.outOfPath, "out of circuit, partner in"], [DIFF_COLORS.moreCharge, "more charge left (may be stranded)"], [DIFF_COLORS.lessCharge, "less charge left"]] : colorMode === "soc" ? [["#7ee2a0", "charged"], ["#1f2a2d", "used"], ["#ef4a3c", "limiting (enlarged, pushed forward)"], ["#e9a23b", "stranded (recessed)"], ["#68737c", "bypassed (recessed)"]] : colorMode === "temp" ? [["#2b5d9a", "cool"], ["#58a6a6", "moderate"], ["#e0a53a", "warm"], ["#ef5a50", "hot"], ["#68737c", "bypassed"]] : colorMode === "soh" ? [["#a33a30", "low health"], ["#d39a35", "mid health"], ["#4fbf85", "high health"], ["#68737c", "bypassed"]] : [["#262b31", "low uncertainty"], ["#5a4b8a", "mid uncertainty"], ["#c49cf2", "high uncertainty"], ["#68737c", "bypassed"]]).map(([color, label]) => <span key={label}><i className="inline-block w-2 h-2 mr-1 rounded-sm" style={{ background: color }} />{label}</span>)}
-                </div>
-                <div className="studio-stage-note">{colorMode === "diff" ? "Difference mode: A and C are compared with B, B with A, cell by cell at the same clock minute · " : ""}Drag to rotate · hover a cell for its modelled state{view === "peak" ? " · select a string below" : ""}</div>
-                <button className="btn btn-accent absolute bottom-4 right-4 z-10" onClick={() => {
-                  if (view === "drain") { useStudio.getState().set({ drainMin: 0, drainPlaying: true }); return; }
-                  if (playback.current) playback.current.open = true;
-                  const start = Math.min(...slots.map((k) => scenario.ops[k].run.startMin));
-                  useStudio.getState().set({ minute: Math.max(0, start - 10), playing: true });
-                }}>{view === "drain" ? "Drain all batteries" : "Play the peak"}</button>
-              </>}
-            </div>
-            {scenario && <LiveReadout scenario={scenario} view={view} slots={slots} />}
-            {scenario && <PlaybackBar scenario={scenario} view={view} />}
-            {scenario && <WeakCellFlow scenario={scenario} view={view} />}
-            {scenario && view === "peak" && scenario.ops.C.run.energyKwh > 1.05 * Math.max(scenario.ops.A.run.energyKwh, scenario.ops.B.run.energyKwh) && <p className="px-3 pt-2 text-[11px] text-faint">Dark cells on the PeakSure battery are charge it chose to deliver across a longer window, not damage. The other operators leave that charge unused.</p>}
-            {scenario && view === "peak" && Math.abs(scenario.ops.A.run.energyKwh - scenario.ops.C.run.energyKwh) < 0.01 * Math.max(1, scenario.ops.C.run.energyKwh) && Math.abs(scenario.ops.B.run.energyKwh - scenario.ops.C.run.energyKwh) < 0.01 * Math.max(1, scenario.ops.C.run.energyKwh) && <p className="px-3 pt-2 text-[11px] text-faint">All three deliver the same energy at this peak, so energy is not the binding limit here. Switch to <button className="underline text-[var(--accent)]" onClick={() => useStudio.getState().set({ view: "drain", playing: false, drainMin: 0 })}>Drain test</button> to see the hardware difference: stranded charge in fixed strings.</p>}
-            {scenario && <StringStrip scenario={scenario} view={view} slots={slots} />}
-            {scenario && c && view === "peak" && <details ref={playback} className="disclosure"><summary>View peak-day playback</summary><Timeline scenario={scenario} c={c} baseline={baseline} /></details>}
-          </main>
-          {scenario && c && <Inspector sc={scenario} c={c} baseline={baseline} />}
-        </div>
-        <YearlyCompare />
-        <EvidencePanel />
-        {c && events && <details className="surface disclosure mt-4"><summary>Change scenario and assumptions</summary><ScenarioPanel c={c} events={events} ms={ms} /></details>}
-        <p className="mt-5 text-[11px] text-faint leading-relaxed">Independent simulation using public inputs and stated assumptions. REON says CESS/OES are white-label; its cell-control product is EBS. The 2.5 MW / 5 MWh size is the published CESS rating used as a comparison size; EBS topology, N_min, switch losses and the baseline control policy are unverified model assumptions. Results may favor either operator and are not hardware validation.</p>
+    fetchJson<{ sens: Sens[]; dec: Dec[] }>("/data/results.json").then(setR);
+    fetchJson<Strategy>("/data/strategy.json").then(setS);
+  }, []);
+  const value = (tag: string) => {
+    if (!r) return null;
+    if (tag === "base") {
+      const g = (c: string) => r.dec.find((d) => d.component.startsWith(c))?.mean ?? 0;
+      return g("V1") + g("V2");
+    }
+    const x = r.sens.find((d) => d.tag === tag);
+    return x ? x.v1 + x.v2 : null;
+  };
+  const a = s?.assumptions;
+  return <div className="site-shell"><AppBar />
+    <main className="page-wrap max-w-[1040px]">
+      <div className="eyebrow mb-3">PeakSure × REON EBS</div>
+      <h1 className="page-title mb-3">Prove cell-level control on existing batteries, then sell it built in.</h1>
+      <p className="text-[14.5px] text-muted leading-relaxed max-w-[760px] mb-6">PeakSure tells a battery operator how much power to commit before each peak, using REON&apos;s cell-level data. The goal is peak shaving: lower demand and capacity charges for Massachusetts utilities and commercial sites.</p>
+
+      <div className="grid md:grid-cols-2 gap-4 mb-4">
+        <Stage n="1" tag="Retrofit · prove it" title="Add REON's cell-level BMS to batteries already installed">
+          <p><b className="text-ink">What we sell:</b> the cell-control technology and PeakSure, without a new battery.</p>
+          <p><b className="text-ink">Where:</b> existing batteries with weak cells, poor cooling, or short (1-h) or long (4-h) duration, where cells limit what the battery can deliver.</p>
+          <p><b className="text-ink">Cost assumption:</b> {a ? `$${a.retrofit_cost.low}–${a.retrofit_cost.high}/kWh` : "…"} for the retrofit (assumed; no public price).</p>
+          <p><b className="text-ink">Exit test:</b> measured extra delivered energy and fewer missed peaks on a real site.</p>
+        </Stage>
+        <Stage n="2" tag="Scale · sell it" title="Sell new REON EBS batteries with cell control built in">
+          <p><b className="text-ink">What we sell:</b> EBS battery systems with the cell-level BMS, and PeakSure as the decision layer.</p>
+          <p><b className="text-ink">When:</b> after Stage 1 shows field evidence, and REON confirms EBS specifications and certification.</p>
+          <p><b className="text-ink">Price assumption:</b> {a ? `${Math.round(a.premium.low * 100)}% to +${Math.round(a.premium.high * 100)}%` : "…"} versus a conventional battery (assumed; no REON price).</p>
+          <p><b className="text-ink">Exit test:</b> EBS delivers more over its life than a conventional battery of the same size.</p>
+        </Stage>
       </div>
-    </div>
-  );
+
+      <section className="surface p-6 mb-4">
+        <div className="eyebrow mb-2">Where cell-level control pays (model, per year)</div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {CASES.map(([tag, label]) => { const v = value(tag); return <div key={tag} className="rounded-lg border border-line p-3">
+            <div className="text-[12px] text-muted">{label}</div>
+            <div className="num text-[20px] font-semibold" style={{ color: v === null ? undefined : v > 1000 ? "var(--ok)" : "var(--text-muted, #667)" }}>{v === null ? "…" : `${v >= 0 ? "+" : ""}${usd(v)}`}</div>
+          </div>; })}
+        </div>
+        <p className="text-[12px] text-faint mt-3">Extra peak savings from cell bypass plus the cell twin, 2.5 MW plant, 15-year simulation. Near zero for a healthy 2-h battery; large when cells or cooling limit delivery. Simulation, not hardware results.</p>
+      </section>
+
+      <section className="rounded-xl p-6 sm:p-7 mb-4 bg-[#153b2f] text-white">
+        <div className="text-[11px] font-semibold tracking-[0.14em] uppercase text-[#9cdbc0] mb-2">Our recommendation</div>
+        <h2 className="text-[21px] font-semibold tracking-tight mb-3">Start now with a retrofit pilot on batteries that are already struggling.</h2>
+        <p className="text-[14px] leading-relaxed text-[#d7ebe2] max-w-[820px]">Run REON&apos;s cell-level control and PeakSure on one or two existing Massachusetts batteries where weak cells, cooling or short duration limit what they deliver. That is where the model shows the value; on a healthy 2-hour battery it shows almost none, so we do not lead there.</p>
+        <ol className="grid sm:grid-cols-3 gap-3 mt-5">
+          {[["Next 3 months", "Read-only data pilot", "PeakSure reads cell and meter data and recommends each peak commitment. People decide; nothing is controlled."],
+            ["3 to 12 months", "Retrofit pilot", "Add REON's cell-level BMS. Measure delivered energy, missed peaks and savings against the same battery's history."],
+            ["After the evidence", "Scale with EBS", "Sell new REON EBS systems with cell control and PeakSure built in, priced on measured, not modelled, value."]]
+            .map(([when, what, how]) => <li key={when} className="rounded-lg bg-white/10 p-4"><div className="text-[11px] uppercase tracking-wide text-[#9cdbc0]">{when}</div>
+              <div className="font-semibold text-[15px] mt-1">{what}</div><p className="text-[12.5px] text-[#d7ebe2] mt-1 leading-relaxed">{how}</p></li>)}
+        </ol>
+        <div className="grid sm:grid-cols-3 gap-4 mt-6 text-[13px] leading-relaxed text-[#d7ebe2]">
+          <p><b className="text-white">Scaling.</b> Every pilot adds real cell data. That calibrates the twin and turns modelled savings into measured ones, which is the evidence REON needs to sell EBS at scale.</p>
+          <p><b className="text-white">Reliability.</b> Commitments are made with 95% confidence and weak cells are switched out instead of stopping a string, so the battery shows up when the peak arrives.</p>
+          <p><b className="text-white">Affordable power.</b> Municipal utilities pass peak charges to every household. Getting more out of batteries they already own lowers those charges without buying new hardware first.</p>
+        </div>
+        <p className="text-[11.5px] text-[#9cdbc0] mt-5">Values above are simulation results. The pilot&apos;s job is to confirm or correct them on real hardware.</p>
+      </section>
+
+      <div className="flex flex-wrap gap-2"><Link href="/compare" className="btn btn-accent">See the comparison</Link><Link href="/assumptions" className="btn">Assumptions</Link><Link href="/method" className="btn">Method</Link></div>
+    </main></div>;
 }

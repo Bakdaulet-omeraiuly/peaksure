@@ -1,65 +1,81 @@
 import AppBar from "@/components/AppBar";
+import { bypassString } from "@/engine/physics";
 
-const S = ({ t, children }: { t: string; children: React.ReactNode }) => (
-  <section className="surface p-5 sm:p-7">
-    <h2 className="text-[17px] font-semibold tracking-tight mb-2">{t}</h2>
+const S = ({ n, t, children }: { n: string; t: string; children: React.ReactNode }) => (
+  <section className="surface p-5 sm:p-6">
+    <div className="flex items-center gap-2 mb-2"><span className="w-6 h-6 rounded-full bg-[#153b2f] text-white grid place-items-center text-[12px] font-semibold">{n}</span>
+      <h2 className="text-[16px] font-semibold tracking-tight">{t}</h2></div>
     <div className="text-[13px] leading-relaxed text-muted space-y-2">{children}</div>
   </section>
 );
+
+const STEPS: [string, string][] = [
+  ["Peaks", "Real ISO-NE system peaks and temperatures, 2019–2025"],
+  ["Cells", "Every simulated cell ages over 15 years (TUM sodium-ion fit)"],
+  ["Belief", "Pack test (A, B) or per-cell twin (C), never the true cell state"],
+  ["Decision", "Commit power × hours before each peak"],
+  ["Discharge", "Minute by minute, per cell, with bypass where allowed"],
+  ["Savings", "kW actually delivered in the peak hour × RNS / FCA rate"],
+];
+
+// The challenge brief's example, computed with the simulator's own bypass function.
+const CELLS = [...Array(15).fill(85), 70];
+const FIXED = Math.min(...CELLS) * 16;
+const AVG = CELLS.reduce((a, b) => a + b, 0);
+const EXAMPLE: [string, number][] = [
+  ["Fixed series string", FIXED],
+  ["Bypass, N_min = 16 (no headroom)", bypassString(CELLS, 0, 16, 16).cellAh],
+  ["Bypass, N_min = 15 (one cell may leave)", bypassString(CELLS, 0, 16, 15).cellAh],
+];
+
+const CHECKLIST: [string, string][] = [
+  ["A specific real-world application", "Massachusetts municipal light plant shaving ISO-NE peaks (Proposal, Compare)"],
+  ["A clearly defined fixed-string baseline", "Case A: fixed series strings, same cells (Compare, Assumptions)"],
+  ["Cell-level monitoring and selective bypass", "Cases B and C: bypass within N_min; per-cell twin in C (Compare)"],
+  ["Usable capacity or energy recovered", "Stranded energy and energy recovered (Compare cards and lifetime panel)"],
+  ["Capacity retention vs a 70% threshold, service life", "15-year retention chart and top-up cells avoided (Compare)"],
+  ["Economic value for one stakeholder", "Utility peak savings per year and NPV (Proposal, Compare)"],
+  ["Environmental value", "Cell-manufacturing CO₂ avoided by fewer top-ups (Compare)"],
+  ["Sensitivity to uncertain assumptions", "Duration, cooling, faults, chemistry, switch loss (Proposal, Assumptions, Compare panel)"],
+  ["Delivered kWh and kW at a defined boundary", "Commitment power × hours = energy, AC side after inverter and switch losses"],
+];
 
 export default function Method() {
   return (
     <div className="site-shell">
       <AppBar />
-      <div className="page-wrap max-w-[1000px]">
-        <div className="eyebrow mb-3">Method & evidence</div>
-        <h1 className="page-title mb-3">A model built for a decision.</h1>
-        <p className="text-muted text-[14px] leading-relaxed mb-6">The simulation separates battery hardware, what the operator believes, and the rule used to commit power.</p>
+      <div className="page-wrap max-w-[960px]">
+        <div className="eyebrow mb-3">Method</div>
+        <h1 className="page-title mb-5">How the comparison works.</h1>
         <div className="grid gap-4">
-          <S t="The decision">
-            <p>Massachusetts municipal light plants pay ISO-NE transmission (RNS, $/kW-yr) on their load at 12 monthly system peaks and capacity on the annual peak.
-              Before each forecast peak, the battery operator commits a discharge power over a window. PeakSure commits only what the battery can deliver with 95% confidence:
-              P(deliverable energy &ge; power &times; window) &ge; 95%.</p>
+          <S n="1" t="The decision">
+            <p>Before each forecast ISO-NE peak (12 monthly transmission peaks and the annual capacity peak), the operator commits a discharge power over a window. Commit too much and the battery runs dry; too little and savings are lost. PeakSure commits only what it can deliver with 95% confidence.</p>
           </S>
-          <S t="Three modeled operators">
-            <p>REON says CESS/OES are white-label products; EBS carries its cell-level BMS. A is a conventional battery, while B/C represent an EBS-equivalent plant at the same 2.5 MW / 5 MWh rating. About 84 published Na+ blocks would match that nameplate rating. The block interconnection is unknown.</p>
-            <p><b className="text-ink">A · Conventional battery:</b> fixed series strings (same current through every cell; the first empty cell stops the string; the hottest cell derates it),
-              an annual system capacity test as its belief, and the common rule: full power for as many whole hours as the P5 energy allows, centred on the most likely hour.</p>
-            <p><b className="text-ink">B · REON-style bypass model:</b> per-cell bypass with the same annual pack-test belief and full-power rule. This is a modeled comparison policy, not a verified description of REON&apos;s current control software.</p>
-            <p><b className="text-ink">C · REON-style bypass + PeakSure:</b> per-cell bypass (an empty or hot cell leaves the path; the string runs while at least N_min cells keep the DC voltage valid),
-              a per-cell Kalman twin as its belief, and the chance-constrained commitment. Optional value-of-information probes switch single cells to measure them.</p>
+          <S n="2" t="Three cases, same cells">
+            <p><b className="text-ink">A · Conventional:</b> fixed series strings; the first empty cell stops its string. Belief from an annual pack test; full-power rule.</p>
+            <p><b className="text-ink">B · REON EBS:</b> per-cell bypass; an empty or hot cell leaves the path while enough cells keep the DC voltage valid. Same pack test and rule as A, so B − A is the hardware value.</p>
+            <p><b className="text-ink">C · REON EBS + PeakSure:</b> B&apos;s hardware with a per-cell twin and the 95% commitment, so C − B adds the information and decision value.</p>
           </S>
-          <details className="surface disclosure"><summary>Data sources, assumptions and limitations</summary><div className="p-4 grid gap-4">
-          <S t="Research extensions">
-            <p><b className="text-ink">Mixed-age cells:</b> a separate paired simulation assigns distinct prior calendar ages within one chemistry. The age history is assumed, not measured from REON hardware.</p>
-            <p><b className="text-ink">Lifetime control:</b> a second resting-SOC policy allocates lower standby charge to cells with the fastest fade estimated by the twin. Its value and any negative outcome are reported against the original policy. Independent cell-level standby control and recharge readiness remain unconfirmed.</p>
-            <p><b className="text-ink">Model mismatch:</b> the robust commitment uses the lower of the cell twin and an independent annual pack-test belief. A smoothed disagreement signal raises an alert; it does not prove the twin is correct. The added conservatism may reduce savings.</p>
+          <S n="3" t="Pipeline">
+            <ol className="grid sm:grid-cols-3 gap-2">
+              {STEPS.map(([k, v], i) => <li key={k} className="rounded-lg border border-line p-3"><div className="micro mb-1">{i + 1} · {k}</div><div className="text-[12.5px]">{v}</div></li>)}
+            </ol>
+            <p>Python runs the 15-year Monte Carlo with paired random draws; the browser re-runs the same physics in TypeScript, tested against Python.</p>
           </S>
-          <S t="What runs where">
-            <p>Real data: ISO-NE SMD hourly files 2019&ndash;2025 (system monthly peaks, hours, WCMA temperatures), ISO-NE RNS and FCA rates, and the public CESS rating used as a comparison plant size.</p>
-            <p>Python model (repository <code>peaksure/</code>): 15-year cell ageing (calendar Arrhenius &times; SOC stress, DoD-weighted cycling, lognormal cell-to-cell spread
-              informed by TUM&apos;s sodium-ion data), the twin, Monte Carlo with paired runs and bootstrap confidence intervals.</p>
-            <p>Browser (this site): the same physics re-implemented in TypeScript and tested against the Python model (agreement to 0.001 kWh), minute-by-minute discharge
-              of every cell, three operator cases, their beliefs, commitments, and probes, computed live from the exported cell states.</p>
+          <S n="4" t="The brief's 16-cell example, run through our bypass model">
+            <p>Fifteen cells hold 85 Ah and one holds 70 Ah. A fixed string stops when the 70 Ah cell is empty. With bypass, that cell leaves the path and the string continues while at least N_min cells keep the voltage valid.</p>
+            <table className="w-full text-[12.5px] num"><thead><tr className="text-left text-faint"><th className="py-1">Wiring</th><th>Energy in cell-Ah</th><th>Per cell</th><th>vs fixed</th></tr></thead>
+              <tbody>{EXAMPLE.map(([label, ah]) => <tr key={label} className="border-t border-line"><td className="py-1.5 font-sans text-ink">{label}</td><td>{ah.toFixed(0)}</td><td>{(ah / 16).toFixed(2)} Ah</td><td>{ah > FIXED + 1e-9 ? `+${((ah / FIXED - 1) * 100).toFixed(1)}%` : "—"}</td></tr>)}</tbody></table>
+            <p>Bypass recovers the gap between the weakest cell (70 Ah) and the average cell ({(AVG / 16).toFixed(2)} Ah) only if one cell may leave the string. With no headroom (N_min = 16) it equals the fixed string. Computed live with the simulator&apos;s <code>bypassString</code>.</p>
           </S>
-          <S t="REON's open questions, answered from public sources">
-            <p>From REON&apos;s challenge video, the brief, REON_WHO_WE_ARE, patent US 2023/0341471, inverter datasheets and the TUM sodium-ion paper:</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li><b className="text-ink">Chemistry:</b> EBS has Na+ and Li+ versions; the modeled plant uses Na-ion as the base case and LFP as a sensitivity. The actual EBS cell format is unconfirmed.</li>
-              <li><b className="text-ink">Cells per string and N_min (assumed):</b> the simulator uses 8 strings of 240 cells with 10% bypass headroom. This is a plant-level abstraction, not a published EBS topology. An illustrative 750 V DC floor may constrain Na-ion at low charge; this voltage limit is not yet enforced by the simulator.</li>
-              <li><b className="text-ink">Switch losses (derived, the key number):</b> each cell&apos;s switch carries the full string current, about 420 A for 8 strings. Loss = I&middot;R_on / V_cell: 0.25 m&Omega; gives 3.4%, 1 m&Omega; gives 13.5%. Our 1% base case needs about 80 &micro;&Omega; per cell path. Try the slider in Explore.</li>
-              <li><b className="text-ink">Cell temperature spread:</b> vendor practice is about 2&ndash;3 &deg;C cell to cell with liquid cooling and 5&ndash;10 &deg;C with air cooling. The &ldquo;hot cell&rdquo; benefit shrinks with liquid cooling.</li>
-              <li><b className="text-ink">Probing:</b> supported. The brief lets us switch any cell in or out, and the patent lists per-cell voltage, current, temperature and impedance sensors. Probe accuracy is our assumption.</li>
-            </ul>
-            <p>Key unknowns: EBS cells per block, block DC voltage and interconnection, and switch R_on per cell path.</p>
+          <S n="5" t="What the challenge asks, and where it is">
+            <table className="w-full text-[12.5px]"><tbody>
+              {CHECKLIST.map(([ask, where]) => <tr key={ask} className="border-t border-line align-top"><td className="py-1.5 pr-3 text-ink w-[45%]">{ask}</td><td className="py-1.5">{where}</td></tr>)}
+            </tbody></table>
           </S>
-          <S t="What it does not show">
-            <p>Ground truth is a simulator, not REON hardware. EBS string design (cells per string, N_min, DC window), switch losses and thermal spread are not public;
-              they are assumptions with sensitivity ranges. Probing and per-cell resting SOC are capabilities stated in the hackathon brief; their accuracy is unconfirmed.
-              Grid CO&#8322; is not claimed. REON&apos;s &ldquo;2&ndash;4&times;&rdquo; is a company claim, not our result.</p>
-            <p>Full method, evidence audit and change log: <code>PeakSure-Science-Addendum.md</code>; results: <code>RESULTS.md</code> in the repository.</p>
+          <S n="6" t="What it does not show">
+            <p>It is a simulation, not REON hardware validation. EBS cells per block, wiring, minimum active cells and switch losses are not public, so they are assumptions with sensitivity ranges (see Assumptions). The cell twin is over-confident in the base case. No grid CO₂ savings are claimed.</p>
           </S>
-          </div></details>
         </div>
       </div>
     </div>

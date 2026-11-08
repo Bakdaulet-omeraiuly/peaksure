@@ -17,7 +17,7 @@ function Row({ label, children, hint }: { label: string; children: React.ReactNo
 }
 
 const PRESETS: { name: string; note: string; date: string; age: number; duration: "1h" | "2h" | "4h"; kHvac: number; sigmaT: number; probeBudget: number }[] = [
-  { name: "EBS-equivalent plant, 2025 peak", note: "base case: 2 h, year 9", date: "2025-06-24", age: 9, duration: "2h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 0 },
+  { name: "Base case: 2025 annual peak", note: "base case: 2 h, year 9", date: "2025-06-24", age: 9, duration: "2h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 0 },
   { name: "Hot afternoon, weak cooling", note: "year 12, HVAC k 0.9, spread 6 C", date: "2025-06-24", age: 12, duration: "2h", kHvac: 0.9, sigmaT: 6, probeBudget: 0 },
   { name: "Winter peak, aged 1-h battery", note: "-18 C, year 12", date: "2019-01-21", age: 12, duration: "1h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 0 },
   { name: "VoI diagnostic probes", note: "May 2019 peak, modeled year 6, budget 4", date: "2019-05-20", age: 6, duration: "2h", kHvac: 0.25, sigmaT: 2.5, probeBudget: 4 },
@@ -63,7 +63,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
             <button key={d} data-on={s.duration === d} onClick={() => s.set({ duration: d })}>{d === "2h" ? "2 h · 5 MWh" : d === "1h" ? "1 h · 2.5 MWh*" : "4 h · 10 MWh*"}</button>
           ))}
         </div>
-        <div className="text-[11px] text-faint mt-1 leading-snug">Energy ÷ power is a nominal ratio, not a guaranteed AC discharge time. 5 MWh matches the published CESS rating (basis unstated). *1 h and 4 h are hypothetical sizes, not REON products. The commitment window is chosen separately.</div>
+        <div className="text-[11px] text-faint mt-1 leading-snug">Energy ÷ power is a nominal ratio, not a guaranteed discharge time. *1 h and 4 h are hypothetical sizes. The commitment window is chosen separately.</div>
       </Row>
       <Row label="Cells in the conventional battery">
         <div className="seg">
@@ -101,7 +101,7 @@ export default function ScenarioPanel({ c, events, ms }: { c: Constants; events:
         <div className="micro mb-1">Provenance</div>
         Peaks, hours and temperatures: ISO-NE SMD 2019&ndash;2025 (real). Cell ageing: PeakSure Python model, {c.chemistry},
         TUM-informed spread. Discharge, beliefs and commitment computed live in your browser ({ms.toFixed(0)} ms).
-        Rates: ISO-NE RNS and FCA. The 2.5 MW / 5 MWh comparison size matches the published CESS rating (reoncorp.com/hardware); CESS chemistry and topology are unknown, and the 240 × 8 cells, N_min, efficiency and switch loss are model assumptions.
+        Rates: ISO-NE RNS and FCA. Plant: 2.5 MW / 5 MWh, about 84 REON EBS blocks of 30 kW / 60 kWh; the 240 × 8 cell layout, N_min, efficiency and switch loss are model assumptions.
         <div className="mt-2">Independent analysis. Not endorsed by REON.</div>
       </div>
       </details>

@@ -1,20 +1,20 @@
 /** Names for the modeled battery cases, kept consistent across views.
- *  "REON-style": PeakSure's schematic model of per-cell bypass. REON's EBS carries the cell-level BMS, but its
- *  internal topology (cells per string, columns, N_min, switch R_on) is not public, so B/C are not an EBS layout. */
+ *  B/C model REON EBS cell-level bypass. EBS internals (cells per string, columns, N_min, switch R_on) are not
+ *  public, so the cell layout is a simulation abstraction, not an EBS hardware layout. */
 export const BATTERY_NAMES = {
-  A: "A · Conventional battery",
-  B: "B · REON-style bypass model",
-  C: "C · REON-style bypass + PeakSure",
+  A: "A · Conventional",
+  B: "B · REON EBS",
+  C: "C · REON EBS + PeakSure",
 } as const;
 
 export const BATTERY_SHORT = {
-  A: "Conventional battery",
-  B: "REON-style bypass",
-  C: "REON-style + PeakSure",
+  A: "Conventional",
+  B: "REON EBS",
+  C: "REON EBS + PeakSure",
 } as const;
 
 export const BATTERY_SUB = {
-  A: "fixed series strings · first empty cell stops its string · annual pack test · full-power rule",
-  B: "per-cell bypass (schematic) · string runs while ≥ N_min cells · annual pack test · full-power rule",
-  C: "per-cell bypass (schematic) · per-cell twin · 95%-confidence commitment",
+  A: "fixed strings · pack test · full power",
+  B: "cell bypass · pack test · full power",
+  C: "cell bypass · cell twin · 95% confidence",
 } as const;
