@@ -1,7 +1,7 @@
 "use client";
 import { Canvas, useFrame, useThree, ThreeEvent } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Scenario, OperatorResult } from "@/engine/scenario";
 import { DischargeResult } from "@/engine/discharge";
@@ -147,7 +147,51 @@ function Container({ op, run, which, ox, minuteRef, hoverable }: {
   );
 }
 
+function SvgFallback({ scenario, view, slots }: { scenario: Scenario; view: "peak" | "drain"; slots: Slot[] }) {
+  const minute = useStudio((s) => Math.floor((view === "drain" ? s.drainMin : s.minute) / 5) * 5);
+  const mode = useStudio((s) => s.colorMode);
+  const N = scenario.sys.nSeries, S = scenario.sys.nStrings, SN = N * S;
+  const shade = new THREE.Color();
+  return <svg viewBox={`0 0 ${slots.length * 300} 350`} className="w-full h-full" role="img" aria-label="Battery cells, charge and bypass states for each simulated operator">
+    <rect width={slots.length * 300} height="350" fill="#050608" />
+    {slots.map((key, block) => {
+      const op = scenario.ops[key], run = view === "drain" ? op.drain! : op.run;
+      const f = frameOf(run, minute);
+      const probed = new Set(run === op.run ? op.probes.map((p) => p.string * N + p.cell) : []);
+      const baseX = block * 300 + 10;
+      const power = run.powerKw[Math.min(Math.max(minute, 0), 1439)] ?? 0;
+      return <g key={key}>
+        <rect x={baseX} y="60" width="280" height="245" rx="9" fill="#0c0f12" stroke={key === "A" ? "#5b6575" : key === "B" ? "#4f7f9b" : "#3f9b62"} strokeWidth="2" />
+        <text x={baseX + 140} y="39" textAnchor="middle" fill="#e3eae5" fontSize="13" fontWeight="bold">{BATTERY_NAMES[key]}</text>
+        {Array.from({ length: S }, (_, s) => {
+          const rackX = baseX + 15 + (s % 4) * 67;
+          const rackY = 73 + (s < 4 ? 0 : 113);
+          const on = run.stringsOnline[f * S + s] === 1 && power > 0;
+          return <g key={s}>
+            <rect x={rackX - 3} y={rackY - 3} width="57" height="104" rx="3" fill="#14191e" />
+            {Array.from({ length: N }, (_, j) => {
+              const i = s * N + j;
+              return <rect key={j} x={rackX + (j % 12) * 4.25} y={rackY + Math.floor(j / 12) * 4.8} width="3.7" height="4.2" rx="0.6"
+                fill={cellColor(op, run, f, i, mode, shade, probed, N).getStyle()} />;
+            })}
+            <path d={`M${rackX + 55},${rackY} V${rackY + 97}`} fill="none" stroke={on ? "#79cbf5" : "#53616b"} strokeWidth="2" />
+            {on && <path d={`M${rackX + 55},${rackY} V${rackY + 97}`} fill="none" stroke="#d3f3ff" strokeWidth="3" strokeDasharray="3 15" className="current-flow" />}
+          </g>;
+        })}
+        <text x={baseX + 140} y="326" textAnchor="middle" fill="#aab8b0" fontSize="11">{SN.toLocaleString()} modeled cells · t+{minute} min</text>
+      </g>;
+    })}
+  </svg>;
+}
+
 export default function Battery3D({ scenario, view }: { scenario: Scenario; view: "peak" | "drain" }) {
+  const [webgl, setWebgl] = useState(false);
+  useEffect(() => {
+    try {
+      const canvas = document.createElement("canvas");
+      setWebgl(!!(canvas.getContext("webgl2") || canvas.getContext("webgl")));
+    } catch { setWebgl(false); }
+  }, []);
   const minuteRef = useRef(useStudio.getState().minute);
   const drainRef = useRef(useStudio.getState().drainMin);
   useEffect(() => useStudio.subscribe((s) => { minuteRef.current = s.minute; drainRef.current = s.drainMin; }), []);
@@ -157,6 +201,7 @@ export default function Battery3D({ scenario, view }: { scenario: Scenario; view
   const xs = slots.map((_, idx) => -span / 2 + SHELL.w / 2 + idx * (SHELL.w + GAP));
   return (
     <div className="absolute inset-0">
+    {!webgl ? <SvgFallback scenario={scenario} view={view} slots={slots} /> : <>
     {slots.map((k, idx) => (
       <div key={`${view}-${k}`} ref={(el) => { labelRefs.current[idx] = el; }}
            className="absolute z-[1] pointer-events-none -translate-x-1/2 -translate-y-full text-[11px] sm:text-[12px] font-semibold text-[#e3eae5] whitespace-nowrap">
@@ -183,6 +228,7 @@ export default function Battery3D({ scenario, view }: { scenario: Scenario; view
       </mesh>
       <OrbitControls target={[0, 1.62, 0]} maxPolarAngle={Math.PI / 1.95} minDistance={3} maxDistance={24} enablePan={false} />
     </Canvas>
+    </>}
     </div>
   );
 }

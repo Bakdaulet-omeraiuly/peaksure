@@ -67,7 +67,7 @@ export default function Explore() {
                 <div className="absolute top-3 left-4 right-4 flex flex-wrap justify-center gap-x-4 gap-y-1 pointer-events-none text-[10px] text-[#aab8b0]">
                   {(colorMode === "soc" ? [["#7ee2a0", "charged"], ["#1f2a2d", "used"], ["#ef4a3c", "limiting"], ["#e9a23b", "stranded"], ["#68737c", "bypassed"]] : colorMode === "temp" ? [["#2b5d9a", "cool"], ["#58a6a6", "moderate"], ["#e0a53a", "warm"], ["#ef5a50", "hot"], ["#68737c", "bypassed"]] : colorMode === "soh" ? [["#a33a30", "low health"], ["#d39a35", "mid health"], ["#4fbf85", "high health"], ["#68737c", "bypassed"]] : [["#262b31", "low uncertainty"], ["#5a4b8a", "mid uncertainty"], ["#c49cf2", "high uncertainty"], ["#68737c", "bypassed"]]).map(([color, label]) => <span key={label}><i className="inline-block w-2 h-2 mr-1 rounded-sm" style={{ background: color }} />{label}</span>)}
                 </div>
-                <div className="studio-stage-note">Drag to rotate{view === "peak" ? " · Hover to inspect a cell" : ""}</div>
+                <div className="studio-stage-note">Drag to rotate when 3D graphics are available{view === "peak" ? " · Select a string below to inspect cells" : ""}</div>
                 <button className="btn btn-accent absolute bottom-4 right-4 z-10" onClick={() => {
                   if (view === "drain") { useStudio.getState().set({ drainMin: 0, drainPlaying: true }); return; }
                   if (playback.current) playback.current.open = true;

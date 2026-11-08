@@ -44,6 +44,14 @@ export default function EBS() {
 
     <section className="mb-4"><EBSBlock3D fixed={tick} bypass={tickB} weakCell={row.fixed.weak_cell} minute={minute} /><p className="text-[11px] text-faint mt-2">One representative block from each case, using the simulation&apos;s cell charge and switch states at the selected time. The charts and totals below cover all {data.assumptions.blocks} blocks. Drag to rotate when 3D graphics are available.</p></section>
 
+    <section className="surface p-4 mb-4 text-[12px] leading-relaxed text-muted" aria-live="polite"><span className="micro block mb-1">What this setting demonstrates</span>
+      {row.fixed.energy_kwh === 0 && row.bypass.energy_kwh === 0
+        ? <>Neither modeled block can start at this DC voltage floor. A compatible converter or a different series layout would need validation before claiming output.</>
+        : row.extra_kwh > 0
+          ? <>The REON EBS bypass model delivers <b>{fmt(row.extra_kwh)} kWh more</b> than the conventional string across {data.assumptions.blocks} blocks, with <b>{fmt(row.extra_full_power_min, 1)} more minutes</b> at full plant power. This is the modeled benefit of continuing past weak cells under these assumptions.</>
+          : <>Cell bypass brings no net energy gain at this setting ({fmt(row.extra_kwh)} kWh difference). The DC floor and switch-path loss limit what it can recover. Lower converter floor and switch resistance are engineering targets to test, not confirmed EBS specifications.</>}
+    </section>
+
     <div className="grid sm:grid-cols-4 gap-3 mb-4">
       <div className="surface p-4"><div className="micro mb-1">Conventional BMS · EBS-sized cells</div><div className="text-[23px] font-semibold num">{fmt(row.fixed.energy_kwh)} kWh</div><div className="text-[11px] text-faint">fixed string · energy to shutdown</div></div>
       <div className="surface p-4"><div className="micro mb-1">REON EBS · bypass model</div><div className="text-[23px] font-semibold num">{fmt(row.bypass.energy_kwh)} kWh</div><div className="text-[11px] text-faint">cell bypass · energy to shutdown</div></div>

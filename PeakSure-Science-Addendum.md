@@ -1165,6 +1165,7 @@ The same export includes the team's Paxton-sized EBS sizing and spreadsheet NPV 
 | 37 | Paxton-sized EBS plant, per-MW licensing (REON and owner sides) and Massachusetts compliance allowances from the team workbook (§AI6) | Addition (ASSUMED) | Team workbook |
 | 38 | Added a separate EBS-size block discharge comparison with voltage-floor, weak-cell and switch-loss assumptions; exported sensitivity results to `/ebs` (§AJ) | Exploratory simulation | EBS topology is not public; keep block feasibility separate from the 15-year plant study |
 | 39 | Exported representative EBS cell states for synchronized 3D and isometric views; named the battery cases across simulations (§AJ) | Visualization | Show the actual weak-cell bypass sequence and identify each comparison battery |
+| 40 | Checked the interactive scenario presets across three seeds and all durations; tied EBS outcome text to the exported result and added a no-WebGL cell view for the main comparison | Verification / presentation | Keep scenario changes coherent and show the model in browsers without 3D graphics |
 
 ---
 
