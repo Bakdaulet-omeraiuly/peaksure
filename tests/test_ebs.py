@@ -1,4 +1,5 @@
 from dataclasses import replace
+import base64
 
 from peaksure.ebs import EBSCase, population, simulate
 
@@ -12,6 +13,9 @@ def test_ebs_bypass_uses_same_cells_and_respects_voltage_floor():
     assert bypass["bypassed_cells"] == case.blocks
     assert bypass["energy_kwh"] <= case.blocks * 60 * case.eta
     assert bypass["full_power_minutes"] > fixed["full_power_minutes"]
+    last = bypass["power_trace"][-1]
+    assert len(base64.b64decode(last["soc_b64"])) == case.cells_per_block
+    assert len(base64.b64decode(last["active_b64"])) == case.cells_per_block
 
     # A 120-cell block cannot directly meet a 750 V input floor at this chemistry.
     direct = simulate(replace(case, dc_floor_v=750), q, True)

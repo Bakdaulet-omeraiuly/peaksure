@@ -1,13 +1,14 @@
 // Assemble one live scenario: a real ISO-NE peak, a battery age, and three modeled operators.
-//   Conventional (A): fixed strings + annual pack test + full-power rule.
-//   REON baseline (B): bypass + annual pack test + full-power rule (assumed policy).
-//   PeakSure (C/D):   REON bypass + per-cell twin + 95%-confidence commitment (+ optional VoI probes).
+//   A Conventional battery: fixed strings + annual pack test + full-power rule.
+//   B REON EBS model: bypass + annual pack test + full-power rule (assumed policy).
+//   C REON EBS + PeakSure: bypass + per-cell twin + 95%-confidence commitment (+ optional VoI probes).
 import { Constants, Life, PeakEvent, decodeI16, decodeU16, rnsRate } from "./data";
 import { Chem, SystemSpec, Tier, containerTemp, deliverable } from "./physics";
 import { Belief, Thermal, cellTemps, packBelief, twinBelief } from "./belief";
 import { Decision, fixedRule, optimize } from "./decision";
 import { DischargeResult, discharge } from "./discharge";
 import { Probe, runVoi } from "./voi";
+import { BATTERY_NAMES } from "./labels";
 
 export interface Knobs { kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss?: number }
 
@@ -102,7 +103,7 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
     const cellsReplaced = Math.round(augKwh / cellKwh);
     const inWindow = ev.he >= decision.startHe && ev.he < decision.startHe + decision.windowH;
     const shaved = inWindow ? run.peakHourAvgKw : 0;
-    return { key, tier, label: key === "A" ? "Conventional" : key === "B" ? "REON bypass (modeled baseline)" : "REON + PeakSure", qRel, belief, beforeProbes: undefined,
+    return { key, tier, label: BATTERY_NAMES[key], qRel, belief, beforeProbes: undefined,
              beliefBeforeProbes: before, decision, truthKwh: truth.energyKwh, truthPowerKw: truth.powerKw, run,
              shavedKw: shaved, valueUsd: shaved * rate, probes, twinMean, twinSd, limiting: truth.limiting, drain, cellsReplaced } as OperatorResult;
   };

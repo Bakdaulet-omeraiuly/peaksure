@@ -1116,6 +1116,8 @@ The assumed block has 120 series cells, a DC/DC input floor swept from 280 to 35
 
 `web/public/data/ebs.json` contains the calculated fixed/bypass traces and sensitivity grid; the `/ebs` page reads that export. The team's required annual gross savings to cover an assumed EBS price premium is shown separately as an **economic hurdle**, not inferred from one discharge. EBS cell count, DC/DC design, switch R_on, weak-cell prevalence, price and MW-scale interconnection require REON confirmation before any hardware or investment claim.
 
+Each five-minute trace frame also exports the first block's 120 quantized cell charge values, active-cell flags and online status. The `/ebs` page renders the same representative block in both cases as a synchronized 3D cell view, with an isometric SVG fallback when WebGL is unavailable. The weak cell, bypass state and current route follow those frames; the view is a visualization of model states, not a 3D simulation of thermal or electrical fields.
+
 The same export includes the team's Paxton-sized EBS sizing and spreadsheet NPV from §AI6. This is a separate project-level calculation; the 84-block discharge trace is not presented as a simulation of Paxton's 167-unit plant. Unpriced compliance line items remain unknown costs.
 
 ---
@@ -1162,6 +1164,7 @@ The same export includes the team's Paxton-sized EBS sizing and spreadsheet NPV 
 | 36 | Two-phase strategy: Phase 1 retrofit (prove the technology), Phase 2 new batteries (scale); Massachusetts retrofit candidates Sterling, Reading, Holden (§AI4) | Framing / addition | Team decision |
 | 37 | Paxton-sized EBS plant, per-MW licensing (REON and owner sides) and Massachusetts compliance allowances from the team workbook (§AI6) | Addition (ASSUMED) | Team workbook |
 | 38 | Added a separate EBS-size block discharge comparison with voltage-floor, weak-cell and switch-loss assumptions; exported sensitivity results to `/ebs` (§AJ) | Exploratory simulation | EBS topology is not public; keep block feasibility separate from the 15-year plant study |
+| 39 | Exported representative EBS cell states for synchronized 3D and isometric views; named the battery cases across simulations (§AJ) | Visualization | Show the actual weak-cell bypass sequence and identify each comparison battery |
 
 ---
 

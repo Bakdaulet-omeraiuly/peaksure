@@ -1,8 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import AppBar from "@/components/AppBar";
 import data from "../../../public/data/ebs.json";
+
+const EBSBlock3D = dynamic(() => import("@/components/EBSBlock3D"), { ssr: false });
 
 const fmt = (v: number, digits = 0) => v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits });
 const W = 600, H = 190, L = 42, T = 12, IW = W - L - 18, IH = H - T - 30;
@@ -39,24 +42,26 @@ export default function EBS() {
       <button className="btn btn-accent" onClick={replay}>Replay discharge</button>
     </div><p className="text-[11px] text-faint mt-3">These are sensitivity inputs, not published EBS cell count or converter specifications. The 750 V option tests what happens if a 120-cell block is connected directly to that inverter floor.</p></div>
 
+    <section className="mb-4"><EBSBlock3D fixed={tick} bypass={tickB} weakCell={row.fixed.weak_cell} minute={minute} /><p className="text-[11px] text-faint mt-2">One representative block from each case, using the simulation&apos;s cell charge and switch states at the selected time. The charts and totals below cover all {data.assumptions.blocks} blocks. Drag to rotate when 3D graphics are available.</p></section>
+
     <div className="grid sm:grid-cols-4 gap-3 mb-4">
-      <div className="surface p-4"><div className="micro mb-1">Fixed string</div><div className="text-[23px] font-semibold num">{fmt(row.fixed.energy_kwh)} kWh</div><div className="text-[11px] text-faint">energy to shutdown</div></div>
-      <div className="surface p-4"><div className="micro mb-1">EBS bypass</div><div className="text-[23px] font-semibold num">{fmt(row.bypass.energy_kwh)} kWh</div><div className="text-[11px] text-faint">energy to shutdown</div></div>
+      <div className="surface p-4"><div className="micro mb-1">Conventional BMS · EBS-sized cells</div><div className="text-[23px] font-semibold num">{fmt(row.fixed.energy_kwh)} kWh</div><div className="text-[11px] text-faint">fixed string · energy to shutdown</div></div>
+      <div className="surface p-4"><div className="micro mb-1">REON EBS · bypass model</div><div className="text-[23px] font-semibold num">{fmt(row.bypass.energy_kwh)} kWh</div><div className="text-[11px] text-faint">cell bypass · energy to shutdown</div></div>
       <div className="surface p-4"><div className="micro mb-1">Bypass difference</div><div className="text-[23px] font-semibold num" style={{ color: row.extra_kwh >= 0 ? "var(--ok)" : "var(--error)" }}>{row.extra_kwh >= 0 ? "+" : ""}{fmt(row.extra_kwh)} kWh</div><div className="text-[11px] text-faint">includes assumed switch resistance</div></div>
       <div className="surface p-4"><div className="micro mb-1">Extra full-power time</div><div className="text-[23px] font-semibold num" style={{ color: row.extra_full_power_min >= 0 ? "var(--ok)" : "var(--error)" }}>{row.extra_full_power_min >= 0 ? "+" : ""}{fmt(row.extra_full_power_min, 1)} min</div><div className="text-[11px] text-faint">all {data.assumptions.blocks} blocks online</div></div>
     </div>
 
     <section className="surface p-5 sm:p-7 mb-4"><div className="eyebrow mb-2">Same discharge, synchronized</div><h2 className="text-[18px] font-semibold mb-3">Available power over time</h2>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[850px]" role="img" aria-label="Fixed and EBS bypass power during the same discharge">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-w-[850px]" role="img" aria-label="Conventional BMS and REON EBS modeled power during the same discharge">
         {[0, 60, 120, 180, 240].map((m) => <g key={m}><line x1={X(m)} x2={X(m)} y1={T} y2={T + IH} stroke="#dce4df" /><text x={X(m)} y={H - 5} textAnchor="middle" fill="#687b70" fontSize="11">{m} min</text></g>)}
         {[0, 0.5, 1].map((f) => <g key={f}><line x1={L} x2={L + IW} y1={Y(f * data.assumptions.blocks * data.assumptions.block_kw)} y2={Y(f * data.assumptions.blocks * data.assumptions.block_kw)} stroke="#dce4df" /><text x={L - 6} y={Y(f * data.assumptions.blocks * data.assumptions.block_kw) + 4} textAnchor="end" fill="#687b70" fontSize="11">{fmt(f * data.assumptions.blocks * data.assumptions.block_kw / 1000, 1)}</text></g>)}
         <polyline points={row.fixed.power_trace.map((p) => `${X(p.minute)},${Y(p.power_kw)}`).join(" ")} fill="none" stroke="#687a83" strokeWidth="2.5" />
         <polyline points={row.bypass.power_trace.map((p) => `${X(p.minute)},${Y(p.power_kw)}`).join(" ")} fill="none" stroke="#137454" strokeWidth="3" />
         <line x1={X(minute)} x2={X(minute)} y1={T} y2={T + IH} stroke="#3479a2" strokeWidth="1.5" />
       </svg>
-      <div className="flex flex-wrap gap-4 text-[11px] text-muted mb-3"><span className="text-[#687a83]">● fixed string</span><span className="text-[#137454]">● EBS bypass</span><span>Power axis: MW</span></div>
+      <div className="flex flex-wrap gap-4 text-[11px] text-muted mb-3"><span className="text-[#687a83]">● Conventional BMS · fixed string</span><span className="text-[#137454]">● REON EBS · bypass model</span><span>Power axis: MW</span></div>
       <input className="w-full" type="range" min={0} max={240} step={5} value={minute} onChange={(e) => { setMinute(+e.target.value); setPlaying(false); }} aria-label="Discharge time in minutes" />
-      <p className="text-[12px] text-muted mt-2 num">t+{minute} min · fixed {fmt(tick.power_kw)} kW · bypass {fmt(tickB.power_kw)} kW · {tickB.bypassed_cells} cells bypassed</p>
+      <p className="text-[12px] text-muted mt-2 num">t+{minute} min · Conventional BMS {fmt(tick.power_kw)} kW · REON EBS {fmt(tickB.power_kw)} kW · {tickB.bypassed_cells} cells bypassed</p>
     </section>
 
     <div className="grid md:grid-cols-2 gap-4 mb-4"><section className="surface p-5"><div className="eyebrow mb-2">Electrical assumptions</div><ul className="text-[12px] text-muted leading-relaxed space-y-1 list-disc pl-5"><li>{data.assumptions.cells_per_block} series cells per block, about {fmt(data.assumptions.cell_ah)} Ah each</li><li>{data.assumptions.n_min} cells minimum after bypass</li><li>{fmt(data.assumptions.r_on_ohm * 1000, 2)} mΩ switch resistance per active cell</li><li>{fmt(data.assumptions.eta * 100)}% DC-to-AC efficiency</li><li>One weak cell per block is a stress scenario, not a measured failure rate</li></ul></section>

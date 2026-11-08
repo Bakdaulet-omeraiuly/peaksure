@@ -7,6 +7,7 @@ assumptions. Parallel blocks are independent; no shared DC-bus dynamics are mode
 from __future__ import annotations
 
 from dataclasses import dataclass
+import base64
 
 import numpy as np
 
@@ -55,6 +56,7 @@ def simulate(case: EBSCase, q_full: np.ndarray, bypass: bool, minutes: int = 240
     full_power_steps = 0
     checkpoints = {}
     trace = []
+    weak_cell = int(np.argmin(q_full[0]))
     steps = int(minutes / dt_min)
     for step in range(steps + 1):
         minute = step * dt_min
@@ -76,7 +78,9 @@ def simulate(case: EBSCase, q_full: np.ndarray, bypass: bool, minutes: int = 240
         current[switched] = 2 * p_dc / (v[switched] + np.sqrt(disc[switched]))
         if step % int(5 / dt_min) == 0:
             trace.append(dict(minute=minute, power_kw=float(online.sum() * case.block_kw),
-                              bypassed_cells=int(bypassed.sum())))
+                              bypassed_cells=int(bypassed.sum()), block_online=bool(online[0]),
+                              soc_b64=base64.b64encode(np.rint(np.clip(soc[0], 0, 1) * 255).astype("u1").tobytes()).decode(),
+                              active_b64=base64.b64encode(active[0].astype("u1").tobytes()).decode()))
         if minute in (0, 60, 90, 100, 105, 110, 120, 180, 240):
             checkpoints[str(int(minute))] = dict(power_kw=float(online.sum() * case.block_kw),
                                                 blocks_online=int(online.sum()),
@@ -93,5 +97,5 @@ def simulate(case: EBSCase, q_full: np.ndarray, bypass: bool, minutes: int = 240
             active[newly_empty] = False
             remaining[newly_empty] = 0
     return dict(energy_kwh=float(delivered.sum()), full_power_minutes=full_power_steps * dt_min,
-        checkpoints=checkpoints, power_trace=trace, bypassed_cells=int(bypassed.sum()),
+        checkpoints=checkpoints, power_trace=trace, weak_cell=weak_cell, bypassed_cells=int(bypassed.sum()),
         blocks_online_end=int(online.sum()), nameplate_kwh=case.blocks * 60)

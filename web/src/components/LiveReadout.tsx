@@ -4,8 +4,8 @@ import { Scenario } from "@/engine/scenario";
 import { runStats } from "@/engine/cellview";
 import { useStudio } from "@/state/store";
 import { Slot } from "./Battery3D";
+import { BATTERY_NAMES } from "@/engine/labels";
 
-const NAME: Record<Slot, string> = { A: "Conventional", B: "REON baseline", C: "REON + PeakSure" };
 const SUB: Record<Slot, string> = { A: "fixed strings · annual pack test", B: "cell bypass · annual pack test", C: "cell bypass · per-cell twin, 95% commit" };
 const kwh = (v: number) => `${Math.max(0, Math.round(v)).toLocaleString()} kWh`;
 
@@ -35,7 +35,7 @@ export default function LiveReadout({ scenario, view, slots }: { scenario: Scena
         ];
         return (
           <div key={k} className="rounded-lg border border-[var(--border)] bg-[var(--panel)] p-3 min-w-0">
-            <div className="text-[12px] font-bold">{NAME[k]}</div>
+            <div className="text-[12px] font-bold">{BATTERY_NAMES[k]}</div>
             <div className="text-[10.5px] text-faint mb-2">{SUB[k]}</div>
             {view === "peak" && (
               <div className="text-[11px] text-muted mb-2 num">

@@ -2,6 +2,7 @@
 import { Scenario } from "@/engine/scenario";
 import { frameOf, runStats } from "@/engine/cellview";
 import { useStudio } from "@/state/store";
+import { BATTERY_NAMES } from "@/engine/labels";
 
 const fmt = (m: number) => `${Math.floor(m)} min`;
 
@@ -43,8 +44,8 @@ export default function WeakCellFlow({ scenario, view }: { scenario: Scenario; v
         const path = off ? `M20 48 H${weakX - 22} Q${weakX - 15} 48 ${weakX - 15} 35 Q${weakX - 15} 20 ${weakX} 20 Q${weakX + 15} 20 ${weakX + 15} 35 Q${weakX + 15} 48 ${weakX + 22} 48 H300` : "M20 48 H300";
         const stats = reon ? bStats : aStats;
         return <div key={key} className="rounded-md bg-[#111a20] p-2.5">
-          <div className="flex justify-between gap-2 text-[11px] mb-1"><b>{reon ? "REON · bypass" : "Conventional · fixed string"}</b><span className={flowing ? "text-[#8ddbb5]" : "text-[#f2a866]"}>{flowing ? "current flowing" : "string stopped / idle"}</span></div>
-          <svg viewBox="0 0 320 91" className="w-full" role="img" aria-label={`${reon ? "REON" : "Conventional"} current path around cell ${string + 1}-${j + 1}`}>
+          <div className="flex justify-between gap-2 text-[11px] mb-1"><b>{BATTERY_NAMES[key]}</b><span className={flowing ? "text-[#8ddbb5]" : "text-[#f2a866]"}>{flowing ? "current flowing" : "string stopped / idle"}</span></div>
+          <svg viewBox="0 0 320 91" className="w-full" role="img" aria-label={`${BATTERY_NAMES[key]} current path around cell ${string + 1}-${j + 1}`}>
             <path d={path} fill="none" stroke={flowing ? "#5fbcf4" : "#53616b"} strokeWidth="3" strokeLinecap="round" />
             {flowing && <path d={path} fill="none" stroke="#bceaff" strokeWidth="4" strokeLinecap="round" strokeDasharray="2 19" className="current-flow" />}
             {sample.map((index, k) => {

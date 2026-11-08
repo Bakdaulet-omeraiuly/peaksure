@@ -6,8 +6,8 @@ import { Scenario } from "@/engine/scenario";
 import { cellState, frameOf } from "@/engine/cellview";
 import { useStudio } from "@/state/store";
 import { Slot, STATE_COLORS } from "./Battery3D";
+import { BATTERY_NAMES } from "@/engine/labels";
 
-const NAME: Record<Slot, string> = { A: "Conventional", B: "REON baseline", C: "REON + PeakSure" };
 const clock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
 
 export default function StringStrip({ scenario, view, slots }: { scenario: Scenario; view: "peak" | "drain"; slots: Slot[] }) {
@@ -74,7 +74,7 @@ export default function StringStrip({ scenario, view, slots }: { scenario: Scena
         {rows.map((r) => (
           <div key={r.k}>
             <div className="flex flex-wrap items-baseline justify-between gap-2 text-[11px] mb-1">
-              <span className="font-semibold text-[12px]">{NAME[r.k]}</span>
+              <span className="font-semibold text-[12px]">{BATTERY_NAMES[r.k]}</span>
               <span className="num text-muted">
                 {r.stop
                   ? <>stopped at {t(r.stop.minute)} · <span style={{ color: "#b77712" }}>{r.charged} cells still charged · {r.strandedKwh.toFixed(1)} kWh stranded</span></>

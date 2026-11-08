@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { Scenario, OperatorResult } from "@/engine/scenario";
 import { DischargeResult } from "@/engine/discharge";
 import { cellState, frameOf } from "@/engine/cellview";
+import { BATTERY_NAMES } from "@/engine/labels";
 import { useStudio, ColorMode } from "@/state/store";
 
 // Schematic container: 8 racks (strings) in 4 columns x 2 tiers, all facing the viewer.
@@ -16,7 +17,6 @@ const SHELL = { w: 4.15, h: 3.42, d: 0.62 };
 const GAP = 0.55;
 
 export type Slot = "A" | "B" | "C";
-const LABEL: Record<Slot, string> = { A: "Conventional", B: "REON baseline", C: "REON + PeakSure" };
 export const slotsFor = (view: "peak" | "drain"): Slot[] => (view === "peak" ? ["A", "B", "C"] : ["A", "B"]);
 
 function cellPos(s: number, j: number) {
@@ -160,7 +160,7 @@ export default function Battery3D({ scenario, view }: { scenario: Scenario; view
     {slots.map((k, idx) => (
       <div key={`${view}-${k}`} ref={(el) => { labelRefs.current[idx] = el; }}
            className="absolute z-[1] pointer-events-none -translate-x-1/2 -translate-y-full text-[11px] sm:text-[12px] font-semibold text-[#e3eae5] whitespace-nowrap">
-        {view === "drain" ? (k === "A" ? "Conventional fixed strings" : "REON cell bypass") : LABEL[k]}
+        {BATTERY_NAMES[k]}
       </div>
     ))}
     <Canvas camera={{ position: [0, 1.9, 12], fov: 40 }} dpr={[1, 2]} gl={{ antialias: true }}>

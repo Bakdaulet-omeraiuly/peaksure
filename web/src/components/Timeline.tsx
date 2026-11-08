@@ -108,8 +108,8 @@ export default function Timeline({ scenario, c, baseline }: { scenario: Scenario
           <line x1={X(minute)} x2={X(minute)} y1={padT - 4} y2={padT + ih} stroke="#79b0ff" strokeWidth={1.5} />
           {w >= 540 && <g transform={`translate(${padL + 8},${padT + 4})`} fontSize={10.5}>
             <line x1={0} x2={14} y1={0} y2={0} stroke="#e8eaed" strokeWidth={1.6} /><text x={18} y={3} fill="#a2aab5">town load</text>
-            <line x1={80} x2={94} y1={0} y2={0} stroke="#9aa6b8" strokeDasharray="4 3" /><text x={98} y={3} fill="#a2aab5">net, {baseline === "A" ? "conventional" : "REON baseline"}</text>
-            <line x1={200} x2={214} y1={0} y2={0} stroke="#7bd88f" strokeWidth={1.8} /><text x={218} y={3} fill="#a2aab5">net, REON + PeakSure</text>
+            <line x1={80} x2={94} y1={0} y2={0} stroke="#9aa6b8" strokeDasharray="4 3" /><text x={98} y={3} fill="#a2aab5">net, {baseline === "A" ? "A conventional" : "B REON EBS"}</text>
+            <line x1={200} x2={214} y1={0} y2={0} stroke="#7bd88f" strokeWidth={1.8} /><text x={218} y={3} fill="#a2aab5">net, C REON EBS + PeakSure</text>
           </g>}
         </svg>
       </div>
