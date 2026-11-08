@@ -223,8 +223,8 @@ const tracker = (s, active) => {
   const H = { bold: true, color: GREEN, fill: { color: CARD } };
   const row = (cells) => cells.map((c, i) => ({ text: c, options: i === 0 ? { bold: true, color: WHITE } : { color: MUTED } }));
   s.addTable([
-    [{ text: "", options: H }, { text: "Lithium-ion (LFP) · REON EBS Li+", options: H }, { text: "Sodium-ion · REON EBS Na+", options: H }],
-    row(["Energy per space", "High: REON says EBS Li+ holds more than 2× Na+", "Lower"]),
+    [{ text: "", options: H }, { text: "Lithium-ion · REON EBS Li+ (modelled as LFP)", options: H }, { text: "Sodium-ion · REON EBS Na+", options: H }],
+    row(["Energy per space", "High: REON says \u201cmore than twice the energy in the same form factor\u201d", "Lower"]),
     row(["Cold weather", "Weaker", "Better: REON rates −40 °F"]),
     row(["Installed price (team estimate)", `$${fmt(lfp.price.low)}–${fmt(lfp.price.high)}/kWh`, `$${fmt(na.price.low)}–${fmt(na.price.high)}/kWh`]),
     row(["Cell-control premium (our model)", `$${sens.chem_LFP.prem_c.toFixed(1)}/kWh`, `$${t1.C.premium_same[0].toFixed(1)}/kWh (base case)`]),
