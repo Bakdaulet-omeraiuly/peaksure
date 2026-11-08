@@ -12,12 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "app"))
 
-import numpy as np
-import pandas as pd
-
-import analysis as an
-from peaksure import econ, research
-from peaksure.config import Config
+import analysis as an  # noqa: E402
+from peaksure import econ, research  # noqa: E402
+from peaksure.config import Config  # noqa: E402
 
 
 def usd(x):
@@ -38,7 +35,7 @@ def main() -> int:
     cal = an.calib_summary(an.load("events_cal"))
     probe = an.probe_summary(an.load("events_probe"), an.load("monthly_probe"))
     research_rows = research.summary(an.load("events_research"), an.load("monthly_research"))
-    names = {"A": "A Conventional", "B": "B REON bypass", "C": "C PeakSure", "D": "D PeakSure + VoI", "C_T3": "C + Tier 3"}
+    names = {"A": "A Conventional", "B": "B CES-sized bypass model", "C": "C Bypass + PeakSure", "D": "D Bypass + PeakSure + VoI", "C_T3": "C + Tier 3"}
 
     L = []
     L.append("# PeakSure: Results\n")
@@ -46,8 +43,8 @@ def main() -> int:
              f"`{man.get('git_commit')}`, {man.get('n_main')} paired runs per main condition, {man.get('n_side')} per "
              f"side study, {man.get('seconds')} s of compute. **Simulated ground truth, not hardware validation.** "
              "Independent analysis, not endorsed by REON.\n")
-    L.append("System: 2.5 MW / 5 MWh (2 h) modeled plant, conventional BMS versus an EBS-equivalent cell-bypass system; "
-             "its 8 × 240 cell wiring is assumed, not published EBS topology. Sodium-ion parameters, 15 years from 2027. Events are ISO-NE "
+    L.append("System: 2.5 MW / 5 MWh CES/CESS-sized model (2 h nameplate ratio, not a guaranteed AC runtime), conventional BMS versus a hypothetical cell-bypass system; "
+             "its 8 × 240 model-unit wiring, Na-ion chemistry, energy-rating boundary and 96% cell-to-AC efficiency are assumed, not published CES topology. The DC voltage window is not enforced. 15 years from 2027. Events are ISO-NE "
              "system monthly peaks 2019–2025 (bootstrapped by year), with WCMA temperatures. Rates: RNS and FCA (see the Addendum).\n")
 
     L.append("## T1. Main benchmark (mean [95% CI])\n")
@@ -75,13 +72,15 @@ def main() -> int:
 
     if len(cal):
         L.append("\n## T4. Twin calibration: share of peaks where true energy < predicted P5 (target 5%)\n")
-        L.append("| Mismatch | eps | Pack-level | Cell twin |")
-        L.append("|---|---|---|---|")
+        L.append("| Mismatch | eps | Pack-level | Raw cell twin (diagnostic) | PeakSure safety envelope |")
+        L.append("|---|---|---|---|---|")
         for (mode, eps), g in cal.groupby(["mode", "eps"]):
             a = g[g.cond == "A_opt"].iloc[0]
+            raw = g[g.cond == "C_raw"].iloc[0]
             c = g[g.cond == "C"].iloc[0]
             L.append(f"| {'systematic' if mode == 'sys' else 'random'} | {eps:.1f} | {a.miss*100:.1f}% [{a.lo*100:.1f}, {a.hi*100:.1f}] "
-                     f"(width {a.width*100:.1f}%) | {c.miss*100:.1f}% [{c.lo*100:.1f}, {c.hi*100:.1f}] (width {c.width*100:.1f}%) |")
+                     f"(width {a.width*100:.1f}%) | {raw.miss*100:.1f}% [{raw.lo*100:.1f}, {raw.hi*100:.1f}] "
+                     f"(width {raw.width*100:.1f}%) | {c.miss*100:.1f}% [{c.lo*100:.1f}, {c.hi*100:.1f}] (width {c.width*100:.1f}%) |")
 
     if len(probe) and "gain" in probe:
         L.append("\n## T5. VoI probing on a 4-h system: extra savings vs no probing ($/yr, paired)\n")
@@ -141,14 +140,18 @@ def export_json() -> None:
     t1, rl = an.main_table(ev, mo, cfg, conds=("A", "B", "C", "D", "C_T3"))
     dec = econ.decomposition(rl)
     sens = an.sens_summary(an.load("events_sens"), an.load("monthly_sens"))
-    e4 = an.load("events_sens"); m4 = an.load("monthly_sens")
+    e4 = an.load("events_sens")
+    m4 = an.load("monthly_sens")
     dec4 = econ.decomposition(econ.run_level(e4[e4.tag == "sens_duration_4h"], m4[m4.tag == "sens_duration_4h"],
                                              cfg.with_(e_nom_kwh=10000.0)))
     cal = an.calib_summary(an.load("events_cal"))
     probe = an.probe_summary(an.load("events_probe"), an.load("monthly_probe"))
     research_rows = research.summary(an.load("events_research"), an.load("monthly_research"))
     bands = an.dref_bands(mo, ["A", "B", "C", "C_T3"])
-    f = lambda x: None if x != x else round(float(x), 4)
+    def f(x):
+        return None if x != x else round(float(x), 4)
+    validation_path = ROOT / "results" / "validation_report.json"
+    validation = json.loads(validation_path.read_text()) if validation_path.exists() else None
     out = dict(
         manifest={k: man.get(k) for k in ("config_hash", "git_commit", "n_main", "n_side", "seconds", "finished")},
         t1=[dict(cond=r.cond, savings=[f(v) for v in r.savings], npv=[f(v) for v in r.npv], capture=f(r.capture[0]),
@@ -162,6 +165,7 @@ def export_json() -> None:
         probe=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in probe.to_dict("records")],
         bands=[{k: (f(v) if not isinstance(v, str) else v) for k, v in r.items()} for r in bands.to_dict("records")],
         research=research_rows,
+        validation=validation,
     )
     p = ROOT / "web" / "public" / "data" / "results.json"
     p.write_text(json.dumps(out))

@@ -15,8 +15,8 @@ from . import econ
 PAIRS = {
     "mixed": (("A_opt", "C"), ("C", "C_T3"), ("C", "C_LC")),
     "lifetime": (("C", "C_T3"), ("C", "C_LC")),
-    "guard_null": (("C", "C_G"),),
-    "guard_bias": (("C", "C_G"),),
+    "guard_null": (("C_raw", "C"),),
+    "guard_bias": (("C_raw", "C"),),
 }
 
 

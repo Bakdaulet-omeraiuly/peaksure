@@ -12,7 +12,6 @@ import base64
 import json
 import sys
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
@@ -21,13 +20,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from peaksure import econ                      # noqa: E402
-from peaksure.config import Config, NA_ION, SYSTEM_FLAGS   # noqa: E402
+from peaksure.config import CES_PROFILE, Config, NA_ION, SYSTEM_FLAGS   # noqa: E402
 from peaksure.data import HE_GRID, hour_forecast, peak_day_shapes, peak_events  # noqa: E402
 from peaksure.sim import draw_population, nominal_fade_month, simulate  # noqa: E402
 
 OUT = ROOT / "web" / "public" / "data"
 SEEDS = (0, 1, 2)
-DURATIONS = {"2h": 5000.0, "4h": 10000.0, "1h": 2500.0}
+DURATIONS = {f"{h}h": Config().p_max_kw * h for h in (1, 2, 3, 4)}
 TIERS = {"fixed": "A", "bypass": "C"}
 
 
@@ -78,6 +77,8 @@ def main() -> int:
         rns_2026=cfg.rns_2026, rns_increments=list(cfg.rns_increments), fca_kw_month=cfg.fca_kw_month,
         nominal_fade_month=nominal_fade_month(cfg), years=cfg.years, he_grid=HE_GRID.tolist(),
         durations=DURATIONS, seeds=list(SEEDS), chemistry=ch.name,
+        product_profile=CES_PROFILE,
+        model_boundary="ASSUMED: interpret the public nameplate energy as nominal cell-side input; modeled deliverable energy includes assumed cell-to-AC efficiency. Published rating boundary UNKNOWN.",
         flags={k: list(v) for k, v in {**SYSTEM_FLAGS, **{f"Na-ion {k}": v for k, v in NA_ION.flags.items()}}.items()},
         towns=econ.TOWNS,
     )
@@ -115,7 +116,8 @@ def export_fixture():
     from peaksure import physics as ph
     cfg = Config()
     life = json.loads((OUT / "life_2h_s0.json").read_text())
-    dec = lambda b: np.frombuffer(base64.b64decode(b), "<u2").astype(float)
+    def dec(b):
+        return np.frombuffer(base64.b64decode(b), "<u2").astype(float)
     t_off = np.frombuffer(base64.b64decode(life["t_off"]), "<i2").astype(float) / 100
     out = {}
     for tier in ("fixed", "bypass"):

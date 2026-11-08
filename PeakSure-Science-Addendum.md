@@ -3,7 +3,7 @@ title: "PeakSure: Scientific Addendum"
 subtitle: "How we make the model defensible, and what is genuinely new"
 ---
 
-> **Reading guide.** Part I (§0–§I, §H) is the original addendum. **Part II (§J–§Z)** is the strengthening pass: research question, architecture, benchmark design, calibration, VoI protocol, engineering constraints, economics, demo, evidence audit, roadmap, pitch, and change log. Corrections to Part I are listed in §Z. ~~No experiment has been run yet. All results are placeholders.~~ **Superseded (8 Nov 2026):** experiments have run; generated results are in `RESULTS.md` (from `results/`), and later sections (§AE onward) describe the implemented model.
+> **Reading guide.** Part I (§0–§I, §H) is the original addendum. **Part II (§J–§Z)** is the strengthening pass: research question, architecture, benchmark design, calibration, VoI protocol, engineering constraints, economics, demo, evidence audit, roadmap, pitch, and change log. Corrections to Part I are listed in §Z. **No experiment has been run yet. All results are placeholders.**
 
 # 0. Purpose
 
@@ -333,7 +333,7 @@ Status key: **V** = confirmed in a primary or official source; **S** = secondary
 
 > Part II adds sections J–Z. Part I (§0–§I and §H) is preserved. Where Part II **corrects** Part I, the correction is stated explicitly and listed in the change log (§Z).
 >
-> **Status of results (superseded 8 Nov 2026: generated results now live in `RESULTS.md`; this Part II text is the original design):** no experiment in this document had been executed when it was written. Every result table and figure below is a **placeholder**. Nothing here is proven until the code runs, with seeds and confidence intervals.
+> **Status of results:** no experiment in this document has been executed yet. Every result table and figure below is a **placeholder**. Nothing here is proven until the code runs, with seeds and confidence intervals.
 
 ---
 
@@ -731,7 +731,7 @@ With 20–80 dispatch days per year (§Q4), annual throughput is low. **Calendar
 
 ---
 
-# T. Expected Figures and Result Tables (original placeholders; generated results are now in `RESULTS.md`)
+# T. Expected Figures and Result Tables (placeholders: NO RESULTS YET)
 
 **Figures**
 1. **F1:** Deliverable energy vs year (P5/P50/P95 bands) for A, B, C. *[placeholder]*
@@ -1120,87 +1120,35 @@ Each five-minute trace frame also exports the first block's 120 quantized cell c
 
 The same export includes the team's Paxton-sized EBS sizing and spreadsheet NPV from §AI6. This is a separate project-level calculation; the 84-block discharge trace is not presented as a simulation of Paxton's 167-unit plant. Unpriced compliance line items remain unknown costs.
 
-# AK. Product Evidence Audit and Two-Battery Comparison (8 Nov 2026)
+---
 
-## AK1. Which REON product is modelled
+# AK. CES/CESS product-boundary and simulator audit (7 Nov 2026)
 
-Checked on reoncorp.com/hardware, /solutions, the home page and Google Patents (7–8 Nov 2026). Profiles live in `peaksure/products.py` (exported to `web/public/data/products.json`; tests in `tests/test_products.py` and `web/src/engine/consistency.test.ts`).
+The [current REON hardware page](https://www.reoncorp.com/hardware), checked 2026-11-07, calls the grid product **CESS** and lists **2.5 MW / 5 MWh**. The project-cited `REON_WHO_WE_ARE.pdf` calls it **CES** and states **480 V three-phase AC** (§AA1). The PDF is not stored in this repository, so the AC claim needs direct rechecking with REON. Neither source establishes the battery DC window, cell chemistry, internal topology, or usable AC energy at that power. The website markets cell-level intelligence for CESS; a team note reports a white-label supply relationship (§AI1). The exact integration and controllable CES cell path need REON confirmation.
 
-- **CESS**: "2.5MW/5MWh" is CONFIRMED on the hardware page; whether this is DC nameplate, usable or AC energy is UNKNOWN. REON told the team that CESS and OES are white-label products, so CESS has **no** REON cell-level bypass. The 480 V three-phase AC interface appears only in the challenge PDF as transcribed in §AA (REON CLAIM; the PDF is not in the repo). CESS chemistry, cell format, cells per string, columns, DC window, N_min, switch R_on and efficiency are UNKNOWN.
-- **EBS (Na+ and Li+)**: the page shows one line-level rating "EBS | 30kW/60kWh"; Na+ is sodium-ion with "20,000-Cycle Life" and −40 to +140 °F (REON CLAIM); Li+ is "more than twice the energy in the same form factor" (DERIVED > 120 kWh). Internal topology is UNKNOWN. About 120 cells per block is DERIVED from an ASSUMED 160 Ah, 3.1 V cell.
-- **Cell-level bypass**: "bypass underperforming cells without shutting down" is a REON CLAIM on the solutions page, which names no product; REON's statement assigns it to EBS.
-- **Patent US 2023/0341471 A1** is a pending application. It describes series columns in parallel with per-cell couple/decouple switches; it is not proof of any product's design.
-- The home page now says "2-3X More Usable Capacity". The older "2–4×" (§H5/§AA) is a superseded REON CLAIM; both are company claims only.
+| Item | Value in this project | Status | Source / boundary |
+|---|---:|---|---|
+| CES/CESS public nameplate power | up to 2.5 MW | REON CLAIM | REON hardware page, checked 2026-11-07 |
+| CES/CESS public nameplate energy | up to 5 MWh | REON CLAIM | Same page; DC/AC measurement boundary UNKNOWN |
+| AC interface | 480 V, three-phase AC | REON CLAIM | Project-cited REON PDF (§AA1); original unavailable here; not DC voltage |
+| Nameplate ratio | 2 h | DERIVED | 5 MWh / 2.5 MW; not guaranteed usable AC runtime |
+| CES/CESS chemistry, format, cells/column, parallel columns, N_min, DC range, switch R_on, PCS efficiency | — | UNKNOWN | Request directly from REON |
+| PeakSure use case | ISO-NE coincident-peak shaving for a Massachusetts MLP | ASSUMED application | PeakSure project choice; no installation at a named MLP asserted |
+| Plant model | Na-ion proxy, 8 × 240 model units, 10% headroom (N_min=216), 1% switch loss, 96% cell-to-AC efficiency | ASSUMED | `peaksure/config.py`; not CES/CESS specifications |
+| Model energy boundary | nameplate 5 MWh treated as nominal cell-side input; deliverable energy includes 96% efficiency | ASSUMED | `Config.q_nom_ah` and `physics.deliverable`; public rating boundary UNKNOWN |
+| Research durations | 1, 3, 4 h at 2.5 MW, plus 2 h base | ASSUMED scenarios | `tools/export_web.py`; only 2 h is the public nameplate ratio |
+| Nominal cell voltage / cold and ageing behavior | Na-ion laboratory proxy, 3.1 V nominal | ASSUMED for CES; some cell coefficients LIT/DERIVED | `NA_ION` and its per-field flags in `peaksure/config.py`; not CES measurements |
+| Thermal behavior | HVAC coupling 0.25, cell spread 2.5 °C, derate onset 45 °C | ASSUMED | `Config`/`NA_ION`; Explore cooling 0.1–1 and spread 0.5–8 °C sensitivity |
+| Commitment risk target | α=0.05 nominal | ASSUMED decision policy | `Config.alpha`, `decision.py`; empirical reliability tested separately in Results |
+| Peak dates / hours / temperature | ISO-NE SMD-derived monthly peak events, WCMA temperatures | DERIVED | `tools/build_peak_events.py`, `tools/export_web.py`; HE means hour ending |
 
-## AK2. What the model is, and is not
+The main Python and TypeScript plant simulators use an active-cell threshold but **do not apply a voltage-vs-SOC curve or PCS DC window**. Thus N_min is an assumed headroom proxy, not a validated voltage constraint. The separate EBS block model does apply a Na-ion voltage curve and assumed DC floor; a 750 V direct-input case produces zero output and is displayed as infeasible. The main model must not be used to claim CES/CESS physical compatibility until its actual DC topology and chemistry are supplied.
 
-The modelled plant (2.5 MW / 5 MWh, 8 × 240 cells, N_min 216, 3.1 V Na-ion, η 0.96, 1% switch loss) is a **comparison model**. Its size equals the published CESS rating; B/C are a **REON-style bypass model** (schematic), not an EBS or CES layout. `config.SYSTEM_FLAGS` now marks `p_max_kw` and `e_nom_kwh` ASSUMED (they were CONFIRMED, which conflated the CESS rating with the modelled bypass plant). 1-h (2.5 MWh) and 4-h (10 MWh) systems are hypothetical scenarios. 5 MWh is treated as DC nameplate; deliverable energy is computed at the AC side (× η × (1 − switch loss)). Energy ÷ power = 2 h is a DERIVED nominal ratio, not a guaranteed AC duration.
+Explore now sweeps operational headroom (2%–20%), switch loss (0.5%–5%) and assumed cell-to-AC efficiency (90%–99%) on the exported yearly cell states. These sliders do not recompute lifetime ageing, whose base snapshots use 10% headroom, 1% switch loss and 96% efficiency. The 8 × 240 model-unit population itself is not yet swept interactively.
 
-The project's use case, MLP coincident-peak shaving in ISO-NE (monthly RNS + annual FCA), is a modelled use case, not evidence of deployment. Demand response, ConnectedSolutions / Clean Peak, arbitrage, resilience and VPP/TOU are not modelled.
+Commitment power × window duration is the required AC energy in the model. A/B use a pack-belief P5 energy limit; C uses an empirical ≥95% sample chance constraint. These are planning beliefs, not privileged access to simulated truth; realized energy can be lower. The web card now shows its belief and simulated outcome separately, including a shortfall warning. The model's empirical P5 interpolates finite samples, so a baseline decision can cover slightly fewer than 95% of those sampled draws even when its energy is no more than the displayed P5; this is a finite-sample limitation, not measured reliability.
 
-## AK3. Audit findings and fixes
-
-1. **Commitment energy.** The UI now shows commitment power × window = energy, the window as HE range and clock time, the believed P5, and a feasibility status (`web/src/engine/commitment.ts`, `peaksure/decision.commitment_status`). 2.5 MW × 3 h = 7.5 MWh is flagged infeasible on a 5 MWh profile.
-2. **4-h system with a 3-h window** is valid, not a state bug: the 10 MWh hypothetical system's operator chooses a 3 h window at 2.5 MW (7.5 MWh), within its P5 belief. The UI now states that window length is a decision, not the battery size.
-3. **Age, year and HE.** Battery age (years), calendar year and peak HE (a clock hour) are shown separately; tests check they are not confused.
-4. **Minute-step overdraw.** The browser discharge drew a full minute even when the emptiest cell held less, so every other cell lost up to one extra minute of charge. The last step is now partial, so stranded energy at the end of the drain test matches the analytic stopping-level value to within 2% (tested in `consistency.test.ts`; before the fix it read low by up to one minute of string current per string). Python is unaffected (it uses the analytic `deliverable`).
-5. **Belief vs truth.** The belief chart and cell hover hide the simulated true deliverable energy and cell health until the peak hour has passed; the twin's belief is labelled as what C sees.
-6. **Fair comparison.** A and B share the event, temperatures, year-0 cells and random draws, but each hardware ages the cells its own way. A new "Identical cells" option gives A the bypass plant's cells at the same age, isolating the wiring difference. The decision-rule effect (B vs C) stays separate from the hardware effect (A vs B), as in the Shapley decomposition.
-7. **Economics.** Displayed value uses kW actually delivered in the actual peak hour × (RNS/12 + FCA × 12 on the annual peak), not committed kW. `econ.run_level` NPV is savings minus augmentation only (no capex/O&M); it is used for paired differences where those cancel. Capex-aware NPV is in `costs.py`. The peak **day** is assumed known (only the hour is uncertain), so timing value is an upper bound.
-
-## AK4. Two-battery 3D comparison
-
-All cell states come from `cellState` on engine output (tests check bypassed cells equal inactive cells on running strings, fixed strings never show bypass, and bypass strings keep ≥ N_min cells). New: one shared Play / Pause / Reset timeline; steps "Before peak → Limiting cell → Bypass decision → Result" whose minutes come from engine events (disabled when the event does not occur); a Difference colour mode comparing each battery cell by cell with its partner at the same clock minute; shape cues (limiting cell enlarged, out-of-circuit cells recessed) and text counts so status is not colour-only; and a live "hardware difference now" line that says "negligible" when it is.
-
-## AK5. Still needed from REON
-
-CESS energy basis and AC/DC boundary; EBS cells per block, block DC window, DC/DC stage, columns and N_min; switch R_on per cell path; round-trip efficiency; how EBS blocks are paralleled at MW scale; certification status per product.
-
-# AL. EBS C&I Peak-Shaving Scenario (8 Nov 2026)
-
-## AL1. EBS evidence (reoncorp.com/hardware and /solutions, accessed 8 Nov 2026)
-
-| Item | Applies to | Status | Notes |
-|---|---|---|---|
-| "EBS \| 30kW/60kWh" | the EBS line heading, above the Na+ and Li+ tabs | CONFIRMED (heading); Na+ assignment DERIVED | The page does not say which variant it rates. Li+ claims ">2x the energy in the same form factor", so 60 kWh can only be Na+. Rated vs usable and AC vs DC are UNKNOWN |
-| 60 kWh / 30 kW = 2 h | EBS | DERIVED | Nominal ratio, not a guaranteed AC discharge duration |
-| "designed for commercial and industrial applications" | EBS line | CONFIRMED (product text) | Listed under "Commercial & Industrial (30–120 kW)" |
-| "20,000-Cycle Life" | Na+ tab only | REON CLAIM | No depth of discharge, C-rate, temperature, warranty or end-of-life definition |
-| "Reliable operation from -40°F to +140°F" | Na+ tab only | REON CLAIM | No charge vs discharge limits or power derating; not used as a model input |
-| "more than twice the energy in the same form factor" | Li+ tab only | REON CLAIM | No base product or conditions; not converted to a kWh model input; Li+ is not simulated |
-| "Peak Shaving & Demand Management ... to reduce demand charges" | REON EMS (solutions page), not tied to EBS | REON CLAIM | Basis for choosing the scenario only |
-| Cell count, N_min, DC floor, switch R_on, efficiency, topology | — | UNKNOWN (model values ASSUMED, from `EBSCase`) | — |
-
-## AL2. Scenario and comparison design
-
-`peaksure/ebs_scenario.py` (exported by `tools/export_ebs_scenario.py` to `web/public/data/ebs_scenario.json`) simulates **one** 30 kW / 60 kWh Na+ EBS-size block reducing a commercial facility's monthly demand peak. It is a PeakSure simulation scenario, not a verified deployment, and does not touch the CES/MLP study or its results.
-
-- **Same everything except hardware.** Both blocks use the same simulated cells (seeded TUM-spread population; weak-cell cases 0.9 / 0.8 are labelled stress cases, natural spread is the default), the same per-cell capacity estimates (2% error, ASSUMED), the same 95% chance-constrained rule and the same window and tariff. The difference is therefore physical bypass value net of the assumed switch loss; information and decision-rule value are held equal (they are separated in the main study's Shapley decomposition).
-- **Belief before truth.** The commitment is the largest power (0.25 kW grid, ≤ 30 kW) whose belief samples sustain it for the whole window with ≥ 95% probability, including N_min, the 300 V DC floor and switch-path loss. The cell selected for diagnosis is the lowest twin estimate. The simulated plant state is used only afterwards (delivered energy, whether the commitment held, stop reason).
-- **Quantities.** Commitment energy = power × window; status uses the same rule as the main study (`commitment_status`). Window time (HE15 start) and length (1–3 h) are ASSUMED; battery age is new cells; temperature is not modelled.
-- **Economics.** Demand-charge value = committed kW × $/kW-month if the commitment holds, using an ASSUMED $10–20/kW-month range (no specific tariff verified). It is an upper bound: the facility's billing peak is assumed to fall inside the window, and timing uncertainty is not modelled. No NPV, cycle-life or lifetime claim is made from this scenario.
-- **Stop reasons** come from the engine: first empty cell in the fixed string, DC voltage floor, fewer than N_min cells, or switch-path loss. With natural cell spread both blocks stop at the assumed DC floor, so bypass gains little or nothing; in the 80% stress case the fixed string stops at its weak cell and bypass continues. Numbers are generated in the export, not quoted here.
-
-## AL3. Visualization
-
-`/ebs` now opens with this scenario. `EBSPair3D` shows both blocks from the exported 5-minute frames: one colour per state (green normal, yellow approaching empty, red limiting, grey bypassed, slate idle), a blue ring for the cell selected for diagnosis, shape cues (limiting enlarged, bypassed and idle recessed), per-state counts as text, a Difference view, shared Play / Pause / Reset and stages (Before peak → Cell limit → Bypass decision → Result) read from engine events, disabled when the event does not occur. The layout is labelled "schematic topology; internal EBS construction not confirmed". The previous `EBSBlock3D` (fixed weak-cell index, yellow meaning both weak and stranded, unlabelled current path) was removed; the 84-block sensitivity section now defaults to natural spread.
-
-# AM. Public Data Integration and Advisory Planner (8 Nov 2026)
-
-**Primary demo: EBS Na+ (one 30 kW / 60 kWh block) at a commercial site on National Grid MA rate G-2.** Chosen because (1) EBS is the REON product that carries cell-level control (REON statement) and its rating and C&I application are on REON's hardware page; (2) CESS is white-label with no bypass, so it cannot show REON's cell-level value; (3) a G-2 demand charge is a decision PeakSure can support (a daily demand target) with a confirmed public tariff; (4) public load data exist for the site type. The CES-sized MLP study is unchanged and remains the plant-scale research case. No source shows an EBS deployed at a G-2 site; this is a modelled use case.
-
-**Data integrated** (details and checksums: `DATA_AUDIT.md`, `data/public_data_manifest.json`):
-- National Grid MA delivery rates (M.D.P.U. No. 1-26-I, effective 2026-10-01): G-2 demand charge $15.24/kW-month, customer charge $45 (CONFIRMED). G-2 tariff (No. 1547): billing demand = greatest 15-minute peak in the month; ≤ 200 kW customers (CONFIRMED). Used as the default tariff in `ebs_scenario.py` and the planner; $10 / $20 kept as ASSUMED sensitivities.
-- NREL/OpenEI commercial hourly load profiles, Boston Logan TMY3 (DOI 10.25984/1788456): stand-alone retail, strip mall, small office. Simulated prototype buildings, superseded and flagged by NREL as containing errors: RELATED EXTERNAL DATA, not REON and not metered. Used for (a) the synthetic sample CSV, (b) checking the assumed HE15 window (summer retail peaks fall at HE15–16), (c) peak-day shapes. No battery parameter was fitted to it.
-- TUM Na-ion raw cell data: not downloaded (rsync timed out from this environment); the existing table-based fit (§AH) is unchanged. No REON cell or operational data is public.
-
-**Planner** (`peaksure/facility.py`, `web/src/engine/facility.ts`, `PilotWorkflow.tsx`): data contract `peaksure-facility-load/0.1` (timestamp, kW; 15- or 60-minute) with schema, unit (W / MW), gap, duplicate, negative, interval and staleness checks; peak day; demand target T = lowest level such that Σ(L − T)⁺·Δt ≤ twin P5 deliverable energy at rated power and max(L − T) ≤ rated power. The dispatch is shaped, so its energy ≤ peak discharge × hours (the constant-power P × H case is the upper bound). A "Why this recommendation?" explanation, P50 comparison, simulated-plant check revealed only on request, sensitivity table and JSON/Markdown report export with the input checksum. Python and TypeScript agree on a fixture (`web/src/engine/__fixtures__/python_facility.json`).
-
-**What this shows honestly:** on the retail peak day the 60 kWh block is energy-limited (the peak is broad), so it shaves about a tenth of the peak; with natural cell spread the conventional and REON-style blocks recommend the same target, and only weak-cell stress cases separate them. Numbers are generated by the export and the page, not quoted here.
-
-**Known model limitation found:** the EBS block model uses a fixed 0.5C overpotential (`curves.terminal_v(..., 0.5, ...)`) regardless of actual current, so deliverable energy is nearly flat in discharge power. Fixing it changes `ebs.py` results and should be done together with REON's cell data.
-
-**Readiness:** demo-ready (offline); suitable for a supervised, read-only data pilot on supplied meter CSVs with human review (`PILOT_READINESS.md`); not ready for live battery control.
+The `/ebs` comparison now begins at a calculated frame where the representative fixed block has stopped while the bypass block still runs, when such a frame exists. Its instantaneous and total differences are sourced from the exported simulation; zero and negative differences remain visible. This visual change does not change model results.
 
 ---
 
@@ -1248,10 +1196,8 @@ CESS energy basis and AC/DC boundary; EBS cells per block, block DC window, DC/D
 | 38 | Added a separate EBS-size block discharge comparison with voltage-floor, weak-cell and switch-loss assumptions; exported sensitivity results to `/ebs` (§AJ) | Exploratory simulation | EBS topology is not public; keep block feasibility separate from the 15-year plant study |
 | 39 | Exported representative EBS cell states for synchronized 3D and isometric views; named the battery cases across simulations (§AJ) | Visualization | Show the actual weak-cell bypass sequence and identify each comparison battery |
 | 40 | Checked the interactive scenario presets across three seeds and all durations; tied EBS outcome text to the exported result and added a no-WebGL cell view for the main comparison | Verification / presentation | Keep scenario changes coherent and show the model in browsers without 3D graphics |
-| 41 | Product evidence audit: separate CESS / EBS Na+ / EBS Li+ / modelled-plant profiles with CONFIRMED / REON CLAIM / DERIVED / LITERATURE / ASSUMED / UNKNOWN / MODEL OUTPUT status; plant size flags changed CONFIRMED → ASSUMED (§AK1–AK2) | Correction (evidence) | CESS is white-label; its rating is a comparison size, not a bypass-plant spec |
-| 42 | Commitment energy and feasibility shown and tested; partial last discharge minute (stranded energy now matches the analytic value); truth hidden until after the peak; identical-cells option; Difference mode, shared playback and engine-driven steps (§AK3–AK4) | Correction / visualization | Accuracy and transparency audit |
-| 43 | EBS C&I peak-shaving scenario: EBS evidence re-checked (30 kW / 60 kWh is the EBS line heading; Na+ assignment DERIVED; Li+ capacity only claimed, not simulated), single-block belief / 95% commitment / simulated outcome with identical cells, stop reasons from the engine, new `/ebs` 3D comparison (§AL) | Addition / correction (evidence) | EBS-specific, honest comparison |
-| 44 | Primary demo set to EBS Na+ at a National Grid MA G-2 site; G-2 tariff CONFIRMED and integrated; NREL/OpenEI simulated building loads integrated as RELATED EXTERNAL DATA (sample CSV, window check); facility data contract, validation, demand-target planner with Why / plant check / sensitivity / report export; stale 'no results yet' notes superseded; fixed-0.5C overpotential flagged (§AM) | Addition / correction | REON review prototype |
+| 41 | Audited CES/CESS public nameplate and AC/unknown boundaries (§AK), added 3-h hypothetical browser states, separated rating from commitment, exposed efficiency sensitivity and infeasible outcomes, and made EBS divergence visible | Correction / verification | Prevent model assumptions and visual comparisons from reading as CES hardware specifications |
+| 42 | Promoted the independent annual pack-test safety envelope into production candidate C/D, retained the unguarded twin as `C_raw`, added a generated 7-case validation matrix and explicit PASS/BLOCKED deployment gates, then reran the complete 64-seed/24-side 15-year study | Robustness / verification | Prevent systematic cell-report bias from driving commitments; keep REON topology, held-out hardware/HIL data and certification as hard blockers |
 
 ---
 

@@ -166,59 +166,59 @@
     },
     {
       "year": 2,
-      "breakeven_switch_loss_pct": 3.25
+      "breakeven_switch_loss_pct": 3.24
     },
     {
       "year": 3,
-      "breakeven_switch_loss_pct": 4.59
+      "breakeven_switch_loss_pct": 4.55
     },
     {
       "year": 4,
-      "breakeven_switch_loss_pct": 5.62
+      "breakeven_switch_loss_pct": 5.57
     },
     {
       "year": 5,
-      "breakeven_switch_loss_pct": 6.6
+      "breakeven_switch_loss_pct": 6.51
     },
     {
       "year": 6,
-      "breakeven_switch_loss_pct": 7.52
+      "breakeven_switch_loss_pct": 7.41
     },
     {
       "year": 7,
-      "breakeven_switch_loss_pct": 8.38
+      "breakeven_switch_loss_pct": 8.25
     },
     {
       "year": 8,
-      "breakeven_switch_loss_pct": 9.2
+      "breakeven_switch_loss_pct": 9.01
     },
     {
       "year": 9,
-      "breakeven_switch_loss_pct": 9.97
+      "breakeven_switch_loss_pct": 9.76
     },
     {
       "year": 10,
-      "breakeven_switch_loss_pct": 10.67
+      "breakeven_switch_loss_pct": 10.45
     },
     {
       "year": 11,
-      "breakeven_switch_loss_pct": 11.36
+      "breakeven_switch_loss_pct": 11.13
     },
     {
       "year": 12,
-      "breakeven_switch_loss_pct": 12.04
+      "breakeven_switch_loss_pct": 11.79
     },
     {
       "year": 13,
-      "breakeven_switch_loss_pct": 12.7
+      "breakeven_switch_loss_pct": 12.43
     },
     {
       "year": 14,
-      "breakeven_switch_loss_pct": 13.34
+      "breakeven_switch_loss_pct": 13.04
     },
     {
       "year": 15,
-      "breakeven_switch_loss_pct": 13.96
+      "breakeven_switch_loss_pct": 13.64
     }
   ],
   "switching_energy": {

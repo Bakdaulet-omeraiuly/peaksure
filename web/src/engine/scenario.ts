@@ -1,10 +1,11 @@
 // Assemble one live scenario: a real ISO-NE peak, a battery age, and three modeled operators.
 //   A Conventional battery: fixed strings + annual pack test + full-power rule.
 //   B REON-style bypass model (schematic; EBS topology unknown): bypass + annual pack test + full-power rule (assumed policy).
-//   C REON-style bypass + PeakSure: bypass + per-cell twin + 95%-confidence commitment (+ optional VoI probes).
+//   C CES-sized bypass + PeakSure: per-cell estimator constrained by an independent annual pack-test
+//     safety envelope + 95%-confidence commitment (+ optional VoI probes).
 import { Constants, Life, PeakEvent, decodeI16, decodeU16, rnsRate } from "./data";
 import { Chem, SystemSpec, Tier, containerTemp, deliverable } from "./physics";
-import { Belief, Thermal, cellTemps, packBelief, twinBelief } from "./belief";
+import { Belief, Thermal, cellTemps, lowerEnvelope, packBelief, twinBelief } from "./belief";
 import { Decision, fixedRule, optimize } from "./decision";
 import { DischargeResult, discharge } from "./discharge";
 import { Probe, runVoi } from "./voi";
@@ -13,6 +14,7 @@ import { CommitmentSummary, summarizeCommitment } from "./commitment";
 
 export interface Knobs {
   kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss?: number;
+  eta?: number; headroom?: number;
   /** true: A uses the REON-style plant's cells at this age (pure hardware comparison on identical cells).
    *  false (default): each hardware uses its own ageing path from the same year-0 cells and random draws. */
   sameCells?: boolean;
@@ -24,6 +26,7 @@ export interface OperatorResult {
   label: string;
   qRel: Float64Array;              // true capacity / nominal
   belief: Belief;
+  rawTwinBelief?: Belief;
   beliefBeforeProbes?: Belief;
   decision: Decision;
   truthKwh: number;
@@ -46,11 +49,25 @@ export interface Scenario {
   ops: { A: OperatorResult; B: OperatorResult; C: OperatorResult };
 }
 
+export function validateModelInputs(c: Constants, life: Life, knobs: Knobs): string | null {
+  const N = c.n_series;
+  const nMin = Math.round(N * (1 - (knobs.headroom ?? c.headroom)));
+  if (!Number.isFinite(c.durations[life.duration]) || c.durations[life.duration] <= 0)
+    return `No modeled energy rating for ${life.duration}.`;
+  if (!Number.isInteger(N) || N < 1 || !Number.isInteger(c.n_strings) || c.n_strings < 1 || nMin < 1 || nMin > N)
+    return "Invalid modeled cell count or minimum active-cell count (N_min).";
+  if (c.p_max_kw <= 0 || (knobs.eta ?? c.eta) <= 0 || (knobs.eta ?? c.eta) > 1 || (knobs.switchLoss ?? c.switch_loss) < 0 || (knobs.switchLoss ?? c.switch_loss) >= 1)
+    return "Invalid modeled power, cell-to-AC efficiency, or switch loss.";
+  return null;
+}
+
 export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: number, knobs: Knobs): Scenario {
+  const invalid = validateModelInputs(c, life, knobs);
+  if (invalid) throw new Error(invalid);
   const eNom = c.durations[life.duration];
   const S = c.n_strings, N = c.n_series;
   const qNom = (eNom * 1000) / (S * N * c.v_nom);
-  const sys: SystemSpec = { nStrings: S, nSeries: N, nMin: Math.round(N * (1 - c.headroom)), eta: c.eta,
+  const sys: SystemSpec = { nStrings: S, nSeries: N, nMin: Math.round(N * (1 - (knobs.headroom ?? c.headroom))), eta: knobs.eta ?? c.eta,
                             switchLoss: knobs.switchLoss ?? c.switch_loss, pStringMax: c.p_max_kw / S, qNomAh: qNom };
   const chem: Chem = { vNom: c.v_nom, coldSlope: c.cold_slope, tChargeMin: c.t_charge_min, tDerate: c.t_derate, tMax: c.t_max };
   const tOff0 = decodeI16(life.t_off, 100);
@@ -73,7 +90,7 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
     const qRel = decodeU16((knobs.sameCells ? life.tiers.bypass[yi] : st).soh, 20000);
     const q = qRel.map((v) => v * qNom);
     const truth = deliverable(q, tier, soc0, tCell, chem, sys);
-    let belief: Belief, before: Belief | undefined, decision: Decision, probes: Probe[] = [];
+    let belief: Belief, rawTwinBelief: Belief | undefined, before: Belief | undefined, decision: Decision, probes: Probe[] = [];
     let twinMean: Float64Array | undefined, twinSd: Float64Array | undefined;
     if (key !== "C") {
       const ref = deliverable(q, tier, 1, new Float64Array(q.length).fill(25), chem, sys).energyKwh;
@@ -82,7 +99,11 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
     } else {
       twinMean = decodeU16(st.twin_mean, 20000);
       twinSd = decodeU16(st.twin_sd, 100000);
-      belief = twinBelief(twinMean, twinSd, qNom, tier, ev.t_amb_c, thBelief, chem, sys, seedBase, 128, knobs.reportBias);
+      rawTwinBelief = twinBelief(twinMean, twinSd, qNom, tier, ev.t_amb_c, thBelief, chem, sys, seedBase, 128, knobs.reportBias);
+      const ref = deliverable(q, tier, 1, new Float64Array(q.length).fill(25), chem, sys).energyKwh;
+      const independentPack = packBelief(ref, ev.month - 1, c.nominal_fade_month, c.sigma_pack_test,
+        ev.t_amb_c, thBelief, chem, sys, seedBase + 101);
+      belief = lowerEnvelope(rawTwinBelief, independentPack);
       decision = optimize(belief.samples, belief.pAvail, ev.p_hour, c.he_grid, c.alpha);
       if (knobs.probeBudget > 0) {
         before = belief;
@@ -94,7 +115,8 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
         if (probes.length) {
           twinMean = v.mean.map((m) => m / (1 + knobs.reportBias));
           twinSd = v.sd;
-          belief = twinBelief(twinMean, twinSd, qNom, tier, ev.t_amb_c, thBelief, chem, sys, seedBase, 128, knobs.reportBias);
+          rawTwinBelief = twinBelief(twinMean, twinSd, qNom, tier, ev.t_amb_c, thBelief, chem, sys, seedBase, 128, knobs.reportBias);
+          belief = lowerEnvelope(rawTwinBelief, independentPack);
           decision = optimize(belief.samples, belief.pAvail, ev.p_hour, c.he_grid, c.alpha);
         }
       }
@@ -111,10 +133,10 @@ export function buildScenario(c: Constants, life: Life, ev: PeakEvent, age: numb
     const cellsReplaced = Math.round(augKwh / cellKwh);
     const inWindow = ev.he >= decision.startHe && ev.he < decision.startHe + decision.windowH;
     const shaved = inWindow ? run.peakHourAvgKw : 0;
-    return { key, tier, label: BATTERY_NAMES[key], qRel, belief, beforeProbes: undefined,
+    return { key, tier, label: BATTERY_NAMES[key], qRel, belief, rawTwinBelief, beforeProbes: undefined,
              beliefBeforeProbes: before, decision, truthKwh: truth.energyKwh, truthPowerKw: truth.powerKw, run,
              shavedKw: shaved, valueUsd: shaved * rate, probes, twinMean, twinSd, limiting: truth.limiting, drain, cellsReplaced,
-             commitment: summarizeCommitment(decision, belief, c.p_max_kw, eNom, c.eta) } as OperatorResult;
+             commitment: summarizeCommitment(decision, belief, c.p_max_kw, eNom, sys.eta) } as OperatorResult;
   };
 
   return { event: ev, age, calYear, durationKey: life.duration, eNom, qNom, sys, chem, tCell, tContainer: tCont,

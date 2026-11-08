@@ -4,8 +4,7 @@ import { Scenario, OperatorResult } from "@/engine/scenario";
 import { Constants, fetchJson } from "@/engine/data";
 import { useStudio } from "@/state/store";
 import { BATTERY_NAMES, BATTERY_SHORT } from "@/engine/labels";
-import { cellState } from "@/engine/cellview";
-import { heClock } from "@/engine/commitment";
+import { commitmentEnergy, commitmentFeasibility, heClockRange } from "@/engine/commitment";
 
 const usd = (x: number) => (Math.abs(x) >= 1000 ? `$${(x / 1000).toFixed(1)}K` : `$${x.toFixed(0)}`);
 const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(Math.floor(m % 60)).padStart(2, "0")}`;
@@ -21,6 +20,8 @@ function Section({ title, right, children }: { title: string; right?: React.Reac
 
 function Commit({ op, sc, minute }: { op: OperatorResult; sc: Scenario; minute: number }) {
   const d = op.decision;
+  const needed = commitmentEnergy(d);
+  const actual = commitmentFeasibility(d, op.truthKwh, op.truthPowerKw);
   const color = op.key === "A" ? "var(--conv)" : "var(--accent)";
   const peakEnd = sc.event.he * 60;
   const decided = minute >= peakEnd;
@@ -29,22 +30,29 @@ function Commit({ op, sc, minute }: { op: OperatorResult; sc: Scenario; minute: 
     <div className="rounded-md border border-line bg-panel-2 p-2.5" style={{ borderLeft: `3px solid ${color}` }}>
       <div className="text-[12px] font-semibold" style={{ color }}>{op.label}</div>
       <div className="num text-[25px] font-semibold tracking-tight mt-2">{Math.round(d.powerKw).toLocaleString()} <span className="text-muted text-[12px] font-normal">kW</span></div>
-      <div className="text-[12px] text-muted mt-1">{d.windowH} h window · HE{d.startHe}{d.windowH > 1 ? `–${d.startHe + d.windowH - 1}` : ""} ({heClock(d.startHe).slice(0, 5)}–{heClock(d.startHe + d.windowH - 1).slice(6)})</div>
-      <div className="text-[12px] text-muted num">energy {Math.round(d.powerKw).toLocaleString()} kW × {d.windowH} h = <b className="text-ink">{Math.round(op.commitment.energyKwh).toLocaleString()} kWh</b> (AC)</div>
-      {op.commitment.status !== "feasible" && op.commitment.status !== "no-commitment" && <div className="text-[11.5px] text-error">{op.commitment.status === "exceeds-rated" ? "Infeasible: above rated energy" : "Above the operator's own P5 belief"}</div>}
+      <div className="grid grid-cols-[1fr_auto] gap-x-2 text-[11.5px] text-muted mt-1 num">
+        <span>Commitment power</span><span>{Math.round(d.powerKw).toLocaleString()} kW</span>
+        <span>Commitment duration</span><span>{d.windowH} h</span>
+        <span>Commitment energy</span><span>{Math.round(needed).toLocaleString()} kWh</span>
+        <span>Window (hour ending)</span><span>HE{d.startHe}–HE{d.startHe + d.windowH - 1}</span>
+        <span>Clock interval</span><span>{heClockRange(d)}</span>
+        <span>Forecast P5 · AC model</span><span>{Math.round(op.belief.p5).toLocaleString()} kWh</span>
+        <span>Actual · simulated AC</span><span>{Math.round(op.truthKwh).toLocaleString()} kWh</span>
+      </div>
+      {d.powerKw > 0 && (!actual.energyOk || !actual.powerOk) && <div role="status" className="text-[11px] text-error mt-1">Full commitment exceeds this simulated realization ({!actual.energyOk ? "energy" : "power"} limit); delivered power below shows the outcome.</div>}
       <div className="mt-1.5 pt-1.5 border-t border-line text-[12px] flex justify-between">
         {decided ? (
-          <><span style={{ color: hit ? "var(--ok)" : "var(--error)" }} title="Value uses the kW actually delivered in the actual peak hour, not the committed kW">{hit ? `Delivered ${Math.round(op.shavedKw).toLocaleString()} kW in HE${sc.event.he}` : "Missed the peak hour"}</span>
-            <span className="num" title={`${Math.round(op.shavedKw)} kW × $${sc.rateUsdPerKw.toFixed(2)}/kW (RNS month${sc.event.is_annual ? " + FCA annual" : ""})`}>{usd(op.valueUsd)}</span></>
+          <><span style={{ color: hit ? "var(--ok)" : "var(--error)" }}>{d.powerKw <= 0 ? "No commitment" : hit ? `Shaved ${Math.round(op.shavedKw).toLocaleString()} kW at the peak` : "Missed the peak hour"}</span>
+            <span className="num">{usd(op.valueUsd)}</span></>
         ) : <span className="text-faint">awaiting peak hour HE{sc.event.he}</span>}
       </div>
     </div>
   );
 }
 
-function BeliefChart({ sc, baseline, revealed }: { sc: Scenario; baseline: "A" | "B"; revealed: boolean }) {
+function BeliefChart({ sc, baseline }: { sc: Scenario; baseline: "A" | "B" }) {
   const ops = [sc.ops[baseline], sc.ops.C];
-  const qs = ops.flatMap((o) => { const v = [...o.belief.samples].sort((a, b) => a - b); return revealed ? [v[0], v[v.length - 1], o.truthKwh] : [v[0], v[v.length - 1]]; });
+  const qs = ops.flatMap((o) => { const v = [...o.belief.samples].sort((a, b) => a - b); return [v[0], v[v.length - 1], o.truthKwh]; });
   const lo = Math.min(...qs) * 0.985, hi = Math.max(...qs) * 1.01;
   const W = 272, H = 132, X = (v: number) => 10 + ((Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo)) * (W - 20);
   const row = (o: OperatorResult, y: number, color: string, label: string) => {
@@ -59,7 +67,7 @@ function BeliefChart({ sc, baseline, revealed }: { sc: Scenario; baseline: "A" |
         {counts.map((n, i) => <rect key={i} x={10 + i * bw} y={y - (n / mx) * 24} width={Math.max(bw - 0.6, 0.6)} height={(n / mx) * 24} fill={color} opacity={0.8} />)}
         <line x1={10} x2={W - 10} y1={y} y2={y} stroke="#2e353d" />
         <line x1={X(o.belief.p5)} x2={X(o.belief.p5)} y1={y - 28} y2={y + 2} stroke={color} strokeDasharray="2 2" />
-        {revealed && <line x1={X(o.truthKwh)} x2={X(o.truthKwh)} y1={y - 30} y2={y + 3} stroke="#f0736a" strokeWidth={2} />}
+        <line x1={X(o.truthKwh)} x2={X(o.truthKwh)} y1={y - 30} y2={y + 3} stroke="#f0736a" strokeWidth={2} />
         {ce >= lo ? <path d={`M${X(ce)},${y + 3} l4,5 l-4,5 l-4,-5 z`} fill="#e8eaed" />
                   : <text x={10} y={y + 12} fontSize={10} fill="#e8eaed">&#9664; committed {Math.round(ce).toLocaleString()} kWh (power-limited)</text>}
       </g>
@@ -69,10 +77,10 @@ function BeliefChart({ sc, baseline, revealed }: { sc: Scenario; baseline: "A" |
     <div>
       <svg width={W} height={H} className="block">
         {row(sc.ops[baseline], 52, "#9aa6b8", `${BATTERY_SHORT[baseline]}: annual pack test`)}
-        {row(sc.ops.C, 116, "#7bd88f", `${BATTERY_SHORT.C}: per-cell twin`)}
+        {row(sc.ops.C, 116, "#7bd88f", `${BATTERY_SHORT.C}: twin + pack safety envelope`)}
       </svg>
       <div className="flex justify-between text-[10.5px] text-faint num"><span>{Math.round(lo).toLocaleString()} kWh</span><span>{Math.round(hi).toLocaleString()} kWh</span></div>
-      <div className="text-[10.5px] text-faint mt-1">{revealed ? "red: simulated truth (revealed after the peak)" : "simulated truth hidden until the peak hour has passed"} &middot; dashed: believed P5 &middot; diamond: committed energy</div>
+      <div className="text-[10.5px] text-faint mt-1">red: truth &middot; dashed: believed P5 &middot; diamond: committed energy</div>
     </div>
   );
 }
@@ -105,13 +113,16 @@ export default function Inspector({ sc, c, baseline }: { sc: Scenario; c: Consta
     const f = Math.min(Math.max(Math.floor(minute) - op.run.startMin, 0), op.run.nFrames - 1);
     return { op, i, soh: op.qRel[i], soc: op.run.soc[f * op.qRel.length + i], t: op.run.temp[f * op.qRel.length + i],
              act: op.run.active[f * op.qRel.length + i], tm: op.twinMean?.[i], ts: op.twinSd?.[i],
-             lim: op.key === "A" && op.limiting?.[hover.string] === hover.cell,
-             state: cellState(op.run, op.tier, f, i, N, 8) };
+             lim: op.key === "A" && op.limiting?.[hover.string] === hover.cell };
   })() : null;
 
   return (
     <aside className="studio-inspector surface min-w-0 overflow-hidden">
       <div className="panel-h"><span className="micro">Peak commitment</span></div>
+      <div className="px-3 pt-3 text-[11px] text-muted leading-relaxed">
+        <b>System rating:</b> {(c.p_max_kw / 1000).toFixed(1)} MW / {(sc.eNom / 1000).toFixed(1)} MWh nominal model input ({sc.durationKey} nameplate ratio{sc.durationKey === "2h" ? ", CES-sized" : ", hypothetical"}).
+        <br /><b>Age:</b> year {sc.age} of battery simulation · calendar year {sc.calYear}. <b>Peak:</b> HE{sc.event.he} on {sc.event.date}; HE means hour ending.
+      </div>
       <div className="p-3 flex flex-col gap-2">
         <Commit op={sc.ops[baseline]} sc={sc} minute={minute} />
         <Commit op={sc.ops.C} sc={sc} minute={minute} />
@@ -124,11 +135,11 @@ export default function Inspector({ sc, c, baseline }: { sc: Scenario; c: Consta
       </div>
       <details className="disclosure"><summary>Technical diagnostics</summary>
       <Section title="Deliverable energy: belief vs truth">
-        <BeliefChart sc={sc} baseline={baseline} revealed={minute >= sc.event.he * 60} />
+        <BeliefChart sc={sc} baseline={baseline} />
       </Section>
       <Section title="Live telemetry" right={<span className="num text-[11px] text-faint">{fmt(minute)}</span>}>
         <table className="w-full text-[11.5px] num">
-          <thead><tr className="text-faint"><td></td><td className="text-right">{baseline === "A" ? "A · Conv." : "B · EBS"}</td><td className="text-right">C · EBS + PeakSure</td></tr></thead>
+          <thead><tr className="text-faint"><td></td><td className="text-right">{baseline === "A" ? "A · Conv." : "B · Bypass"}</td><td className="text-right">C · + PeakSure</td></tr></thead>
           <tbody>
             {[["Power kW", Math.round(tA.p).toLocaleString(), Math.round(tC.p).toLocaleString()],
               ["Delivered kWh", Math.round(tA.e).toLocaleString(), Math.round(tC.e).toLocaleString()],
@@ -160,19 +171,19 @@ export default function Inspector({ sc, c, baseline }: { sc: Scenario; c: Consta
       <Section title="Model mismatch" right={<span className="num text-[11px] text-faint">bias {(reportBias * 100).toFixed(0)}%</span>}>
         <input type="range" min={0} max={0.03} step={0.01} value={reportBias} onChange={(e) => set({ reportBias: +e.target.value })} />
         <div className="text-[11.5px] text-muted mt-1 leading-snug">
-          Systematic error in per-cell capacity reports. Monte Carlo: twin P5 miss rate {sysMiss ? <b className="num text-ink">{(sysMiss.miss * 100).toFixed(1)}%</b> : "n/a"} (target 5%).
-          {reportBias > 0 ? " Systematic bias can make this live twin overconfident. The independent pack-test safety envelope is evaluated separately in Findings." : ""}
+          Systematic error in per-cell capacity reports. Monte Carlo: guarded PeakSure P5 miss rate {sysMiss ? <b className="num text-ink">{(sysMiss.miss * 100).toFixed(1)}%</b> : "n/a"} (maximum target 5%).
+          {reportBias > 0 ? " The live commitment is constrained by the independent annual pack-test safety envelope; the raw twin remains diagnostic only." : " The production candidate uses the lower of the cell-twin and independent pack-test beliefs."}
         </div>
       </Section>
       {hoverInfo && (
         <Section title={`Cell ${hover!.string + 1}-${hover!.cell + 1} · ${hoverInfo.op.label}`}>
           <div className="grid grid-cols-2 text-[11.5px] num gap-y-0.5">
-            <span className="text-faint font-sans">simulated true health</span><span className="text-right">{minute >= sc.event.he * 60 ? `${(hoverInfo.soh * 100).toFixed(1)}%` : "hidden until after the peak"}</span>
+            <span className="text-faint font-sans">state of health</span><span className="text-right">{(hoverInfo.soh * 100).toFixed(1)}%</span>
             <span className="text-faint font-sans">charge now</span><span className="text-right">{(hoverInfo.soc * 100).toFixed(0)}%</span>
             <span className="text-faint font-sans">temperature</span><span className="text-right">{hoverInfo.t.toFixed(1)} C</span>
-            <span className="text-faint font-sans">status</span><span className="text-right">{{ charged: "in path", culprit: "emptiest cell: stopped its string", bypassed: "bypassed (string still running)", stranded: "string stopped, charge left", empty: "empty, string stopped" }[hoverInfo.state]}</span>
-            {hoverInfo.tm !== undefined && <><span className="text-faint font-sans">twin belief (what C sees)</span><span className="text-right">{(hoverInfo.tm * 100).toFixed(1)} ± {((hoverInfo.ts ?? 0) * 100).toFixed(1)}%</span></>}
-            {hoverInfo.lim && <span className="col-span-2 text-error font-sans">weakest cell: limits its whole string (fixed wiring)</span>}
+            <span className="text-faint font-sans">status</span><span className="text-right">{hoverInfo.act ? "in path" : "bypassed / off"}</span>
+            {hoverInfo.tm !== undefined && <><span className="text-faint font-sans">twin estimate</span><span className="text-right">{(hoverInfo.tm * 100).toFixed(1)} ± {((hoverInfo.ts ?? 0) * 100).toFixed(1)}%</span></>}
+            {hoverInfo.lim && <span className="col-span-2 text-error font-sans">limits its whole string</span>}
           </div>
         </Section>
       )}

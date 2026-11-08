@@ -12,8 +12,8 @@ It compares four setups on the same cells, with the same random draws:
 | ID | Hardware | Belief | Commitment rule |
 |---|---|---|---|
 | **A** | fixed series strings | annual pack test | full-power rule |
-| **B** | REON bypass | annual pack test | full-power rule |
-| **C** | REON bypass | per-cell Kalman twin | 95% chance-constrained commitment |
+| **B** | assumed cell bypass at CES/CESS nameplate size | annual pack test | full-power rule |
+| **C** | same assumed bypass | per-cell Kalman estimator | 95% chance-constrained commitment |
 | **D** | as C | as C | as C, plus value-of-information (VoI) probes |
 
 - Live demo: https://peaksure-energy.vercel.app
@@ -52,7 +52,7 @@ cd web && vercel deploy --prod --yes             # deploy (project peaksure-ener
 4. **Honesty over hype.**
    - Report null and negative results.
    - Keep the decision-rule effect separate from REON hardware value (Shapley decomposition in `econ.decomposition`).
-   - Label each parameter CONFIRMED / LIT / DERIVED / ASSUMED in `config.py`.
+   - Label each parameter CONFIRMED / REON CLAIM / LIT / DERIVED / ASSUMED / UNKNOWN in `config.py`.
    - Never claim grid-CO₂ savings.
    - Present REON's "2–4×" only as a company claim.
    - Never call the simulator hardware validation.
@@ -61,9 +61,9 @@ cd web && vercel deploy --prod --yes             # deploy (project peaksure-ener
 7. **Do not commit** raw third-party data (REON brief PDFs, ISO-NE xlsx, papers); see `.gitignore`.
 
 ## Current findings (see `RESULTS.md` for numbers)
-- On REON's 2-h CES doing coincident-peak duty, cell-level value is **near zero**: peak timing dominates, and energy rarely binds.
+- On the 2-h CES/CESS-sized hypothetical cell-bypass model doing coincident-peak duty, cell-level value is **near zero**: peak timing dominates, and energy rarely binds. REON's CES/CESS internal topology and chemistry are unknown.
 - It pays with cell faults, weak or failing cooling, 1-h systems and 4-h systems.
-- Since the TUM ageing fit (Addendum §AH), the cell twin is **over-confident even in the base case** (P5 miss 9.8% vs 5% target; open fix: retune process noise), and it breaks under **systematic** bias. The exploratory independent pack-test safety envelope reduces misses in the simulated bias study; the diagnostic alert is imperfect and hardware validation is open.
+- The raw cell twin is **over-confident even in the base case** and breaks under systematic bias, so it is diagnostic only. Production candidate C/D now use the sample-wise lower envelope of the twin and an independent annual pack-test belief. The full validation matrix passes the simulated 5% P5-miss and 95% full-delivery gates; hardware validation remains blocked pending REON topology and held-out/HIL data (`VALIDATION.md`).
 - Mixed-age cohorts and lifetime resting-SOC policies are exploratory synthetic studies (§AG, RESULTS §T6). Do not claim a measured lifetime or efficiency gain.
 - VoI probes pay in only ~4% of peaks; PeakSure skips the rest.
 - **Switch loss = I·R_on / V_cell** is first-order (each cell's switch carries the full string current, ~420 A at 8 strings).

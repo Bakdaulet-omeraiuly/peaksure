@@ -16,10 +16,10 @@ export interface EbsScenarioFile {
 
 export type EbsCellState = "normal" | "approaching" | "limiting" | "bypassed" | "idle";
 export const EBS_STATE_COLOR: Record<EbsCellState, string> = {
-  normal: "#3fbf7f", approaching: "#e8c547", limiting: "#ef4a3c", bypassed: "#8a949c", idle: "#33414a",
+  normal: "#3fbf7f", approaching: "#4aa3ff", limiting: "#ef4a3c", bypassed: "#8a949c", idle: "#33414a",
 };
 export const EBS_STATE_LABEL: Record<EbsCellState, string> = {
-  normal: "normal (in circuit)", approaching: "approaching empty (< 15% charge, in circuit)",
+  normal: "normal (in circuit)", approaching: "reserve threshold (< 15% charge, controller action due)",
   limiting: "limiting: empty cell that stopped the fixed string", bypassed: "bypassed (string still running)",
   idle: "idle: block stopped, charge left in cell",
 };

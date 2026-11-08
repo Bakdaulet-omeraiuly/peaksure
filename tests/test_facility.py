@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from peaksure.facility import G2_DEMAND_USD_PER_KW_MONTH, demand_target, peak_day, validate
+from peaksure.facility import G2_DEMAND_USD_PER_KW_MONTH, continuity_schedule, demand_target, peak_day, validate
 
 ROOT = Path(__file__).resolve().parents[1]
 SAMPLE = ROOT / "web/public/data/sample_facility_load_SYNTHETIC.csv"
@@ -84,3 +84,26 @@ def test_sample_target_fixture_matches_typescript():
         t = demand_target(day.values, 1.0, case["energy_kwh"], case["power_kw"])
         assert t.target_kw == pytest.approx(case["target_kw"], abs=1e-6)
         assert t.energy_kwh == pytest.approx(case["need_kwh"], abs=1e-6)
+
+
+def test_continuity_preserves_reserve_and_recharges_without_a_rebound_peak():
+    load = np.array([20.0] * 24)
+    load[14:17] = [42, 48, 40]
+    discharge = np.maximum(load - 30, 0)
+    p = continuity_schedule(load, discharge, 1.0, initial_kwh=50, reserve_kwh=10,
+                            target_kw=30, charge_power_kw=30, charge_efficiency=0.96)
+    assert p.dispatch_shortfall_kwh == pytest.approx(0)
+    assert p.min_stored_kwh >= 10 - 1e-9
+    assert max(p.grid_kw) <= 30 + 1e-9
+    assert p.served_intervals == 24
+    assert "discharge" in p.modes and "charge" in p.modes and "standby" in p.modes
+
+
+def test_continuity_grid_backfills_if_reserve_would_be_crossed():
+    load = np.array([50.0, 50.0])
+    p = continuity_schedule(load, np.array([30.0, 30.0]), 1.0, initial_kwh=20,
+                            reserve_kwh=10, target_kw=50, charge_power_kw=0)
+    assert p.discharged_kwh == pytest.approx(10)
+    assert p.dispatch_shortfall_kwh == pytest.approx(50)
+    assert p.min_stored_kwh == pytest.approx(10)
+    assert p.grid_kw == pytest.approx([40, 50])

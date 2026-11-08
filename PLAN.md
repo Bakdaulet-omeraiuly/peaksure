@@ -1,5 +1,7 @@
 # PeakSure: Build Plan
 
+> **Current interpretation (2026-11-07):** This historical plan uses “CES” and older assumed topology language. The current REON hardware page calls the grid product “CESS” (up to 2.5 MW / 5 MWh); a project-cited REON PDF calls it “CES” and says 480 V three-phase AC. Main simulator chemistry, 8 × 240 model units, N_min, losses, and cell-side interpretation of 5 MWh are assumptions. See Addendum §AK and the generated Results for current labels and limitations.
+
 > One-liner: Massachusetts towns buy batteries to hit one hour a year. PeakSure uses REON's cell-level intelligence to make sure the battery delivers in that hour, and puts a dollar value on that certainty.
 
 **Docs**

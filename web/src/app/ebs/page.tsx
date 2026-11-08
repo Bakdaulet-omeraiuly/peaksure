@@ -1,13 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import AppBar from "@/components/AppBar";
 import data from "../../../public/data/ebs.json";
 
-const EBSPair3D = dynamic(() => import("@/components/EBSPair3D"), { ssr: false });
+const EBSBlock3D = dynamic(() => import("@/components/EBSBlock3D"), { ssr: false });
 import EBSScenario from "@/components/EBSScenario";
-import PilotWorkflow from "@/components/PilotWorkflow";
 
 const fmt = (v: number, digits = 0) => v.toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits });
 const W = 600, H = 190, L = 42, T = 12, IW = W - L - 18, IH = H - T - 30;
@@ -15,13 +14,22 @@ const X = (minute: number) => L + minute / 240 * IW;
 const Y = (power: number) => T + IH * (1 - power / (data.assumptions.blocks * data.assumptions.block_kw));
 
 export default function EBS() {
-  const [weak, setWeak] = useState(1);
+  const [weak, setWeak] = useState(0.8);
   const [floor, setFloor] = useState(300);
   const [minute, setMinute] = useState(0);
   const [playing, setPlaying] = useState(false);
   const row = data.rows.find((r) => r.weak_factor === weak && r.dc_floor_v === floor)!;
   const tick = row.fixed.power_trace.find((p) => p.minute === minute)!;
   const tickB = row.bypass.power_trace.find((p) => p.minute === minute)!;
+  // Weak cell of block 1 comes from the simulation: the cell the bypass case switches out,
+  // otherwise the lowest-charge cell when the fixed string stops.
+  const weakCell = useMemo(() => {
+    const dec = (b: string) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0));
+    for (const f of row.bypass.power_trace) { const i = dec(f.active_b64).indexOf(0); if (i >= 0) return i; }
+    const online = row.fixed.power_trace.filter((f) => f.block_online);
+    const soc = dec((online[online.length - 1] ?? row.fixed.power_trace[0]).soc_b64);
+    let k = 0; soc.forEach((v, i) => { if (v < soc[k]) k = i; }); return k;
+  }, [row]);
 
   useEffect(() => {
     if (!playing) return;
@@ -37,7 +45,6 @@ export default function EBS() {
     <div className="eyebrow mb-3">EBS · block simulation</div>
     <h1 className="page-title mb-3">EBS: conventional vs REON-style cell bypass</h1>
     <p className="text-[13px] text-muted leading-relaxed max-w-[850px] mb-4">REON&apos;s hardware page lists the EBS line at <b>30 kW / 60 kWh</b> with Na+ (sodium-ion) and Li+ (lithium) variants. It does not say which variant that rating describes, whether it is rated or usable energy, or on which side of the inverter it is measured. Na+ claims (20,000 cycles; −40 to +140 °F) come without test conditions. Li+ is only described as &ldquo;more than twice the energy in the same form factor&rdquo;, so it is not simulated. Cell count, N_min, DC floor, switch resistance and efficiency below are model assumptions. This is a simulation, not REON hardware validation.</p>
-    <PilotWorkflow />
     <EBSScenario />
     <div className="eyebrow mb-3 mt-6">Fleet sensitivity · 84 blocks · drain at rated power</div>
     <p className="text-[14px] text-muted leading-relaxed max-w-[850px] mb-5">A separate exploratory model of {data.assumptions.blocks} independent Na+ EBS-size blocks, rated {fmt(data.assumptions.blocks * data.assumptions.block_kw / 1000, 2)} MW / {fmt(data.assumptions.blocks * 60 / 1000, 2)} MWh together. Both cases discharge the <b>same generated cells</b> at {data.assumptions.block_kw} kW per block: a fixed string stops at its first empty cell; bypass switches that cell out while voltage and the minimum active-cell count allow it.</p>
@@ -48,7 +55,7 @@ export default function EBS() {
       <button className="btn btn-accent" onClick={replay}>Replay discharge</button>
     </div><p className="text-[11px] text-faint mt-3">These are sensitivity inputs for the cell count and converter. The 750 V option tests what happens if a 120-cell block is connected directly to that inverter floor.</p></div>
 
-    <section className="mb-4"><EBSPair3D a={{ frame: tick, bypass: false, title: "A · Conventional battery", sub: "fixed series string", status: minute === 0 ? "start" : tick.block_online ? "running" : "STOPPED" }} b={{ frame: tickB, bypass: true, title: "B · REON-style EBS model", sub: "cell bypass (schematic)", status: minute === 0 ? "start" : tickB.block_online ? "running" : "STOPPED" }} started={minute > 0} diagnosisCell={null} difference={false} /><p className="text-[11px] text-faint mt-2">Block 1 of {data.assumptions.blocks} from each case, using the simulation&apos;s cell charge and switch states at t+{minute} min. The charts and totals below cover all {data.assumptions.blocks} blocks.</p></section>
+    <section className="surface p-4 mb-4"><div className="eyebrow mb-2">Detailed 3D battery · synchronized simulation state</div><EBSBlock3D fixed={tick} bypass={tickB} weakCell={weakCell} minute={minute} /><p className="text-[11px] text-faint mt-2">Block 1 of {data.assumptions.blocks}; 3D cells, bypass switches, busbars, cooling plate and BMS layers follow the shared simulation timeline.</p></section>
 
     <section className="surface p-4 mb-4 text-[12px] leading-relaxed text-muted" aria-live="polite"><span className="micro block mb-1">What this setting demonstrates</span>
       {row.fixed.energy_kwh === 0 && row.bypass.energy_kwh === 0

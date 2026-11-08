@@ -5,7 +5,7 @@ import { useStudio } from "@/state/store";
 
 interface YearRow { year: number; reon_usd: number; peaksure_usd: number; delta_usd: number; delta_lo_usd: number; delta_hi_usd: number; reon_capture: number; peaksure_capture: number }
 interface YearData { n_runs: number; rows: YearRow[] }
-const money = (v: number) => `${v < 0 ? "−" : v > 0 ? "+" : ""}$${Math.round(Math.abs(v) / 1000).toLocaleString()}k`;
+const money = (v: number) => `${v < 0 ? "−" : v > 0 ? "+" : ""}$${Math.abs(v) < 500 ? Math.round(Math.abs(v)).toLocaleString() : `${Math.round(Math.abs(v) / 1000).toLocaleString()}k`}`;
 
 export default function YearlyCompare() {
   const [data, setData] = useState<YearData | null>(null);
@@ -25,10 +25,10 @@ export default function YearlyCompare() {
       <div className="panel-h"><span className="micro">15-year modeled comparison</span><span className="badge">{data.n_runs} paired runs</span></div>
       <div className="p-4">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2 text-[12px] text-muted">
-          <span>B · REON-style bypass versus C · REON-style + PeakSure · annual savings</span>
-          <span className="num">Year {selected.year}: B · EBS ${Math.round(selected.reon_usd / 1000)}k · C · EBS + PeakSure ${Math.round(selected.peaksure_usd / 1000)}k · Δ {money(selected.delta_usd)}</span>
+          <span>B · CES-sized bypass model versus C · same model + PeakSure · annual savings</span>
+          <span className="num">Year {selected.year}: B · bypass ${Math.round(selected.reon_usd / 1000)}k · C · + PeakSure ${Math.round(selected.peaksure_usd / 1000)}k · Δ {money(selected.delta_usd)}</span>
         </div>
-        <div className="overflow-x-auto"><svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[600px]" role="img" aria-label="Annual modeled savings: REON EBS baseline versus REON EBS with PeakSure">
+        <div className="overflow-x-auto"><svg viewBox={`0 0 ${W} ${H}`} className="w-full min-w-[600px]" role="img" aria-label="Annual modeled savings: CES-sized bypass baseline versus bypass with PeakSure">
           {[0, 0.5, 1].map((f) => { const v = lo + (hi - lo) * f; return <g key={f}><line x1={left} x2={W-right} y1={y(v)} y2={y(v)} stroke="#e3e9e5"/><text x={left-7} y={y(v)+4} textAnchor="end" fontSize="10" fill="#718178">${Math.round(v / 1000)}k</text></g>; })}
           <path d={path("reon_usd")} fill="none" stroke="#85949c" strokeWidth="2" />
           <path d={path("peaksure_usd")} fill="none" stroke="#16825b" strokeWidth="2" />
@@ -40,8 +40,8 @@ export default function YearlyCompare() {
             <text x={x(i)} y={H-9} textAnchor="middle" fontSize="10" fill={r.year === age ? "#16825b" : "#718178"}>{r.year}</text>
           </g>)}
         </svg></div>
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-muted mt-1"><span>● B · REON-style bypass</span><span className="text-[#16825b]">● C · REON-style + PeakSure</span><span>Click a year to update both modeled batteries above.</span></div>
-        <p className="text-[11px] text-faint mt-2">Annual values average {data.n_runs} paired simulations. The REON baseline control rule is assumed; this is not measured REON performance. Positive and negative differences are shown.</p>
+        <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-muted mt-1"><span>● B · CES-sized bypass model</span><span className="text-[#16825b]">● C · bypass + PeakSure</span><span>Click a year to update both modeled batteries above.</span></div>
+        <p className="text-[11px] text-faint mt-2">Annual values average {data.n_runs} paired simulations. The bypass hardware and baseline control rule are assumed; this is not measured REON performance. Positive, zero and negative differences are shown.</p>
       </div>
     </section>
   );

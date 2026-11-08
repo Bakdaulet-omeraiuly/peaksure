@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { demandTarget, peakDay, recommend, plantCheck, validate, G2 } from "./facility";
+import { continuitySchedule, demandTarget, peakDay, recommend, plantCheck, validate, G2 } from "./facility";
 import { EbsScenarioFile } from "./ebsScenario";
 
 const root = path.resolve(__dirname, "../../public/data");
@@ -89,5 +89,21 @@ describe("demand target", () => {
     expect(G2.usdPerKwMonth).toBe(15.24);
     expect(E.demand_charge["G-2"]).toBe(G2.usdPerKwMonth);
     expect(E.flags.demand_charge[0]).toBe("CONFIRMED");
+  });
+  it("keeps an operating reserve and recharges off-peak without a rebound peak", () => {
+    const load = Array(24).fill(20); load.splice(14, 3, 42, 48, 40);
+    const discharge = load.map((v) => Math.max(0, v - 30));
+    const p = continuitySchedule(load, discharge, 1, 50, 10, 30, 30, 0.96);
+    expect(p.dispatchShortfallKwh).toBeCloseTo(0, 9);
+    expect(p.minStoredKwh).toBeGreaterThanOrEqual(10 - 1e-9);
+    expect(Math.max(...p.gridKw)).toBeLessThanOrEqual(30 + 1e-9);
+    expect(new Set(p.modes)).toEqual(new Set(["standby", "discharge", "charge"]));
+  });
+  it("lets the grid backfill instead of crossing the battery reserve", () => {
+    const p = continuitySchedule([50, 50], [30, 30], 1, 20, 10, 50, 0);
+    expect(p.dischargedKwh).toBeCloseTo(10, 9);
+    expect(p.dispatchShortfallKwh).toBeCloseTo(50, 9);
+    expect(p.minStoredKwh).toBeCloseTo(10, 9);
+    expect(p.gridKw).toEqual([40, 50]);
   });
 });

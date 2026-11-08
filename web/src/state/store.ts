@@ -6,8 +6,9 @@ export type ColorMode = "soc" | "soh" | "temp" | "sd" | "diff";
 export interface HoverCell { op: "A" | "B" | "C"; string: number; cell: number }
 
 interface StudioState {
-  eventIdx: number; age: number; duration: "1h" | "2h" | "4h"; seed: number;
-  kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss: number; sameCells: boolean;
+  eventIdx: number; age: number; duration: "1h" | "2h" | "3h" | "4h"; seed: number;
+  kHvac: number; sigmaT: number; probeBudget: number; reportBias: number; switchLoss: number;
+  eta: number; headroom: number; sameCells: boolean;
   colorMode: ColorMode; town: string;
   baseline: "A" | "B";
   view: "peak" | "drain"; drainMin: number; drainPlaying: boolean;
@@ -18,7 +19,8 @@ interface StudioState {
 
 export const useStudio = create<StudioState>((set) => ({
   eventIdx: -1, age: 9, duration: "2h", seed: 0,
-  kHvac: 0.25, sigmaT: 2.5, probeBudget: 0, reportBias: 0, switchLoss: 0.01, sameCells: false,
+  kHvac: 0.25, sigmaT: 2.5, probeBudget: 0, reportBias: 0, switchLoss: 0.01,
+  eta: 0.96, headroom: 0.10, sameCells: false,
   colorMode: "soc", town: "Sterling",
   baseline: "B",
   view: "peak", drainMin: 0, drainPlaying: false,

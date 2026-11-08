@@ -34,9 +34,11 @@ export default function SiteScene3D({ loadKw, batteryKw, gridKw, targetKw, hourL
   useEffect(() => { try { const c = document.createElement("canvas"); setWebgl(!!(c.getContext("webgl2") || c.getContext("webgl"))); } catch { setWebgl(false); } }, []);
   const scale = Math.max(loadKw, 1);
   const over = gridKw > targetKw + 0.05;
+  const discharging = batteryKw > 0.05, charging = batteryKw < -0.05, batteryFlow = Math.abs(batteryKw);
+  const batteryMode = discharging ? `discharging ${batteryFlow.toFixed(1)} kW` : charging ? `charging ${batteryFlow.toFixed(1)} kW` : "online · standby";
   if (!webgl) return <div className="rounded-lg bg-[#0b1418] text-[#dfe8ea] p-4 text-[12px] num">
     <div className="font-semibold mb-1">Site at {hourLabel} ({label})</div>
-    Grid → meter {gridKw.toFixed(1)} kW · facility load {loadKw.toFixed(1)} kW · battery discharge {batteryKw.toFixed(1)} kW · demand target {targetKw.toFixed(1)} kW
+    Grid → meter {gridKw.toFixed(1)} kW · facility load {loadKw.toFixed(1)} kW · battery {batteryMode} · demand target {targetKw.toFixed(1)} kW
     <div className="text-[#93a6ab] mt-1">Schematic; 3D graphics unavailable.</div></div>;
   return <div className="relative h-[300px] sm:h-[340px] rounded-lg overflow-hidden bg-[#0b1418]">
     <Canvas camera={{ position: [0, 5.2, 12.5], fov: 40 }} dpr={[1, 2]}>
@@ -57,13 +59,13 @@ export default function SiteScene3D({ loadKw, batteryKw, gridKw, targetKw, hourL
       <mesh position={[0.3, 0.75, 1.9]}><boxGeometry args={[0.9, 1.5, 0.7]} /><meshStandardMaterial color="#2f7d5a" /></mesh>
       <Flow from={[-5.6, 2.6, 0]} to={[-3, 0.9, 0]} kw={gridKw} color="#7fb2ff" scale={scale} />
       <Flow from={[-3, 0.9, 0]} to={[0.5, 0.9, 0]} kw={gridKw} color="#7fb2ff" scale={scale} />
-      <Flow from={[0.3, 1.5, 1.9]} to={[-1.0, 0.9, 1.9]} kw={batteryKw} color="#5fd39a" scale={scale} />
-      <Flow from={[-1.0, 0.9, 1.9]} to={[0.5, 0.9, 0.1]} kw={batteryKw} color="#5fd39a" scale={scale} />
+      <Flow from={charging ? [-1.0, 0.9, 1.9] : [0.3, 1.5, 1.9]} to={charging ? [0.3, 1.5, 1.9] : [-1.0, 0.9, 1.9]} kw={batteryFlow} color={charging ? "#5fa9e6" : "#5fd39a"} scale={scale} />
+      <Flow from={charging ? [0.5, 0.9, 0.1] : [-1.0, 0.9, 1.9]} to={charging ? [-1.0, 0.9, 1.9] : [0.5, 0.9, 0.1]} kw={batteryFlow} color={charging ? "#5fa9e6" : "#5fd39a"} scale={scale} />
       <Tag p={[-5.0, 2.85, 0]}>Utility grid<br />{gridKw.toFixed(1)} kW import</Tag>
       <Tag p={[-3.2, 2.1, 0]}>Revenue meter<br />G-2 bills 15-min peak</Tag>
       <Tag p={[2.6, 2.75, -0.6]}>Facility load {loadKw.toFixed(1)} kW<br />target ≤ {targetKw.toFixed(1)} kW</Tag>
       <Tag p={[-1.9, 0.25, 2.9]}>Inverter (schematic)</Tag>
-      <Tag p={[1.1, 2.35, 2.4]}>EBS-size block (schematic)<br />discharging {batteryKw.toFixed(1)} kW</Tag>
+      <Tag p={[1.1, 2.35, 2.4]}>EBS-size block (schematic)<br />{batteryMode}</Tag>
       <OrbitControls target={[0, 1, 0.5]} enablePan={false} minDistance={6} maxDistance={16} maxPolarAngle={Math.PI / 2.1} />
     </Canvas>
     <div className="absolute bottom-2 left-3 text-[10.5px] text-[#9fb2b7]">{hourLabel} · {label} · schematic site; flows from the advisory dispatch, not measured telemetry</div>

@@ -1,7 +1,7 @@
 # PeakSure
 
 **Know what your battery can deliver when it counts.**
-A cell-aware decision tool for REON's cell-level energy storage (the EBS, Energy Block System; REON's CESS and OES are white-label products from other vendors), built for coincident-peak management at Massachusetts municipal light plants (MIT Energy & Climate Hack 2026, REON challenge).
+A cell-aware decision study for coincident-peak shaving at Massachusetts municipal light plants. The comparison uses the public REON CES/CESS nameplate size; its cell-bypass topology is a hypothesis, not a published CES/CESS design (MIT Energy & Climate Hack 2026, REON challenge).
 
 > Independent analysis. Not endorsed by REON. No experiment result is final until it appears in `results/` with seeds and confidence intervals.
 
@@ -10,10 +10,10 @@ For each forecast ISO-NE peak, PeakSure decides **how much power, over which win
 
 | | Hardware | Information | Commitment |
 |---|---|---|---|
-| **A** Conventional | Fixed series string | Annual pack capacity test | Fixed rule (P5 / 3-h window) |
-| **B** REON bypass | Cell bypass | Pack test | Fixed rule |
-| **C** PeakSure | Cell bypass | Per-cell probabilistic twin | Optimized commitment |
-| **D** PeakSure + VoI | Cell bypass | Twin + value-of-information probes | Optimized |
+| **A** Conventional | Fixed series string | Annual pack capacity test | Fixed rule (full available power for a P5-bounded whole-hour window) |
+| **B** Bypass model | Assumed cell bypass at CES/CESS nameplate size | Pack test | Fixed rule |
+| **C** PeakSure | Same assumed bypass | Per-cell probabilistic estimator constrained by an independent annual pack-test safety envelope | 95%-bounded optimized commitment |
+| **D** PeakSure + VoI | Same assumed bypass | Guarded estimator + value-of-information probes | 95%-bounded optimized commitment |
 
 A factorial design (A_opt, A_twin, B_opt, perfect-information runs) separates **physical**, **informational**, **active-information** and **decision-rule** value without double counting.
 
@@ -28,10 +28,11 @@ A factorial design (A_opt, A_twin, B_opt, perfect-information runs) separates **
 | `data/processed/` | Derived ISO-NE peak events (2019–2026) with WCMA temperatures |
 | `app/` | Streamlit demo (includes a Chemistry & cost tab: Na-ion vs LFP voltage curves, price ranges, capex-aware NPV) |
 | `tests/` | Unit tests (including the brief's 16-cell example) |
+| `VALIDATION.md` | Generated software acceptance gates and A/B/raw/C stress-scenario matrix |
 
 ## PeakSure Studio (web demo)
 `web/` holds a Next.js + React Three Fiber app.
-- **Studio:** two CES containers (1,920 cells each). Pick a real ISO-NE peak and battery age, then press **Run the peak**. Every cell discharges minute by minute: a conventional string stops at its first empty cell, while REON bypass lets empty or hot cells leave the path. The panels show each operator's belief vs the truth, the 95%-confidence commitment, VoI probes, a calibration watchdog and an event log.
+- **Explore:** schematic batteries with 8 × 240 model cell units each, not drawings of CES hardware. Pick a real ISO-NE peak, a modeled battery age, and a CES-sized 2 h or hypothetical 1/3/4 h system. The panels separate nameplate ratio, commitment window and energy, belief, simulated truth, and outcome. The main plant simulator does not enforce a CES DC voltage window because it is unknown.
 - **Results:** the Monte Carlo study (where it pays, value decomposition, calibration, probing, lifetime).
 - **Method:** what is real, what is modelled, and what is not shown.
 
@@ -51,11 +52,14 @@ Above it, an advisory demand-target planner for one EBS block at a National Grid
 `python tools/build_facility_loads.py --download`). See `PILOT_READINESS.md` (demo / pilot / not live control) and
 `DATA_AUDIT.md` (which public data was used, and how).
 
+REON's [current hardware page](https://www.reoncorp.com/hardware) calls the grid product **CESS** and lists up to 2.5 MW / 5 MWh. A REON PDF cited in the project Addendum calls it **CES** and states 480 V three-phase AC; that PDF is not stored in this repository. The 2 h ratio is derived from the two nameplate numbers and is not a verified AC discharge duration. CES chemistry, cell count, parallel columns, DC window, N_min, switch resistance, PCS efficiency, and energy rating boundary remain unknown. Source check: 2026-11-07.
+
 ## Run (Python model)
 ```bash
 pip install -r requirements.txt pytest
 pytest -q
 python -m peaksure.experiments --quick      # precompute results into results/
+python -m peaksure.validation --quick       # software gates; full run omits --quick
 streamlit run app/app.py
 ```
 

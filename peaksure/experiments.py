@@ -26,7 +26,7 @@ from .sim import simulate
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results"
 
-MAIN_CONDS = ["A", "A_opt", "A_twin", "A_perf", "B", "B_opt", "C", "C_perf", "C_T3"]
+MAIN_CONDS = ["A", "A_opt", "A_twin", "A_perf", "B", "B_opt", "C_raw", "C", "C_perf", "C_T3"]
 
 SENS = {
     "headroom_0.02": dict(headroom=0.02), "headroom_0.05": dict(headroom=0.05),
@@ -127,7 +127,7 @@ def main(argv=None) -> int:
     for eps in (0.0, 0.1, 0.2, 0.3):
         sysc = base.with_(trend_bias=eps, meas_bias=eps / 10)
         rndc = base.with_(sigma_meas=base.sigma_meas * (1 + 10 * eps))
-        for c in ("A_opt", "C"):
+        for c in ("A_opt", "C_raw", "C"):
             jobs += [(cfgd(sysc), c, s, f"cal_sys_{eps:.1f}", False) for s in range(n_side)]
             jobs += [(cfgd(rndc), c, s, f"cal_rnd_{eps:.1f}", False) for s in range(n_side)]
     if only in (None, "cal"):
@@ -162,8 +162,8 @@ def main(argv=None) -> int:
     studies = (
         ("mixed", base.with_(initial_age_years=(0.0, 5.0, 10.0)), ("A_opt", "C", "C_T3", "C_LC")),
         ("lifetime", base, ("C", "C_T3", "C_LC")),
-        ("guard_null", base, ("C", "C_G")),
-        ("guard_bias", base.with_(trend_bias=0.1, meas_bias=0.01), ("C", "C_G")),
+        ("guard_null", base, ("C_raw", "C")),
+        ("guard_bias", base.with_(trend_bias=0.1, meas_bias=0.01), ("C_raw", "C")),
     )
     jobs = [(cfgd(cfg), cond, seed, tag, False)
             for tag, cfg, conds in studies for cond in conds for seed in range(n_research)]
@@ -175,12 +175,14 @@ def main(argv=None) -> int:
 
     manifest["seconds"] = round(time.time() - t0, 1)
     manifest["finished"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    if only in (None, "research"):
+        manifest["research"] = dict(n_runs=n_research, config_hash=base.hash(), finished=manifest["finished"])
     if only:
         old = json.loads((RESULTS / "manifest.json").read_text()) if (RESULTS / "manifest.json").exists() else {}
         old.setdefault("partial_reruns", []).append(dict(part=only, finished=manifest["finished"],
                                                           git_commit=manifest["git_commit"], seconds=manifest["seconds"]))
         if only == "research":
-            old["research"] = dict(n_runs=n_research, config_hash=base.hash(), finished=manifest["finished"])
+            old["research"] = manifest["research"]
         manifest = old
     (RESULTS / "manifest.json").write_text(json.dumps(manifest, indent=2, default=str))
     print("done", manifest["seconds"], "s")

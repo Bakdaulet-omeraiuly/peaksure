@@ -119,13 +119,54 @@ export function interp(xs: number[], ys: number[], x: number): number {
  * Advisory recommendation for one hardware: the energy limit is the belief P5 at the rated power (conservative,
  * since the dispatch never exceeds rated power). Truth (simulated plant) is NOT an input here.
  */
-export function recommend(day: number[], dtH: number, ratedKw: number, beliefKw: number[], beliefP5: number[]) {
+export function recommend(day: number[], dtH: number, ratedKw: number, beliefKw: number[], beliefP5: number[], reserveFraction = 0) {
   const e5 = interp(beliefKw, beliefP5, ratedKw);
-  return { energyLimitKwh: e5, target: demandTarget(day, dtH, e5, ratedKw) };
+  const reserveKwh = e5 * Math.min(0.9, Math.max(0, reserveFraction));
+  const dispatchEnergyKwh = e5 - reserveKwh;
+  return { energyLimitKwh: e5, dispatchEnergyKwh, reserveKwh, target: demandTarget(day, dtH, dispatchEnergyKwh, ratedKw) };
 }
 
 /** After the event: could the simulated plant deliver the dispatch? (energy at the dispatch's peak power). */
 export function plantCheck(t: Target, plantKw: number[], plantKwh: number[]) {
   const avail = interp(plantKw, plantKwh, t.maxDischargeKw || plantKw[0]);
   return { availableKwh: avail, delivered: t.energyKwh <= avail + 1e-6, marginKwh: avail - t.energyKwh };
+}
+
+export interface ContinuityPlan {
+  dischargeKw: number[]; chargeKw: number[]; gridKw: number[]; storedKwh: number[];
+  modes: ("standby" | "charge" | "discharge")[];
+  dischargedKwh: number; chargedFromGridKwh: number; dispatchShortfallKwh: number;
+  minStoredKwh: number; endStoredKwh: number; reserveKwh: number; servedIntervals: number;
+}
+
+/** Grid-connected daily operation: preserve reserve, then recharge off-peak without creating a new demand peak. */
+export function continuitySchedule(load: number[], requestedDischarge: number[], dtH: number, initialKwh: number,
+  reserveKwh: number, targetKw: number, chargePowerKw: number, chargeEfficiency = 0.96): ContinuityPlan {
+  if (load.length !== requestedDischarge.length || dtH <= 0 || initialKwh < 0 || reserveKwh < 0)
+    throw new Error("invalid continuity schedule inputs");
+  let energy = initialKwh, hasDispatched = false, dispatchShortfallKwh = 0;
+  const reserve = Math.min(reserveKwh, initialKwh);
+  const dischargeKw: number[] = [], chargeKw: number[] = [], gridKw: number[] = [], storedKwh: number[] = [];
+  const modes: ContinuityPlan["modes"] = [];
+  for (let i = 0; i < load.length; i++) {
+    const want = Math.max(0, requestedDischarge[i]);
+    const actual = Math.min(want, Math.max(0, energy - reserve) / dtH);
+    energy -= actual * dtH;
+    dispatchShortfallKwh += (want - actual) * dtH;
+    hasDispatched ||= actual > 1e-9;
+    const hour = (i * dtH) % 24, offPeak = hour >= 21 || hour < 6;
+    const roomAtMeter = Math.max(0, targetKw - load[i]);
+    let charge = 0;
+    if (hasDispatched && actual <= 1e-9 && offPeak && energy < initialKwh - 1e-9) {
+      charge = Math.min(chargePowerKw, roomAtMeter, (initialKwh - energy) / (chargeEfficiency * dtH));
+      energy += charge * chargeEfficiency * dtH;
+    }
+    dischargeKw.push(actual); chargeKw.push(charge); gridKw.push(Math.max(0, load[i] - actual + charge)); storedKwh.push(energy);
+    modes.push(actual > 1e-9 ? "discharge" : charge > 1e-9 ? "charge" : "standby");
+  }
+  return { dischargeKw, chargeKw, gridKw, storedKwh, modes,
+    dischargedKwh: dischargeKw.reduce((a, v) => a + v, 0) * dtH,
+    chargedFromGridKwh: chargeKw.reduce((a, v) => a + v, 0) * dtH,
+    dispatchShortfallKwh, minStoredKwh: Math.min(initialKwh, ...storedKwh), endStoredKwh: energy,
+    reserveKwh: reserve, servedIntervals: load.length };
 }

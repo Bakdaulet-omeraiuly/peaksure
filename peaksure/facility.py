@@ -142,3 +142,65 @@ def interp_energy(curve_kw: list[float], curve_kwh: list[float], kw: float) -> f
 
 def monthly_value(reduction_kw: float, usd_per_kw_month: float = G2_DEMAND_USD_PER_KW_MONTH) -> float:
     return reduction_kw * usd_per_kw_month if math.isfinite(reduction_kw) else 0.0
+
+
+@dataclass
+class Continuity:
+    discharge_kw: list[float]
+    charge_kw: list[float]
+    grid_kw: list[float]
+    stored_kwh: list[float]
+    modes: list[str]
+    discharged_kwh: float
+    charged_from_grid_kwh: float
+    dispatch_shortfall_kwh: float
+    min_stored_kwh: float
+    end_stored_kwh: float
+    reserve_kwh: float
+    served_intervals: int
+
+
+def continuity_schedule(load_kw: np.ndarray, requested_discharge_kw: np.ndarray, dt_h: float,
+                        initial_kwh: float, reserve_kwh: float, target_kw: float,
+                        charge_power_kw: float, charge_efficiency: float = 0.96) -> Continuity:
+    """Grid-connected 24 h operating schedule.
+
+    The battery discharges only down to the reserve. After the first dispatch it recharges during the
+    assumed off-peak window (21:00-06:00), without pushing grid import above the demand target. The grid
+    supplies any balance, so this is continuity of facility service, not an islanding/outage claim.
+    """
+    load = np.asarray(load_kw, float)
+    requested = np.asarray(requested_discharge_kw, float)
+    if load.shape != requested.shape or dt_h <= 0 or initial_kwh < 0 or reserve_kwh < 0:
+        raise ValueError("invalid continuity schedule inputs")
+    energy = initial_kwh
+    reserve = min(reserve_kwh, initial_kwh)
+    has_dispatched = False
+    discharge: list[float] = []
+    charge: list[float] = []
+    grid: list[float] = []
+    stored: list[float] = []
+    modes: list[str] = []
+    shortfall = 0.0
+    for i, (site, want) in enumerate(zip(load, requested)):
+        want = max(0.0, float(want))
+        actual = min(want, max(0.0, energy - reserve) / dt_h)
+        energy -= actual * dt_h
+        shortfall += (want - actual) * dt_h
+        has_dispatched = has_dispatched or actual > 1e-9
+        hour = (i * dt_h) % 24
+        off_peak = hour >= 21 or hour < 6
+        room_at_meter = max(0.0, target_kw - float(site))
+        charger = 0.0
+        if has_dispatched and actual <= 1e-9 and off_peak and energy < initial_kwh - 1e-9:
+            charger = min(charge_power_kw, room_at_meter,
+                          (initial_kwh - energy) / (charge_efficiency * dt_h))
+            energy += charger * charge_efficiency * dt_h
+        discharge.append(actual)
+        charge.append(charger)
+        grid.append(max(0.0, float(site) - actual + charger))
+        stored.append(energy)
+        modes.append("discharge" if actual > 1e-9 else "charge" if charger > 1e-9 else "standby")
+    return Continuity(discharge, charge, grid, stored, modes,
+                      float(sum(discharge) * dt_h), float(sum(charge) * dt_h), shortfall,
+                      min(stored, default=initial_kwh), energy, reserve, len(load))

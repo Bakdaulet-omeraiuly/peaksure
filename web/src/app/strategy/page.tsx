@@ -22,12 +22,12 @@ export default function Strategy() {
   return <div className="site-shell"><AppBar /><main className="page-wrap max-w-[1120px]">
     <div className="eyebrow mb-3">Product & economics</div>
     <h1 className="page-title mb-3">What the battery model represents.</h1>
-    <p className="text-[14px] leading-relaxed text-muted max-w-[830px] mb-3">REON says its CESS containers and OES cabinets are white-label products. EBS is the product with REON&apos;s cell-level control. PeakSure compares a conventional battery with an EBS-equivalent plant at the same modeled power and energy.</p>
+    <p className="text-[14px] leading-relaxed text-muted max-w-[830px] mb-3">REON&apos;s current hardware page lists CESS at grid scale; project notes report a white-label supply relationship, while the page markets REON cell-level intelligence for CESS. CES/CESS internal wiring remains unverified. PeakSure compares a conventional battery with a hypothetical cell-bypass plant at that nameplate size.</p>
     <p className="text-[12px] text-muted mb-6">Explore the separate <Link href="/ebs" className="underline text-[var(--accent)]">EBS block simulation</Link> to test cell count, voltage-floor and weak-cell assumptions at the published block rating.</p>
 
     <div className="grid md:grid-cols-3 gap-3 mb-6">
-      <div className="surface p-5"><div className="micro mb-2">Conventional</div><p className="text-[13px] text-muted">Fixed strings and a conventional BMS. This is comparison A, including a white-label CESS-like plant.</p></div>
-      <div className="surface p-5"><div className="micro mb-2">EBS equivalent</div><p className="text-[13px] text-muted">Na+ EBS is {a.ebs_block_kw} kW / {a.ebs_block_kwh} kWh per block. About {blocks} blocks match a {a.nominal_mw} MW / {a.nominal_mwh} MWh plant by nameplate size.</p></div>
+      <div className="surface p-5"><div className="micro mb-2">Conventional</div><p className="text-[13px] text-muted">Fixed strings and a conventional BMS. This is comparison A, not a CES hardware claim.</p></div>
+      <div className="surface p-5"><div className="micro mb-2">EBS size comparison</div><p className="text-[13px] text-muted">Na+ EBS is {a.ebs_block_kw} kW / {a.ebs_block_kwh} kWh per block. About {blocks} blocks match a {a.nominal_mw} MW / {a.nominal_mwh} MWh plant by nameplate power; how blocks interconnect is unknown. The main plant model does not simulate those blocks.</p></div>
       <div className="surface p-5"><div className="micro mb-2">Schematic wiring</div><p className="text-[13px] text-muted">The main Explore view models {a.active_cells} cells per string; the separate EBS study tests an assumed 120-cell block. EBS topology and DC/DC stages are unconfirmed. The 3D racks are a comparison diagram, not an EBS drawing.</p></div>
     </div>
 

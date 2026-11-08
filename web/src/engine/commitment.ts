@@ -27,6 +27,21 @@ export interface CommitmentSummary {
 
 export const commitmentEnergyKwh = (powerKw: number, durationH: number) => powerKw * durationH;
 
+/** Compatibility helpers used by the detailed inspector and cross-engine tests. */
+export const commitmentEnergy = (d: Decision) => commitmentEnergyKwh(d.powerKw, d.windowH);
+
+export const heClockRange = (d: Decision) =>
+  `${String(d.startHe - 1).padStart(2, "0")}:00–${String(d.startHe + d.windowH - 1).padStart(2, "0")}:00`;
+
+export function commitmentFeasibility(d: Decision, availableKwh: number, availableKw: number) {
+  const requiredKwh = commitmentEnergy(d);
+  return {
+    requiredKwh,
+    energyOk: requiredKwh <= availableKwh + 1e-6,
+    powerOk: d.powerKw <= availableKw + 1e-6,
+  };
+}
+
 /** Hour-ending h covers clock time (h-1):00 to h:00. */
 export const heClock = (he: number) => `${String(he - 1).padStart(2, "0")}:00–${String(he % 24).padStart(2, "0")}:00`;
 

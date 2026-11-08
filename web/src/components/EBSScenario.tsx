@@ -46,7 +46,8 @@ export default function EBSScenario() {
   const clock = (m: number) => { const t = (c.start_he - 1) * 60 + Math.round(m); return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(((t % 60) + 60) % 60).padStart(2, "0")}`; };
   const sF = summary(d, c, "fixed"), sB = summary(d, c, "bypass");
   const usd = d.demand_charge[tariff];
-  const status = (r: typeof runs.fixed, f: typeof fa) => !started ? "before the window" : f.block_online ? `running · ${f1(f.power_kw, 2)} kW` : `STOPPED at t+${r.stop_min} min: ${r.stop_reason}`;
+  const status = (r: typeof runs.fixed, f: typeof fa) => !started ? "READY · reserve held" : f.block_online ? `DISCHARGING · ${f1(f.power_kw, 2)} kW` :
+    (r.stop_min ?? 0) <= 0 ? `UNAVAILABLE · ${r.stop_reason}` : `CYCLE COMPLETE · recharge after t+${r.stop_min} min`;
   const hoverInfo = hover ? (() => {
     const fr = hover.side === "A" ? fa : fb;
     const s = cellStates(fr, hover.side === "B", started)[hover.cell];
@@ -61,6 +62,7 @@ export default function EBSScenario() {
     <div className="eyebrow mb-2">EBS scenario · PeakSure simulation</div>
     <h2 className="text-[18px] font-semibold mb-2">One EBS block shaving a commercial facility&apos;s demand peak</h2>
     <p className="text-[12.5px] text-muted leading-relaxed max-w-[900px] mb-3">{d.use_case} Both blocks use the <b>same simulated cells</b>, the <b>same per-cell estimates</b> and the <b>same 95%-confidence rule</b>, so any difference is the physical effect of cell bypass, after the assumed switch loss. Facility peak timing, demand response, time-of-use, VPP and backup are not modelled.</p>
+    <div className="rounded-lg border border-[#8fc9ad] bg-[#eef8f2] p-3 mb-3 text-[12px] text-muted"><b className="text-[#176b4b]">Operational meaning:</b> the battery can stay online all day while alternating between standby, discharge and recharge. It cannot deliver full power forever without an energy source. This event view shows one peak dispatch; the drain test intentionally runs to the safe cutoff and must not be read as normal 24/7 operation.</div>
 
     <div className="flex flex-wrap gap-4 items-end mb-3 text-[12px] text-muted">
       <label><span className="block font-semibold text-ink mb-1">Product profile</span>

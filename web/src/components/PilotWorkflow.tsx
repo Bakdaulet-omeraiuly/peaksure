@@ -5,7 +5,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { fetchJson } from "@/engine/data";
-import { CONTRACT, G2, Point, peakDay, plantCheck, recommend, validate } from "@/engine/facility";
+import { CONTRACT, G2, ContinuityPlan, Point, continuitySchedule, peakDay, plantCheck, recommend, validate } from "@/engine/facility";
 import { EbsScenarioFile } from "@/engine/ebsScenario";
 
 const SiteScene3D = dynamic(() => import("@/components/SiteScene3D"), { ssr: false });
@@ -30,6 +30,7 @@ export default function PilotWorkflow() {
   const [reveal, setReveal] = useState(false);
   const [hour, setHour] = useState(15);
   const [hw, setHw] = useState<"fixed" | "bypass">("bypass");
+  const [reservePct, setReservePct] = useState(20);
   const [hash, setHash] = useState("");
   const [loadErr, setLoadErr] = useState<string | null>(null);
   useEffect(() => { fetchJson<EbsScenarioFile & { energy_curves: Curves }>("/data/ebs_scenario.json").then(setE).catch(() => setLoadErr("Could not load the EBS scenario export.")); }, []);
@@ -48,25 +49,33 @@ export default function PilotWorkflow() {
     const load = day.map((p) => p.kw);
     const out = (["fixed", "bypass"] as const).map((k) => {
       const b = curves.belief[k];
-      const rec = recommend(load, dtH, E.rated_kw, b.kw, b.p5);
-      const p50 = recommend(load, dtH, E.rated_kw, b.kw, b.p50).target;
+      const rec = recommend(load, dtH, E.rated_kw, b.kw, b.p5, reservePct / 100);
+      const p50 = recommend(load, dtH, E.rated_kw, b.kw, b.p50, reservePct / 100).target;
       return { k, rec, p50, check: plantCheck(rec.target, curves.plant[k].kw, curves.plant[k].kwh) };
     });
     return { load, out };
-  }, [E, curves, day, dtH]);
+  }, [E, curves, day, dtH, reservePct]);
+
+  const selected = res?.out.find((o) => o.k === hw);
+  const continuity = useMemo(() => {
+    if (!E || !res || !selected) return null;
+    return continuitySchedule(res.load, selected.rec.target.dischargeKw, dtH, selected.rec.energyLimitKwh,
+      selected.rec.reserveKwh, selected.rec.target.targetKw, E.rated_kw, 0.96);
+  }, [E, res, selected, dtH]);
 
   if (loadErr) return <div className="surface p-5 mb-4 text-[12px] text-error">{loadErr}</div>;
   if (!E || !v) return <div className="surface p-5 mb-4 text-[12px] text-muted">Loading planner…</div>;
   const synthetic = source === "sample";
-  const pick = res?.out.find((o) => o.k === hw);
+  const pick = selected;
   const perHour = Math.round(1 / dtH);
   const idx = Math.min((hour - 1) * perHour, (res?.load.length ?? 1) - 1);
-  const loadNow = res ? res.load[idx] : 0, battNow = pick ? pick.rec.target.dischargeKw[idx] : 0;
+  const loadNow = res ? res.load[idx] : 0;
+  const battNow = continuity ? continuity.dischargeKw[idx] - continuity.chargeKw[idx] : 0;
   const A = res?.out[0], B = res?.out[1];
   const dReduction = A && B ? B.rec.target.reductionKw - A.rec.target.reductionKw : 0;
   const why = (o: NonNullable<typeof A>) => {
     const t = o.rec.target;
-    return `The twin's 5th-percentile deliverable AC energy at ${E.rated_kw} kW is ${f(o.rec.energyLimitKwh)} kWh. On the peak day (${day ? day[0].t.toDateString() : ""}) the facility peaks at ${f(t.peakKw)} kW. `
+    return `The twin's 5th-percentile deliverable AC energy at ${E.rated_kw} kW is ${f(o.rec.energyLimitKwh)} kWh. PeakSure keeps ${f(o.rec.reserveKwh)} kWh (${reservePct}%) in reserve, leaving ${f(o.rec.dispatchEnergyKwh)} kWh for peak shaving. On the peak day (${day ? day[0].t.toDateString() : ""}) the facility peaks at ${f(t.peakKw)} kW. `
       + `Holding demand at ${f(t.targetKw)} kW needs ${f(t.energyKwh)} kWh over ${f(t.hours, 0)} h (${t.firstHe ? he(t.firstHe) : "—"} to ${t.lastHe ? he(t.lastHe) : "—"}), with at most ${f(t.maxDischargeKw)} kW from the battery. `
       + (t.binding === "energy" ? "Energy is the binding limit: a lower target would need more energy than the belief allows at 95% confidence. " : t.binding === "power" ? `Rated power (${E.rated_kw} kW) is the binding limit. ` : "No discharge is recommended. ")
       + `At the median belief the target would be ${f(o.p50.targetKw)} kW; the gap is the price of 95% confidence.`;
@@ -76,11 +85,12 @@ export default function PilotWorkflow() {
     input: { source: synthetic ? "SYNTHETIC sample (NREL/OpenEI simulated retail building, Boston TMY3, July)" : "uploaded file", file: fileName, sha256: hash, quality: v.report },
     product: { profile: "EBS Na+ (simulated)", rated_kw: E.rated_kw, rated_kwh: E.rated_kwh, evidence: E.flags },
     tariff: { name: "National Grid MA G-2", usd_per_kw_month: G2.usdPerKwMonth, status: G2.status, source: G2.source },
-    battery_state: { weak_cell_case: weak, cells: E.cells, n_min: E.n_min, dc_floor_v: E.dc_floor_v, r_on_ohm: E.r_on_ohm, eta: E.eta, note: "simulated cells; model assumptions" },
+    battery_state: { weak_cell_case: weak, reserve_percent: reservePct, cells: E.cells, n_min: E.n_min, dc_floor_v: E.dc_floor_v, r_on_ohm: E.r_on_ohm, eta: E.eta, note: "simulated cells; model assumptions" },
     peak_day: day ? { date: day[0].t.toISOString(), load_kw: day.map((p) => p.kw) } : null,
     recommendations: res?.out.map((o) => ({ hardware: HW[o.k], belief_p5_energy_kwh: o.rec.energyLimitKwh, ...o.rec.target,
       monthly_value_usd: o.rec.target.reductionKw * G2.usdPerKwMonth, simulated_plant_check: reveal ? o.check : "not revealed" })),
-    limitations: ["hourly data underestimates the 15-minute billed peak", "peak day assumed known", "EBS internals assumed",
+    limitations: ["grid-connected continuity only; outage/islanding is not modelled", "20% reserve and off-peak recharge window are adjustable assumptions",
+      "hourly data underestimates the 15-minute billed peak", "peak day assumed known", "EBS internals assumed",
       "energy curve uses a fixed 0.5C overpotential", "single month; no ageing", "not hardware validation"],
   });
   const download = (name: string, body: string, type: string) => {
@@ -124,6 +134,9 @@ export default function PilotWorkflow() {
         <label><span className="block font-semibold text-ink mb-1">Battery cell state (simulated)</span>
           <select className="border border-line rounded-md p-2 bg-white" value={weak} onChange={(e) => { setWeak(+e.target.value); setReveal(false); }}>
             <option value={1}>natural spread</option><option value={0.9}>stress: one cell at 90%</option><option value={0.8}>stress: one cell at 80%</option></select></label>
+        <label><span className="block font-semibold text-ink mb-1">Operating reserve <span className="text-faint">ASSUMED</span></span>
+          <select className="border border-line rounded-md p-2 bg-white" value={reservePct} onChange={(e) => { setReservePct(+e.target.value); setReveal(false); }}>
+            {[10, 20, 30].map((v) => <option key={v} value={v}>{v}% kept for reliability</option>)}</select></label>
       </div>
 
       <div className="grid md:grid-cols-2 gap-3 mb-3">
@@ -132,7 +145,7 @@ export default function PilotWorkflow() {
           <div className="micro mt-1 mb-1">5 · Recommendation (belief only, before the event)</div>
           <div className="num text-[20px] font-semibold">hold ≤ {f(t.targetKw)} kW <span className="text-[12px] font-normal text-muted">(−{f(t.reductionKw)} kW from {f(t.peakKw)})</span></div>
           <div className="num">discharge {t.firstHe ? `${he(t.firstHe)} → ${he(t.lastHe!)}` : "none"} · {f(t.energyKwh)} kWh · peak {f(t.maxDischargeKw)} kW ≤ {E.rated_kw} kW rated</div>
-          <div className="num">energy limit: twin P5 {f(o.rec.energyLimitKwh)} kWh (95% confidence) · binding: {t.binding}</div>
+          <div className="num">twin P5 {f(o.rec.energyLimitKwh)} kWh · dispatch budget {f(o.rec.dispatchEnergyKwh)} kWh · reserve {f(o.rec.reserveKwh)} kWh ({reservePct}%) · binding: {t.binding}</div>
           <div className="num">value if held: ${f(t.reductionKw * G2.usdPerKwMonth, 0)}/month at G-2 <span className="text-faint">(MODEL OUTPUT)</span></div>
           <details className="mt-1"><summary className="cursor-pointer text-[var(--accent)]">Why this recommendation?</summary><p className="text-muted mt-1 leading-relaxed">{why(o)}</p></details>
           <div className="micro mt-2 mb-1">6 · Simulated plant check (after the event)</div>
@@ -150,14 +163,28 @@ export default function PilotWorkflow() {
         <span className="num w-[130px]">{he(hour)}</span>
         <input className="flex-1 min-w-[160px]" type="range" min={1} max={24} value={hour} onChange={(e) => setHour(+e.target.value)} aria-label="Hour of the peak day" />
       </div>
-        <SiteScene3D loadKw={loadNow} batteryKw={battNow} gridKw={Math.max(0, loadNow - battNow)} targetKw={pick!.rec.target.targetKw} hourLabel={he(hour)} label={HW[hw]} />
+        <SiteScene3D loadKw={loadNow} batteryKw={battNow} gridKw={continuity?.gridKw[idx] ?? loadNow} targetKw={pick!.rec.target.targetKw} hourLabel={he(hour)} label={HW[hw]} />
         <LoadChart load={res.load} dtH={dtH} a={A!.rec.target.targetKw} b={B!.rec.target.targetKw} hour={hour} />
       </div>
 
+      {continuity && <section className="rounded-lg border border-[#8fc9ad] bg-[#eef8f2] p-4 mb-3 text-[12px] text-muted">
+        <div className="flex flex-wrap justify-between gap-2"><div><div className="micro mb-1">24-hour operating continuity · grid-connected</div>
+          <div className="text-[18px] font-semibold text-[#176b4b]">Facility load served: {continuity.servedIntervals}/{res.load.length} intervals</div></div>
+          <div className="num text-right">battery online: standby / discharge / recharge<br />dispatch shortfall {f(continuity.dispatchShortfallKwh)} kWh</div></div>
+        <div className="grid sm:grid-cols-4 gap-2 mt-3">
+          <div><b className="text-ink">Peak discharge</b><br />{f(continuity.dischargedKwh)} kWh</div>
+          <div><b className="text-ink">Minimum stored</b><br />{f(continuity.minStoredKwh)} kWh ≥ {f(continuity.reserveKwh)} kWh reserve</div>
+          <div><b className="text-ink">Off-peak recharge</b><br />{f(continuity.chargedFromGridKwh)} kWh from grid</div>
+          <div><b className="text-ink">End of day</b><br />{f(continuity.endStoredKwh)} / {f(pick!.rec.energyLimitKwh)} kWh</div>
+        </div>
+        <ContinuityChart plan={continuity} initialKwh={pick!.rec.energyLimitKwh} />
+        <p className="mt-2 text-faint">The site stays powered because the utility grid supplies the balance while the battery is in standby or charging. The battery does not discharge continuously; it remains available, preserves reserve, then recharges after the peak without exceeding the demand target. Outage backup and islanding are not claimed here.</p>
+      </section>}
+
       <div className="text-[12px] mb-3"><div className="micro mb-1">8 · Sensitivity (same data; belief P5 → demand reduction, $/month)</div>
         <table className="w-full num text-[11.5px]"><thead><tr className="text-faint text-left"><th>Cell state</th><th>A kW</th><th>B kW</th><th>B − A at $10 / G-2 $15.24 / $20</th></tr></thead><tbody>
-          {E.energy_curves.map((c) => { const ra = recommend(res.load, dtH, E.rated_kw, c.belief.fixed.kw, c.belief.fixed.p5).target.reductionKw;
-            const rb = recommend(res.load, dtH, E.rated_kw, c.belief.bypass.kw, c.belief.bypass.p5).target.reductionKw;
+          {E.energy_curves.map((c) => { const ra = recommend(res.load, dtH, E.rated_kw, c.belief.fixed.kw, c.belief.fixed.p5, reservePct / 100).target.reductionKw;
+            const rb = recommend(res.load, dtH, E.rated_kw, c.belief.bypass.kw, c.belief.bypass.p5, reservePct / 100).target.reductionKw;
             return <tr key={c.weak_factor} className="border-t border-line"><td className="font-sans">{c.weak_factor === 1 ? "natural spread" : `one cell at ${c.weak_factor * 100}%`}</td><td>{f(ra, 2)}</td><td>{f(rb, 2)}</td>
               <td>{[10, G2.usdPerKwMonth, 20].map((u) => `$${f((rb - ra) * u, 0)}`).join(" / ")}</td></tr>; })}</tbody></table>
         <div className="text-faint mt-1">$10 and $20/kW-month are ASSUMED sensitivity values; $15.24 is the confirmed G-2 charge. Unknown EBS parameters (cells, N_min, DC floor, R_on) shift the energy curves; see the block study below.</div></div>
@@ -168,6 +195,19 @@ export default function PilotWorkflow() {
         <span className="text-faint">Includes the input checksum, assumptions and limitations so the result can be reproduced.</span></div>
     </>}
   </section>;
+}
+
+function ContinuityChart({ plan, initialKwh }: { plan: ContinuityPlan; initialKwh: number }) {
+  const W = 640, H = 92, L = 34, T = 8, IW = W - L - 8, IH = H - T - 18;
+  const x = (i: number) => L + (i / Math.max(1, plan.storedKwh.length - 1)) * IW;
+  const y = (v: number) => T + IH * (1 - v / Math.max(initialKwh, 1));
+  return <svg viewBox={`0 0 ${W} ${H}`} className="w-full mt-3" role="img" aria-label="Battery stored energy over the 24-hour grid-connected operating schedule">
+    <line x1={L} x2={L + IW} y1={y(plan.reserveKwh)} y2={y(plan.reserveKwh)} stroke="#4aa3ff" strokeDasharray="4 3" />
+    <polyline points={plan.storedKwh.map((v, i) => `${x(i)},${y(v)}`).join(" ")} fill="none" stroke="#137454" strokeWidth="3" />
+    {plan.modes.map((m, i) => m === "standby" ? null : <circle key={i} cx={x(i)} cy={y(plan.storedKwh[i])} r="3" fill={m === "charge" ? "#3479a2" : "#137454"} />)}
+    {[0, 6, 12, 18, 24].map((h) => <text key={h} x={L + (h / 24) * IW} y={H - 3} fontSize="10" fill="#687b70" textAnchor="middle">{h}:00</text>)}
+    <text x={4} y={T + 9} fontSize="10" fill="#687b70">kWh</text><text x={L + 3} y={y(plan.reserveKwh) - 3} fontSize="9" fill="#3479a2">reserve</text>
+  </svg>;
 }
 
 function LoadChart({ load, dtH, a, b, hour }: { load: number[]; dtH: number; a: number; b: number; hour: number }) {

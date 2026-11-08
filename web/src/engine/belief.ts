@@ -23,6 +23,15 @@ function summarize(samples: Float64Array, powers: number[]): Belief {
   return { samples, p5: quantile(s, 0.05), p50: quantile(s, 0.5), p95: quantile(s, 0.95), pAvail: p[Math.floor(p.length / 2)] };
 }
 
+/** Conservative fusion of independent beliefs. Samples share only an index, not latent truth;
+ * taking the lower value preserves each marginal safety bound without exposing simulated truth. */
+export function lowerEnvelope(primary: Belief, independent: Belief): Belief {
+  const n = Math.min(primary.samples.length, independent.samples.length);
+  const samples = new Float64Array(n);
+  for (let i = 0; i < n; i++) samples[i] = Math.min(primary.samples[i], independent.samples[i]);
+  return summarize(samples, [Math.min(primary.pAvail, independent.pAvail)]);
+}
+
 export function twinBelief(mean: Float64Array, sd: Float64Array, qNom: number, tier: Tier, tForecast: number,
                            th: Thermal, chem: Chem, sys: SystemSpec, seed: number, K = 128,
                            bias = 0): Belief {

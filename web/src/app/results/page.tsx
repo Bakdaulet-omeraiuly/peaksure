@@ -15,11 +15,16 @@ interface R {
   probe: { tag: string; cond: string; budget: number | null; gain?: number; gain_lo?: number; gain_hi?: number; probes: number }[];
   bands: { cond: string; sim_year: number; p5: number; p50: number; p95: number }[];
   research?: { study: string; baseline: string; candidate: string; n_runs: number; savings_yr: CI; end_energy_kwh: CI; p5_miss_baseline: number; p5_miss_candidate: number; guard_alert_rate: number }[];
+  validation?: {
+    software_validation_ready: boolean; deployment_ready: boolean; seeds: number; years: number; cases: number;
+    gates: { id: string; status: "PASS" | "FAIL" | "BLOCKED"; criterion: string; evidence: string }[];
+    scenarios: { scenario: string; cond: string; events: number; p5_miss: number; delivery_reliability: number; mean_commit_kw: number }[];
+  };
 }
 
 const usd = (x: number) => (Math.abs(x) >= 1e6 ? `$${(x / 1e6).toFixed(2)}M` : Math.abs(x) >= 1e3 ? `$${(x / 1e3).toFixed(1)}K` : `$${x.toFixed(0)}`);
-const NAMES: Record<string, string> = { ...BATTERY_NAMES, D: "D · REON-style + PeakSure + VoI", C_T3: "C · REON-style + PeakSure, resting SOC" };
-const CHART_NAMES: Record<string, string> = { A: "A Conventional", B: "B REON EBS", C: "C EBS + PeakSure", C_T3: "C EBS + resting" };
+const NAMES: Record<string, string> = { ...BATTERY_NAMES, D: "D · CES-sized bypass + PeakSure + VoI", C_T3: "C · CES-sized bypass + PeakSure, resting SOC" };
+const CHART_NAMES: Record<string, string> = { A: "A Conventional", B: "B Bypass model", C: "C + PeakSure", C_T3: "C + resting" };
 const COL: Record<string, string> = { A: "#9aa6b8", B: "#79b0ff", C: "#7bd88f", D: "#3fb6a8", C_T3: "#c49cf2" };
 const LAB: Record<string, string> = {
   fault_scenario: "Cell faults 0.2%/yr (scenario)", hvac_failing: "Failing HVAC", duration_1h: "1-h system", hvac_weak: "Weak HVAC",
@@ -101,12 +106,13 @@ export default function Results() {
   const calRows = (mode: string) => r.cal.filter((x) => x.mode === mode).sort((a, b) => a.eps - b.eps);
   const probes = r.probe.filter((p) => p.budget != null && p.budget > 0 && p.gain !== undefined);
   const c0 = r.cal.find((x) => x.mode === "sys" && x.eps === 0 && x.cond === "C");
+  const raw0 = r.cal.find((x) => x.mode === "sys" && x.eps === 0 && x.cond === "C_raw");
   const a0 = r.cal.find((x) => x.mode === "sys" && x.eps === 0 && x.cond === "A_opt");
-  const narrow = c0 && a0 ? a0.width / c0.width : NaN;
+  const narrow = raw0 && a0 ? a0.width / raw0.width : NaN;
   const v4 = r.probe.find((p) => p.cond === "D" && p.budget === 4), rr4 = r.probe.find((p) => p.cond === "D_rr" && p.budget === 4);
   const fewer = v4 && rr4 && v4.probes > 0 ? rr4.probes / v4.probes : NaN;
   const life = r.research?.find((x) => x.study === "lifetime" && x.candidate === "C_LC");
-  const guarded = r.research?.find((x) => x.study === "guard_bias" && x.candidate === "C_G");
+  const guarded = r.research?.find((x) => x.study === "guard_bias" && x.candidate === "C");
   const mixed = r.research?.find((x) => x.study === "mixed" && x.candidate === "C");
   return (
     <div className="site-shell">
@@ -114,12 +120,22 @@ export default function Results() {
       <div className="page-wrap max-w-[1280px]">
         <div className="eyebrow mb-3">Research findings</div>
         <h1 className="page-title mb-3">Where cell intelligence matters.</h1>
-        <p className="text-muted text-[14px] max-w-[760px] leading-relaxed mb-6">A 15-year paired simulation of A · Conventional battery, B · REON-style bypass model, and C · REON-style bypass + PeakSure. Figures are model results, not hardware validation.</p>
+        <p className="text-muted text-[14px] max-w-[760px] leading-relaxed mb-6">A 15-year paired simulation of A · conventional fixed strings, B · hypothetical cell bypass at the CES/CESS nameplate size, and C · the same bypass model with PeakSure. CES chemistry and internal wiring are unknown. These are model results, not hardware validation.</p>
         <div className="surface p-5 sm:p-7 text-[14px] leading-relaxed text-muted mb-5">
-            <span className="eyebrow block mb-2">Main finding</span> On the modeled 2-hour EBS-equivalent plant doing coincident-peak duty, cell-level intelligence adds little
+            <span className="eyebrow block mb-2">Main finding</span> On the modeled 2-hour CES-sized plant doing coincident-peak duty, cell-level intelligence adds little
             (V1 + V2 = {usd(r.dec[1].mean + r.dec[2].mean)}/yr): energy rarely limits the decision, and peak-hour timing dominates. It pays where energy or
             cells bind: 1-h and 4-h systems, weak cooling, and cell faults.
         </div>
+        {r.validation && <section className="surface p-5 sm:p-7 mb-5">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div><span className="eyebrow block mb-2">Validation gates</span><h2 className="text-[18px] font-semibold">Software evidence passes; field deployment remains blocked.</h2></div>
+            <div className="flex gap-2 text-[11px]"><span className="badge" style={{ color: "var(--ok)" }}>SIMULATION PASS</span><span className="badge" style={{ color: "var(--error)" }}>HARDWARE BLOCKED</span></div>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
+            {r.validation.gates.map((g) => <div key={g.id} className="rounded-md border border-line bg-panel-2 p-3"><div className="flex justify-between gap-2 text-[10px] font-semibold"><span>{g.id.replaceAll("_", " ")}</span><span style={{ color: g.status === "PASS" ? "var(--ok)" : g.status === "FAIL" ? "var(--error)" : "#d39a35" }}>{g.status}</span></div><p className="text-[10.5px] text-faint mt-1 leading-snug">{g.evidence}</p></div>)}
+          </div>
+          <p className="text-[11px] text-faint mt-3">{r.validation.seeds} seeds × {r.validation.years} years × {r.validation.cases} scenarios. PASS means simulated software evidence only, never REON hardware certification.</p>
+        </section>}
         <div className="grid sm:grid-cols-3 gap-3 mb-5">
           <div className="surface p-5"><div className="micro mb-2">Lifetime control</div><p className="text-[13px] text-muted leading-relaxed">{life ? `${Math.abs(Math.round(life.end_energy_kwh[0])).toLocaleString()} kWh ${life.end_energy_kwh[0] >= 0 ? "more" : "less"} deliverable energy at the horizon; ${usd(life.savings_yr[0])}/yr change in peak savings.` : "Exploratory resting-charge policy."}</p></div>
           <div className="surface p-5"><div className="micro mb-2">Twin uncertainty</div><p className="text-[13px] text-muted leading-relaxed">{guarded ? `Under injected bias, P5 miss: ${(guarded.p5_miss_baseline * 100).toFixed(1)}% → ${(guarded.p5_miss_candidate * 100).toFixed(1)}% with the pack-test envelope.` : "Independent pack-test safety envelope."}</p></div>
@@ -130,7 +146,7 @@ export default function Results() {
 
           <Card title="Where cell-level intelligence pays" sub="break-even premium, $/kWh nameplate (NPV C minus A_opt, 95% CI)">
             <Bars rows={sens.map((s) => ({ label: LAB[s.tag] ?? s.tag, v: s.prem_c, lo: s.prem_c_lo, hi: s.prem_c_hi }))} />
-            <div className="text-[11.5px] text-faint mt-2">One change at a time from base (2-h EBS-equivalent plant, Na-ion, k_HVAC 0.25). Same optimized rule on both sides, so the rule effect is excluded.</div>
+            <div className="text-[11.5px] text-faint mt-2">One change at a time from base (2-h CES-sized model, assumed Na-ion, k_HVAC 0.25). Same optimized rule on both sides, so the rule effect is excluded.</div>
           </Card>
 
           <Card title="Main benchmark: 2-h modeled plant, 15 years" sub="mean of paired runs">
@@ -163,6 +179,14 @@ export default function Results() {
             <p className="text-[11px] text-faint mt-3">Exploratory model results. Per-cell resting SOC and initial mixed-age history are assumed; independent hardware validation remains open.</p>
           </Card> : null}
 
+          {r.validation ? <Card title="Validation scenario matrix" sub="A/B/raw twin/guarded C · identical events and random draws">
+            <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-[11.5px] num">
+              <thead className="text-faint"><tr><td className="font-sans">Scenario</td><td>Case</td><td className="text-right">Events</td><td className="text-right">P5 miss</td><td className="text-right">Full delivery</td><td className="text-right">Mean commit</td></tr></thead>
+              <tbody>{r.validation.scenarios.map((x) => <tr key={`${x.scenario}-${x.cond}`} className="border-t border-line"><td className="py-1.5 font-sans">{x.scenario.replaceAll("_", " ")}</td><td>{x.cond}</td><td className="text-right">{x.events.toLocaleString()}</td><td className="text-right" style={{ color: x.cond === "C" && x.p5_miss <= 0.05 ? "var(--ok)" : x.p5_miss > 0.05 ? "var(--error)" : "inherit" }}>{(x.p5_miss * 100).toFixed(2)}%</td><td className="text-right" style={{ color: x.cond === "C" && x.delivery_reliability >= 0.95 ? "var(--ok)" : x.delivery_reliability < 0.95 ? "var(--error)" : "inherit" }}>{(x.delivery_reliability * 100).toFixed(2)}%</td><td className="text-right">{Math.round(x.mean_commit_kw).toLocaleString()} kW</td></tr>)}</tbody>
+            </table></div>
+            <p className="text-[11px] text-faint mt-3">Raw twin is diagnostic only. Guarded C is the production candidate and uses the lower of independent cell-twin and annual pack-test beliefs. Conventional/bypass failures remain visible instead of being filtered out.</p>
+          </Card> : null}
+
           <Card title="Where the value comes from" sub="$/yr, Shapley over hardware x information">
             <Waterfall d={r.dec} title="2-h modeled plant (base), A to D" />
             <Waterfall d={r.dec4} title="4-h system, A to C" />
@@ -173,16 +197,18 @@ export default function Results() {
               <div key={mode} className="mb-3">
                 <div className="text-[12px] text-muted mb-1">{mode === "sys" ? "Systematic: twin underestimates fade by eps, cell reports +eps/10" : "Random: cell estimate noise x (1 + 10 eps)"}</div>
                 <table className="w-full text-[12px] num">
-                  <thead className="text-faint"><tr><td>eps</td><td className="text-right">Pack-level</td><td className="text-right">Cell twin</td></tr></thead>
+                  <thead className="text-faint"><tr><td>eps</td><td className="text-right">Pack-level</td><td className="text-right">Raw twin</td><td className="text-right">Validated C</td></tr></thead>
                   <tbody>
                     {Array.from(new Set(calRows(mode).map((x) => x.eps))).map((e) => {
                       const a = calRows(mode).find((x) => x.eps === e && x.cond === "A_opt")!;
+                      const raw = calRows(mode).find((x) => x.eps === e && x.cond === "C_raw")!;
                       const c = calRows(mode).find((x) => x.eps === e && x.cond === "C")!;
-                      const bad = c.miss > 0.07 || c.miss < 0.03;
+                      const bad = c.miss > 0.05;
                       return (
                         <tr key={e} className="border-t border-line">
                           <td className="py-1">{(e * 100).toFixed(0)}%</td>
                           <td className="text-right">{(a.miss * 100).toFixed(1)}% <span className="text-faint">w {(a.width * 100).toFixed(1)}%</span></td>
+                          <td className="text-right" style={{ color: raw.miss > 0.05 ? "var(--error)" : "inherit" }}>{(raw.miss * 100).toFixed(1)}% <span className="text-faint">w {(raw.width * 100).toFixed(1)}%</span></td>
                           <td className="text-right" style={{ color: bad ? "var(--error)" : "var(--ok)" }}>{(c.miss * 100).toFixed(1)}% <span className="text-faint">w {(c.width * 100).toFixed(1)}%</span></td>
                         </tr>
                       );
@@ -191,7 +217,7 @@ export default function Results() {
                 </table>
               </div>
             ))}
-            <div className="text-[11.5px] text-faint">The cell twin is calibrated and {narrow.toFixed(0)}x narrower at zero mismatch, but systematic bias makes it confidently wrong. The separate research study tests a conservative pack-test envelope and a diagnostic mismatch alert.</div>
+            <div className="text-[11.5px] text-faint">The raw twin is about {narrow.toFixed(0)}x narrower than the pack estimate at zero mismatch, but systematic bias can make it confidently wrong. Production candidate C therefore applies the conservative pack-test envelope on every commitment; simulated coverage is reported above and is not a field guarantee.</div>
           </Card>
 
           <Card title="VoI probing (4-h system)" sub="extra $/yr vs no probing, paired">

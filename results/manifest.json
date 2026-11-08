@@ -56,8 +56,21 @@
   "config_hash": "8f1d2b3cf5",
   "n_main": 64,
   "n_side": 24,
-  "started": "2026-11-07 17:45:27",
-  "git_commit": "7d80ffb",
-  "seconds": 938.0,
-  "finished": "2026-11-07 18:01:05"
+  "started": "2026-11-08 03:27:27",
+  "git_commit": "e269a8c",
+  "seconds": 985.6,
+  "finished": "2026-11-08 03:43:52",
+  "partial_reruns": [
+    {
+      "part": "research",
+      "finished": "2026-11-08 03:47:34",
+      "git_commit": "e269a8c",
+      "seconds": 60.1
+    }
+  ],
+  "research": {
+    "n_runs": 24,
+    "config_hash": "8f1d2b3cf5",
+    "finished": "2026-11-08 03:47:34"
+  }
 }

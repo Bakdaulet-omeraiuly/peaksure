@@ -26,20 +26,24 @@ CONDITIONS = {
     "A_perf": dict(tier="fixed",  info="perfect", rule="opt"),
     "B":      dict(tier="bypass", info="pack",    rule="fixed"),
     "B_opt":  dict(tier="bypass", info="pack",    rule="opt"),
-    "C":      dict(tier="bypass", info="twin",    rule="opt"),
+    # Production candidate: a per-cell twin constrained by an independent annual pack-test belief.
+    # C_raw is retained only as a diagnostic ablation; it must not be presented as deployment-ready.
+    "C_raw":  dict(tier="bypass", info="twin",    rule="opt"),
+    "C":      dict(tier="bypass", info="twin",    rule="opt", guard=True),
     "C_perf": dict(tier="bypass", info="perfect", rule="opt"),
-    "D":      dict(tier="bypass", info="twin",    rule="opt", probe="voi"),
-    "D_rr":   dict(tier="bypass", info="twin",    rule="opt", probe="rr"),
-    "D_rand": dict(tier="bypass", info="twin",    rule="opt", probe="random"),
-    "C_T3":   dict(tier="bypass", info="twin",    rule="opt", rest_policy="weak"),
-    "C_LC":   dict(tier="bypass", info="twin",    rule="opt", rest_policy="trend"),
+    "D":      dict(tier="bypass", info="twin",    rule="opt", probe="voi", guard=True),
+    "D_rr":   dict(tier="bypass", info="twin",    rule="opt", probe="rr", guard=True),
+    "D_rand": dict(tier="bypass", info="twin",    rule="opt", probe="random", guard=True),
+    "C_T3":   dict(tier="bypass", info="twin",    rule="opt", rest_policy="weak", guard=True),
+    "C_LC":   dict(tier="bypass", info="twin",    rule="opt", rest_policy="trend", guard=True),
     "C_G":    dict(tier="bypass", info="twin",    rule="opt", guard=True),
 }
 
 LABELS = {
     "A": "A  Conventional (fixed string, pack estimate, fixed rule)",
     "B": "B  REON bypass, no predictive intelligence",
-    "C": "C  PeakSure: bypass + cell twin + optimized commitment",
+    "C_raw": "C diagnostic: unguarded cell twin",
+    "C": "C  PeakSure: bypass + cell twin + independent pack-test safety envelope",
     "D": "D  PeakSure + VoI diagnostic probes",
     "C_T3": "C + Tier 3 lifetime-aware resting SOC",
     "C_LC": "C + twin-trend-informed resting SOC allocation",

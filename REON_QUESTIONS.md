@@ -1,7 +1,13 @@
 # Two numbers we need from REON (message draft for the mentors / Discord)
 
 Hi REON team, we are the PeakSure team (cell-level commitment for municipal utilities on ISO-NE peaks).
-Our model of the 2.5 MW CES depends heavily on two numbers we could not find in public material. Approximate values or ranges are fine.
+Our CES/CESS-sized 2.5 MW model depends on values we could not confirm from the public hardware page. The current page says CESS; a project-cited REON PDF says CES. Approximate values or ranges are fine.
+
+**First confirm the product boundary:** Is 5 MWh a cell-side/DC nameplate, DC usable, or AC usable rating? At what discharge power, SOC limits, temperature, and end-of-life condition is it specified? Is the 480 V three-phase AC interface current for this product?
+
+**Confirm the CES/CESS cell architecture:** chemistry and cell format; cells per series column; number of parallel columns; minimum and maximum PCS DC voltage; minimum active-cell count; and whether REON cell-level bypass is integrated into this container product.
+
+**Confirm conversion losses:** cell switch-path R_on and its operating range, PCS/DC-DC efficiency curve, and auxiliary consumption. These determine usable AC energy and sensitivity to bypass.
 
 **1. Switch resistance per cell path (R_on), and how many parallel strings (columns) share the 2.5 MW.**
 Each cell's switch carries the full string current, so the loss is roughly I x R_on / V_cell. With 240 cells in series and 8 strings, the current at 2.5 MW is about 440 A:

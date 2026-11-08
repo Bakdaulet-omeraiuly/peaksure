@@ -45,9 +45,10 @@
   22
  ],
  "durations": {
+  "1h": 2500.0,
   "2h": 5000.0,
-  "4h": 10000.0,
-  "1h": 2500.0
+  "3h": 7500.0,
+  "4h": 10000.0
  },
  "seeds": [
   0,
@@ -55,26 +56,84 @@
   2
  ],
  "chemistry": "Sodium-ion (layered oxide / hard carbon)",
+ "product_profile": {
+  "name": "CES / CESS",
+  "naming": {
+   "value": "CES in project-cited REON PDF; CESS on current REON hardware page",
+   "status": "REON CLAIM",
+   "source": "https://www.reoncorp.com/hardware; project Addendum \u00a7AA1 cites REON_WHO_WE_ARE.pdf"
+  },
+  "rated_power_kw": {
+   "value": 2500.0,
+   "status": "REON CLAIM",
+   "source": "https://www.reoncorp.com/hardware (CESS, checked 2026-11-07)",
+   "qualifier": "up to"
+  },
+  "rated_energy_kwh": {
+   "value": 5000.0,
+   "status": "REON CLAIM",
+   "source": "https://www.reoncorp.com/hardware (CESS, checked 2026-11-07)",
+   "qualifier": "up to; rating boundary unconfirmed"
+  },
+  "ac_interface": {
+   "value": "480 V, 3-phase AC",
+   "status": "REON CLAIM",
+   "source": "REON_WHO_WE_ARE.pdf as quoted in project Addendum \u00a7AA1; original file unavailable in repository"
+  },
+  "rated_duration_h": {
+   "value": 2.0,
+   "status": "DERIVED",
+   "source": "5 MWh / 2.5 MW nameplate arithmetic; usable AC discharge not established"
+  },
+  "chemistry": {
+   "value": null,
+   "status": "UNKNOWN",
+   "source": "No CES-specific chemistry in the checked REON hardware page"
+  },
+  "cell_dc_topology": {
+   "value": null,
+   "status": "UNKNOWN",
+   "source": "No CES-specific cell count, parallel columns, DC window or N_min published"
+  },
+  "switch_loss": {
+   "value": null,
+   "status": "UNKNOWN",
+   "source": "No CES-specific switch-path resistance or loss published"
+  }
+ },
+ "model_boundary": "ASSUMED: interpret the public nameplate energy as nominal cell-side input; modeled deliverable energy includes assumed cell-to-AC efficiency. Published rating boundary UNKNOWN.",
  "flags": {
   "p_max_kw": [
    "ASSUMED",
-   "Comparison size = published CESS 2.5 MW (CONFIRMED for CESS, reoncorp.com/hardware, 2026-11-07). CESS is white-label; B/C/D = REON-style bypass plant (~84 EBS blocks of 30 kW / 60 kWh, interconnection UNKNOWN)"
+   "Comparison size follows the published CESS 2.5 MW rating, but is not an EBS/CES internal specification; modeled as an AC output cap"
   ],
   "e_nom_kwh": [
    "ASSUMED",
-   "5 MWh treated as DC nameplate; CESS 5 MWh basis (DC/usable/AC) UNKNOWN; 1-h and 4-h sizes are hypothetical"
+   "REON lists up to 5 MWh but its measurement boundary is unknown; model interprets this as cell-side nominal energy before 96% AC efficiency"
+  ],
+  "chemistry": [
+   "ASSUMED",
+   "Na-ion laboratory proxy; CES chemistry UNKNOWN; LFP is a research sensitivity"
   ],
   "n_strings / n_series": [
    "ASSUMED",
-   "EBS string design not public (a 60 kWh block is ~120 cells); ask REON"
+   "8 parallel strings \u00d7 240 switchable model units; no CES topology published"
   ],
-  "headroom": [
+  "headroom / n_min": [
    "ASSUMED",
-   "DC-window headroom sets N_min; first-order driver (Lot Desk deck)"
+   "10% bypass headroom gives N_min=216 model units; no CES DC window published; sensitivity 2%-20%"
+  ],
+  "eta_discharge": [
+   "ASSUMED",
+   "96% base; 90%-99% operational sensitivity; CES PCS curve and energy-rating boundary UNKNOWN"
+  ],
+  "dc_window": [
+   "UNKNOWN",
+   "Not enforced in main plant model; CES DC minimum/maximum and cell voltage curve require REON data"
   ],
   "switch_loss": [
    "ASSUMED",
-   "0.5-2% sensitivity; MOSFET I^2 R_ds(on)"
+   "1% base, 0.5%-5% operational sensitivity; CES switch R_on UNKNOWN"
   ],
   "dispatch_days": [
    "ASSUMED",

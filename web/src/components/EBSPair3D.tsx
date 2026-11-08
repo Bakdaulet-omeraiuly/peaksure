@@ -45,9 +45,10 @@ function Block({ side, ox, started, diagnosisCell, mask, which, onHover }: { sid
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
   }, [states, soc, n, ox, mask]);
   const ring = diagnosisCell !== null ? pos(diagnosisCell, ox) : null;
+  const border = side.status.startsWith("UNAVAILABLE") ? "#ef4a3c" : side.frame.block_online || !started ? (side.bypass ? "#3f9b62" : "#657d88") : "#4aa3ff";
   return <group>
     <mesh position={[ox, 1.34, -0.08]}><boxGeometry args={[2.75, 2.5, 0.22]} /><meshStandardMaterial color="#132027" roughness={0.85} /></mesh>
-    <mesh position={[ox, 1.34, -0.08]}><boxGeometry args={[2.78, 2.53, 0.24]} /><meshBasicMaterial color={side.frame.block_online || !started ? (side.bypass ? "#3f9b62" : "#657d88") : "#ef4a3c"} wireframe /></mesh>
+    <mesh position={[ox, 1.34, -0.08]}><boxGeometry args={[2.78, 2.53, 0.24]} /><meshBasicMaterial color={border} wireframe /></mesh>
     <instancedMesh ref={mesh} args={[undefined, undefined, n]}
       onPointerMove={(e) => { e.stopPropagation(); if (e.instanceId != null) onHover?.({ side: which, cell: e.instanceId }); }}
       onPointerOut={() => onHover?.(null)}>
@@ -72,8 +73,9 @@ function SvgSide({ side, left, started, diagnosisCell, mask, which, onHover }: {
   mask: boolean[] | null; which: "A" | "B"; onHover?: Props["onHover"] }) {
   const states = cellStates(side.frame, side.bypass, started);
   const soc = decode(side.frame.soc_b64);
+  const border = side.status.startsWith("UNAVAILABLE") ? "#ef4a3c" : side.frame.block_online || !started ? (side.bypass ? "#3f9b62" : "#657d88") : "#4aa3ff";
   return <g>
-    <rect x={left + 12} y="51" width="444" height="254" rx="14" fill="#112028" stroke={side.frame.block_online || !started ? (side.bypass ? "#3f9b62" : "#657d88") : "#ef4a3c"} strokeWidth="3" />
+    <rect x={left + 12} y="51" width="444" height="254" rx="14" fill="#112028" stroke={border} strokeWidth="3" />
     {states.map((st, i) => {
       const x = left + 32 + (i % COLS) * 34, y = 72 + Math.floor(i / COLS) * 23;
       const fill = mask ? (mask[i] ? "#f2f5f7" : "#1c2126") : st === "normal" ? new THREE.Color(EBS_STATE_COLOR.normal).lerp(new THREE.Color("#18352b"), 1 - soc[i] / 255).getStyle() : EBS_STATE_COLOR[st];
@@ -101,7 +103,7 @@ export default function EBSPair3D({ a, b, started, diagnosisCell, difference, on
   return <div>
     <div className="relative h-[340px] sm:h-[410px] rounded-lg overflow-hidden bg-[#061013]">
       <div className="absolute top-2 left-3 right-3 z-10 grid grid-cols-2 gap-2 text-center text-[11px] sm:text-[13px] font-semibold text-white pointer-events-none">
-        {[a, b].map((s) => <span key={s.title}>{s.title}<br /><small className="font-normal text-[#a8bac0]">{s.sub}</small><br /><small className="font-normal" style={{ color: s.status.startsWith("STOPPED") ? "#ff8a80" : "#9fe0bd" }}>{s.status}</small></span>)}
+        {[a, b].map((s) => <span key={s.title}>{s.title}<br /><small className="font-normal text-[#a8bac0]">{s.sub}</small><br /><small className="font-normal" style={{ color: s.status.startsWith("UNAVAILABLE") ? "#ff8a80" : s.status.startsWith("CYCLE COMPLETE") ? "#75bfff" : "#9fe0bd" }}>{s.status}</small></span>)}
       </div>
       {webgl ? <Canvas camera={{ position: [0, 1.45, 10], fov: 38 }} dpr={[1, 2]}>
         <Fit /><color attach="background" args={["#061013"]} />
@@ -118,7 +120,7 @@ export default function EBSPair3D({ a, b, started, diagnosisCell, difference, on
       {legend.map(([c, l]) => <span key={l}><i className="inline-block w-2.5 h-2.5 mr-1 rounded-sm align-middle" style={{ background: c }} />{l}</span>)}
       <span><i className="inline-block w-2.5 h-2.5 mr-1 rounded-full align-middle border-2" style={{ borderColor: DIAGNOSIS_COLOR }} />selected for diagnosis (lowest twin estimate)</span>
     </div>
-    <p className="text-[11px] text-faint mt-1">Shape cues: limiting cell enlarged and pushed forward (&ldquo;!&rdquo; in 2D); bypassed and idle cells recessed (struck through when bypassed). Red block outline = block stopped.</p>
+    <p className="text-[11px] text-faint mt-1">Green = active. Blue = reserve threshold or a completed discharge cycle awaiting recharge. Grey = deliberately bypassed/idle. Red is reserved for a real unavailable or missed-dispatch state.</p>
     <p className="text-[11.5px] text-muted mt-1 num" aria-live="polite">
       A: {ca.normal + ca.approaching} in circuit · {ca.approaching} approaching empty · {ca.limiting} limiting · {ca.idle} idle &nbsp;|&nbsp;
       B: {cb.normal + cb.approaching} in circuit · {cb.approaching} approaching empty · {cb.bypassed} bypassed · {cb.idle} idle

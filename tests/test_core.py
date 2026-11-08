@@ -149,10 +149,13 @@ def test_mixed_age_cohorts_keep_one_chemistry_and_distinct_capacity():
 
 def test_independent_pack_envelope_reduces_systematic_bias_misses():
     cfg = Config(years=2, meas_bias=0.01, trend_bias=0.10)
-    twin = simulate(cfg, "C", 0)["events"]
-    guarded = simulate(cfg, "C_G", 0)["events"]
+    twin = simulate(cfg, "C_raw", 0)["events"]
+    guarded = simulate(cfg, "C", 0)["events"]
     assert (twin.peak_he.values == guarded.peak_he.values).all()
     assert (guarded.d_true < guarded.d_p5).sum() < (twin.d_true < twin.d_p5).sum()
+    alias = simulate(cfg, "C_G", 0)["events"]
+    assert np.allclose(guarded.d_p5, alias.d_p5)
+    assert np.allclose(guarded.power_kw, alias.power_kw)
 
 
 def test_zero_twin_error_perfect_info_dominates_twin():

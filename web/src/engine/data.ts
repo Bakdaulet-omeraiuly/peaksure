@@ -6,7 +6,15 @@ export interface Constants {
   sigma_pack_test: number; sigma_probe: number; alpha: number; eol_retention: number; start_year: number;
   rns_2026: number; rns_increments: number[]; fca_kw_month: number; nominal_fade_month: number; years: number;
   he_grid: number[]; durations: Record<string, number>; seeds: number[]; chemistry: string;
+  product_profile: ProductProfile; model_boundary: string;
   flags: Record<string, [string, string]>; towns: Record<string, { customers: number; peak_mw: number; src: string }>;
+}
+
+export interface ProductField<T> { value: T; status: "CONFIRMED" | "REON CLAIM" | "DERIVED" | "ASSUMED" | "UNKNOWN"; source: string; qualifier?: string }
+export interface ProductProfile {
+  name: string; naming: ProductField<string>; rated_power_kw: ProductField<number>; rated_energy_kwh: ProductField<number>;
+  ac_interface: ProductField<string>; rated_duration_h: ProductField<number>;
+  chemistry: ProductField<null>; cell_dc_topology: ProductField<null>; switch_loss: ProductField<null>;
 }
 
 export interface PeakEvent {

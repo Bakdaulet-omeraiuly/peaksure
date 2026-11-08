@@ -1,5 +1,6 @@
 from dataclasses import replace
 import base64
+import pytest
 
 from peaksure.ebs import EBSCase, population, simulate
 
@@ -21,6 +22,8 @@ def test_ebs_bypass_uses_same_cells_and_respects_voltage_floor():
     direct = simulate(replace(case, dc_floor_v=750), q, True)
     assert direct["energy_kwh"] == 0
     assert direct["checkpoints"]["0"]["blocks_online"] == 0
+    with pytest.raises(ValueError, match="invalid EBS electrical assumptions"):
+        simulate(replace(case, n_min=case.cells_per_block + 1), q, True)
 
 
 def test_ebs_loss_and_no_weak_cell_controls():
