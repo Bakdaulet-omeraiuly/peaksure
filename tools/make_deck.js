@@ -114,30 +114,22 @@ const head = (s, eyebrow, title) => {
   s.addNotes(`In a normal battery, the weakest cell stops the whole string. REON switches that cell out, so the rest keep delivering. Drained to empty, fixed strings strand ${DRAIN.a_str} kilowatt-hours; REON EBS strands only ${DRAIN.b_str}.`);
 }
 
-// 4 · Two-phase approach
-{
-  const s = pres.addSlide({ masterName: "CONTENT" });
-  head(s, "Our solution", "Two phases: prove it today, build it in tomorrow");
-  const phase = (x, n, t, sub, lines) => {
-    card(s, x, 2.0, 5.4, 3.9, `phase ${n}`);
-    s.addShape(pres.shapes.OVAL, { x: x + 0.35, y: 2.3, w: 0.6, h: 0.6, fill: { color: GREEN }, line: { color: GREEN }, objectName: `phase ${n} badge` });
-    txt(s, String(n), { x: x + 0.35, y: 2.3, w: 0.6, h: 0.6, fontSize: 22, bold: true, color: BG, align: "center", valign: "middle" });
-    txt(s, t, { x: x + 1.15, y: 2.3, w: 4, h: 0.6, fontSize: 24, bold: true, color: GREEN, valign: "middle" });
-    txt(s, sub, { x: x + 0.35, y: 3.1, w: 4.7, h: 0.8, fontSize: 15 });
-    txt(s, lines.map((l, i) => ({ text: l, options: { bullet: true, breakLine: i < lines.length - 1 } })), { x: x + 0.35, y: 3.95, w: 4.7, h: 1.8, fontSize: 14, color: MUTED, paraSpaceAfter: 6 });
-  };
-  phase(0.6, 1, "Retrofit", "Add REON's cell-level BMS to batteries already installed.", ["Proves the technology on real sites", "Cheapest way in: no new battery", "PeakSure advises each peak commitment"]);
-  phase(7.33, 2, "Scale", "Sell REON EBS batteries with cell control built in.", ["Once Phase 1 shows measured gains", "PeakSure as the decision layer", "New town storage and commercial sites"]);
-  s.addShape(pres.shapes.RIGHT_ARROW, { x: 6.15, y: 3.65, w: 1.0, h: 0.6, fill: { color: GREEN }, line: { color: GREEN }, objectName: "evidence arrow" });
-  txt(s, "evidence", { x: 6.0, y: 4.3, w: 1.3, h: 0.3, fontSize: 11, color: MUTED, align: "center" });
-  txt(s, "PeakSure: watch every cell, predict what the battery can deliver, commit only what it can deliver with 95% confidence.", { x: 0.6, y: 6.15, w: 12.1, h: 0.5, fontSize: 14, color: MUTED });
-  s.addNotes("Our approach has two phases. First, retrofit existing batteries to prove it. Then, scale by selling REON EBS with cell control built in.");
-}
+
+const tracker = (s, active) => {
+  [["1", "Retrofit"], ["2", "Scale"]].forEach(([n, t], i) => {
+    const on = i + 1 === active, x = 9.55 + i * 1.75;
+    s.addShape(pres.shapes.OVAL, { x, y: 0.32, w: 0.4, h: 0.4, fill: { color: on ? GREEN : CARD }, line: { color: GREEN, width: 1 }, objectName: `tracker ${n}` });
+    txt(s, n, { x, y: 0.32, w: 0.4, h: 0.4, fontSize: 13, bold: true, color: on ? BG : GREEN, align: "center", valign: "middle" });
+    txt(s, t, { x: x + 0.5, y: 0.32, w: 1.1, h: 0.4, fontSize: 13, bold: on, color: on ? WHITE : MUTED, valign: "middle" });
+  });
+  s.addShape(pres.shapes.LINE, { x: 10.6, y: 0.52, w: 0.6, h: 0, line: { color: GREEN, width: 1.5, endArrowType: "triangle" }, objectName: "tracker arrow" });
+};
 
 // 5 · Phase 1
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
-  head(s, "Phase 1 · Retrofit", "Add cell-level control to batteries that already exist");
+  head(s, "Our solution · Phase 1 · Retrofit", "Add cell-level control to batteries that already exist");
+  tracker(s, 1);
   card(s, 0.6, 1.9, 4.0, 4.8, "cost card");
   txt(s, "COST", { x: 0.9, y: 2.1, w: 3.5, h: 0.3, fontSize: 11, bold: true, color: GREEN, charSpacing: 2 });
   txt(s, `$${S.assumptions.retrofit_cost.low}–${S.assumptions.retrofit_cost.high}`, { x: 0.9, y: 2.5, w: 3.5, h: 0.8, fontSize: 40, bold: true });
@@ -151,13 +143,14 @@ const head = (s, eyebrow, title) => {
   });
   txt(s, "MASSACHUSETTS CANDIDATES", { x: 5.0, y: 5.05, w: 7.7, h: 0.3, fontSize: 11, bold: true, color: GREEN, charSpacing: 1 });
   TOWNS.forEach(([n, size, yr], i) => txt(s, [{ text: `${n}  `, options: { bold: true, color: WHITE } }, { text: `${size} (${yr})`, options: { color: MUTED } }], { x: 5.0 + i * 2.6, y: 5.45, w: 2.5, h: 0.6, fontSize: 14 }));
-  s.addNotes(`Phase one adds REON's cell-level BMS to installed batteries for about ${S.assumptions.retrofit_cost.low} to ${S.assumptions.retrofit_cost.high} dollars per kilowatt-hour. It pays most where cells limit delivery: up to ${k(val("fault_scenario"))} a year. Sterling, Reading and Holden are ready candidates.`);
+  s.addNotes(`Our approach has two phases: first retrofit existing batteries to prove it, then scale by selling REON EBS with cell control built in. Phase one adds REON's cell-level BMS to installed batteries for about ${S.assumptions.retrofit_cost.low} to ${S.assumptions.retrofit_cost.high} dollars per kilowatt-hour. It pays most where cells limit delivery: up to ${k(val("fault_scenario"))} a year. Sterling, Reading and Holden are ready candidates.`);
 }
 
 // 6 · Phase 2
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
-  head(s, "Phase 2 · Scale", "With proof in hand, sell REON EBS with cell control");
+  head(s, "Our solution · Phase 2 · Scale", "With proof in hand, sell REON EBS with cell control");
+  tracker(s, 2);
   const blocks = [
     ["When", ["Phase 1 shows measured extra energy and fewer missed peaks", "REON confirms EBS specifications and certification"]],
     ["Where", ["New municipal light plant storage in Massachusetts", "Commercial sites on demand charges, e.g. National Grid G-2 at $15.24/kW-month"]],
@@ -169,7 +162,8 @@ const head = (s, eyebrow, title) => {
     txt(s, t, { x: x + 0.3, y: 2.25, w: 3.3, h: 0.5, fontSize: 22, bold: true, color: GREEN });
     txt(s, lines.map((l, j) => ({ text: l, options: { bullet: true, breakLine: j < lines.length - 1 } })), { x: x + 0.3, y: 2.9, w: 3.3, h: 2.7, fontSize: 15, paraSpaceAfter: 8 });
   });
-  txt(s, "REON EBS: 30 kW / 60 kWh blocks with cell-level control (REON hardware page); Na+ and Li+ variants.", { x: 0.6, y: 6.1, w: 12.1, h: 0.4, fontSize: 12, color: MUTED });
+  const naE = S.chemistries.find((c) => c.name === "Na-ion");
+  txt(s, [{ text: "Economics: ", options: { bold: true, color: GREEN } }, { text: `team sheet 3 MW / 9 MWh (167 EBS): upfront ≈ $4.0M, NPV +$0.91M at $500K/yr savings · our simulation, new 2.5 MW / 5 MWh plant: NPV $${(naE.npv_full.A / 1e6).toFixed(2)}M conventional, $${(naE.npv_full.C / 1e6).toFixed(2)}M EBS + PeakSure at assumed prices`, options: { color: MUTED } }], { x: 0.6, y: 6.0, w: 12.1, h: 0.6, fontSize: 12 });
   s.addNotes("With that proof, we scale: REON EBS for new municipal storage, and for commercial sites on demand charges like National Grid's G-2 rate.");
 }
 
@@ -224,19 +218,19 @@ const head = (s, eyebrow, title) => {
 // 9 · Battery options
 {
   const s = pres.addSlide({ masterName: "CONTENT" });
-  head(s, "Battery options", "One control system, three cell types");
+  head(s, "Battery options", "One control system, two cell types");
   const lfp = S.chemistries.find((c) => c.name === "LFP"), na = S.chemistries.find((c) => c.name === "Na-ion");
   const H = { bold: true, color: GREEN, fill: { color: CARD } };
   const row = (cells) => cells.map((c, i) => ({ text: c, options: i === 0 ? { bold: true, color: WHITE } : { color: MUTED } }));
   s.addTable([
-    [{ text: "", options: H }, { text: "LFP (lithium)", options: H }, { text: "NMC (lithium)", options: H }, { text: "Sodium-ion", options: H }],
-    row(["Energy per space", "High", "Highest", "Lowest; REON says its Li+ EBS holds more than 2×"]),
-    row(["Cold weather", "Weaker", "Weaker", "Better; REON rates −40 °F (claim)"]),
-    row(["Installed price (team estimate)", `$${fmt(lfp.price.low)}–${fmt(lfp.price.high)}/kWh`, "Not modelled", `$${fmt(na.price.low)}–${fmt(na.price.high)}/kWh`]),
-    row(["Cell-control premium (our model)", `$${sens.chem_LFP.prem_c.toFixed(1)}/kWh`, "Not modelled", `$${t1.C.premium_same[0].toFixed(1)}/kWh (base case)`]),
-    row(["CO₂ to make", "56 kg/kWh", "79 kg/kWh (NMC811)", "No comparable figure"]),
-    row(["Best fit", "Town storage, tight space", "Second-life EV packs", "Cold or indoor sites"]),
-  ], { x: 0.6, y: 1.9, w: 12.1, colW: [3.1, 3.0, 2.6, 3.4], fontSize: 13, fontFace: "Arial", border: { type: "solid", color: LINE, pt: 0.75 }, fill: { color: BG }, rowH: 0.62, valign: "middle", margin: 0.08, objectName: "chemistry table" });
+    [{ text: "", options: H }, { text: "Lithium-ion (LFP) · REON EBS Li+", options: H }, { text: "Sodium-ion · REON EBS Na+", options: H }],
+    row(["Energy per space", "High: REON says EBS Li+ holds more than 2× Na+", "Lower"]),
+    row(["Cold weather", "Weaker", "Better: REON rates −40 °F"]),
+    row(["Installed price (team estimate)", `$${fmt(lfp.price.low)}–${fmt(lfp.price.high)}/kWh`, `$${fmt(na.price.low)}–${fmt(na.price.high)}/kWh`]),
+    row(["Cell-control premium (our model)", `$${sens.chem_LFP.prem_c.toFixed(1)}/kWh`, `$${t1.C.premium_same[0].toFixed(1)}/kWh (base case)`]),
+    row(["Materials", "Lithium, iron; 56 kg CO₂e/kWh to make", "Abundant sodium, no lithium"]),
+    row(["Best fit", "Town storage, tight space", "Cold or indoor sites, high cycling"]),
+  ], { x: 0.6, y: 1.9, w: 12.1, colW: [3.3, 4.4, 4.4], fontSize: 13, fontFace: "Arial", border: { type: "solid", color: LINE, pt: 0.75 }, fill: { color: BG }, rowH: 0.62, valign: "middle", margin: 0.08, objectName: "chemistry table" });
   txt(s, "REON's BMS works with partner cells · Sources: REON; Tarascon (2020); Vaalma et al. (2018); Llamas-Orozco et al. (2023)", { x: 0.6, y: 6.5, w: 12.1, h: 0.35, fontSize: 10, color: MUTED });
   s.addNotes("One control system works across cell types. LFP is cheaper and its flat voltage curve helps; sodium-ion is better in the cold.");
 }
@@ -283,29 +277,12 @@ const head = (s, eyebrow, title) => {
   });
   txt(s, "Compliance in Massachusetts", { x: 0.6, y: 4.6, w: 6, h: 0.4, fontSize: 15, bold: true, color: GREEN });
   txt(s, ["Siting: 225 CMR 29.00 and local permits", "Fire: 527 CMR 1.00, NFPA 855, UL 9540 / 9540A", "Electrical: 527 CMR 12.00; interconnection with the host utility", "End of life: 310 CMR 30.000"].map((l, i, a) => ({ text: l, options: { bullet: true, breakLine: i < a.length - 1 } })), { x: 0.6, y: 5.0, w: 6.2, h: 1.7, fontSize: 13, color: MUTED, paraSpaceAfter: 3 });
-  txt(s, "Economics", { x: 7.2, y: 4.6, w: 5.5, h: 0.4, fontSize: 15, bold: true, color: GREEN });
-  const lfp = S.chemistries.find((c) => c.name === "Na-ion");
-  txt(s, [`Team sheet, 3 MW / 9 MWh (167 EBS): upfront ≈ $4.0M; NPV +$0.91M at $500K/yr savings`, `Our simulation, new 2.5 MW / 5 MWh plant: conventional NPV $${(lfp.npv_full.A / 1e6).toFixed(2)}M, EBS + PeakSure $${(lfp.npv_full.C / 1e6).toFixed(2)}M at assumed prices`, "EBS pays where cells limit delivery, which is why we start with the retrofit"].map((l, i, a) => ({ text: l, options: { bullet: true, breakLine: i < a.length - 1 } })), { x: 7.2, y: 5.0, w: 5.6, h: 1.8, fontSize: 13, color: MUTED, paraSpaceAfter: 3 });
-  s.addNotes(`Our recommendation: a data pilot now, a retrofit on one or two Massachusetts batteries next, then scale with EBS. The battery covers ${pct(t1.C.capture)} of monthly peaks instead of ${pct(t1.A.capture)}.`);
+  card(s, 7.2, 4.6, 5.6, 2.1, "ask card");
+  txt(s, "OUR ASK TO REON", { x: 7.5, y: 4.8, w: 5, h: 0.3, fontSize: 11, bold: true, color: GREEN, charSpacing: 1 });
+  txt(s, "One anonymized battery log, cells per block, DC floor and switch-loss range: that turns this model into evidence.", { x: 7.5, y: 5.2, w: 5.0, h: 1.3, fontSize: 15 });
+  s.addNotes(`Prove it on today's batteries, build it into tomorrow's. Our recommendation: a data pilot now, a retrofit on one or two Massachusetts batteries next, then scale with EBS. The battery covers ${pct(t1.C.capture)} of monthly peaks instead of ${pct(t1.A.capture)}.`);
 }
 
-// 12 · Next steps and team
-{
-  const s = pres.addSlide({ masterName: "COVER" });
-  txt(s, "NEXT STEPS AND TEAM", { x: 0.8, y: 0.6, w: 11, h: 0.4, fontSize: 14, bold: true, color: GREEN, charSpacing: 2 });
-  txt(s, "One real battery log turns this into evidence", { x: 0.8, y: 1.05, w: 11.7, h: 0.9, fontSize: 34, bold: true });
-  txt(s, ["Validate on one anonymized REON battery log", "Add real O&M, compliance and EBS pricing to the cost model", "Model outages: backup hours protected by bypass", "Add NMC cells and the 2026 peak to the tool"].map((l, i, a) => ({ text: l, options: { bullet: true, breakLine: i < a.length - 1 } })), { x: 0.8, y: 2.2, w: 6.2, h: 2.4, fontSize: 16, color: MUTED, paraSpaceAfter: 8 });
-  [["ZT", "Zhamilya Toleukhan"], ["RB", "Riya Bhandari"], ["BO", "Bakdaulet Omertayev"], ["AK", "Aliya Khabiyeva"]].forEach(([ini, n], i) => {
-    const y = 2.2 + i * 0.75;
-    s.addShape(pres.shapes.OVAL, { x: 7.8, y, w: 0.6, h: 0.6, fill: { color: CARD }, line: { color: GREEN, width: 1 }, objectName: `avatar ${ini}` });
-    txt(s, ini, { x: 7.8, y, w: 0.6, h: 0.6, fontSize: 14, bold: true, color: GREEN, align: "center", valign: "middle" });
-    txt(s, n, { x: 8.6, y, w: 4, h: 0.6, fontSize: 16, valign: "middle" });
-  });
-  card(s, 0.8, 5.25, 11.7, 1.0, "ask card");
-  txt(s, [{ text: "Our ask to REON: ", options: { bold: true, color: GREEN } }, { text: "one anonymized battery log, cells per block, DC floor and switch-loss range." }], { x: 1.1, y: 5.45, w: 11.2, h: 0.6, fontSize: 18, valign: "middle" });
-  txt(s, "Prove it on today's batteries. Build it into tomorrow's.  ·  peaksure-studio.vercel.app  ·  Independent analysis, not endorsed by REON", { x: 0.8, y: 6.6, w: 11.7, h: 0.4, fontSize: 12, color: MUTED });
-  s.addNotes("Prove it on today's batteries. Build it into tomorrow's. Thank you.");
-}
 
 (async () => {
   const out = process.argv[2];
